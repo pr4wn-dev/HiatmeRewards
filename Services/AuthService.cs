@@ -1,306 +1,731 @@
 ﻿using HiatMeApp.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Polly;
+using Polly.Retry;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace HiatMeApp.Services;
-
-public class AuthService
+namespace HiatMeApp.Services
 {
-    private readonly HttpClient _httpClient;
-    private string? _csrfToken;
-
-    public AuthService(HttpClient httpClient)
+    public class AuthService
     {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _csrfToken = string.Empty;
-    }
+        private readonly HttpClient _httpClient;
+        private string? _csrfToken;
+        private readonly AsyncRetryPolicy<(bool, string, int?)> _mileageRetryPolicy;
+        private readonly AsyncRetryPolicy<(bool, User?, string)> _loginRetryPolicy;
+        private readonly AsyncRetryPolicy<(bool, string)> _genericRetryPolicy;
+        private readonly AsyncRetryPolicy<(bool, Vehicle?, string, List<MileageRecord>?, int?)> _assignVehicleRetryPolicy;
 
-    public async Task<bool> FetchCSRFTokenAsync()
-    {
-        try
+        public AuthService(HttpClient httpClient)
         {
-            Console.WriteLine("Fetching CSRF token from: " + _httpClient.BaseAddress + "/includes/hiatme_config.php?action=get_csrf_token");
-            var response = await _httpClient.GetAsync("/includes/hiatme_config.php?action=get_csrf_token");
-            Console.WriteLine($"Response status code: {response.StatusCode}");
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _httpClient.Timeout = TimeSpan.FromSeconds(200);
+            _csrfToken = string.Empty;
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "HiatMeApp/1.0");
+            _httpClient.DefaultRequestHeaders.Add("Connection", "close"); // Prevent keep-alive issues
+            Console.WriteLine("AuthService initialized with BaseAddress: " + _httpClient.BaseAddress);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"Failed to fetch CSRF token. Status: {response.StatusCode}, Reason: {response.ReasonPhrase}");
-                return false;
-            }
+            _mileageRetryPolicy = Policy<(bool, string, int?)>
+                .Handle<HttpRequestException>()
+                .Or<TaskCanceledException>()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (result, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"Mileage Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
+                    });
 
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Response content: {json}");
+            _loginRetryPolicy = Policy<(bool, User?, string)>
+                .Handle<HttpRequestException>()
+                .Or<TaskCanceledException>()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (result, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"Login Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
+                    });
 
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                Console.WriteLine("Empty response received.");
-                return false;
-            }
+            _genericRetryPolicy = Policy<(bool, string)>
+                .Handle<HttpRequestException>()
+                .Or<TaskCanceledException>()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (result, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"Generic Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
+                    });
 
-            var result = JsonConvert.DeserializeObject<CsrfResponse>(json);
-            if (result?.Success == true && !string.IsNullOrEmpty(result.CsrfToken))
-            {
-                _csrfToken = result.CsrfToken;
-                Console.WriteLine($"CSRF token fetched successfully: {_csrfToken}");
-                return true;
-            }
-            else
-            {
-                Console.WriteLine($"Invalid CSRF response. Success: {result?.Success}, Token: {result?.CsrfToken}");
-                return false;
-            }
+            _assignVehicleRetryPolicy = Policy<(bool, Vehicle?, string, List<MileageRecord>?, int?)>
+                .Handle<HttpRequestException>()
+                .Or<TaskCanceledException>()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (result, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"AssignVehicle Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
+                    });
         }
-        catch (JsonException ex)
+
+        public async Task<bool> FetchCSRFTokenAsync()
         {
-            Console.WriteLine($"JSON parsing error: {ex.Message}");
-            return false;
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"HTTP request error: {ex.Message}");
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error in FetchCSRFTokenAsync: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<(bool Success, User? User, string Message)> LoginAsync(string? email, string? password)
-    {
-        if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
-            return (false, null, "Failed to retrieve session token.");
-
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            return (false, null, "Email and password are required.");
-
-        var data = new Dictionary<string, string>
-        {
-            { "action", "login" },
-            { "email", email },
-            { "password", password }
-        };
-        var content = new FormUrlEncodedContent(data);
-        _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
-        _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
-
-        try
-        {
-            Console.WriteLine($"Sending login request for: {email} with CSRF token: {_csrfToken}");
-            var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
-            Console.WriteLine($"Login response status code: {response.StatusCode}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"Login request failed. Status: {response.StatusCode}, Reason: {response.ReasonPhrase}");
-                // Fetch a fresh token on failure
-                if (await FetchCSRFTokenAsync())
-                    return (false, null, "Login failed. Please try again with new session token.");
-                return (false, null, "Login failed and unable to refresh session token.");
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Login response content: {json}");
-
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                Console.WriteLine("Empty login response received.");
-                // Fetch a fresh token
-                if (await FetchCSRFTokenAsync())
-                    return (false, null, "Empty response. Please try again with new session token.");
-                return (false, null, "Empty response and unable to refresh session token.");
-            }
-
-            LoginResponse? result = null;
             try
             {
-                result = JsonConvert.DeserializeObject<LoginResponse>(json);
+                string endpoint = "/includes/hiatme_config.php?action=get_csrf_token";
+                Console.WriteLine($"Fetching CSRF token from: {_httpClient.BaseAddress}{endpoint}");
+                var response = await _httpClient.GetAsync(endpoint);
+                Console.WriteLine($"FetchCSRFTokenAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"FetchCSRFTokenAsync failed: Status={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    return false;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"FetchCSRFTokenAsync response: {json}");
+
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    Console.WriteLine("FetchCSRFTokenAsync: Empty response received.");
+                    return false;
+                }
+
+                var result = await Task.Run(() => JsonConvert.DeserializeObject<CsrfResponse>(json));
+                if (result?.Success == true && !string.IsNullOrEmpty(result.CsrfToken))
+                {
+                    _csrfToken = result.CsrfToken;
+                    Console.WriteLine($"FetchCSRFTokenAsync: CSRF token fetched successfully: {_csrfToken}");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine($"FetchCSRFTokenAsync: Invalid response. Success={result?.Success}, Token={result?.CsrfToken}");
+                    return false;
+                }
             }
             catch (JsonException ex)
             {
-                Console.WriteLine($"JSON parsing error in LoginAsync: {ex.Message}");
-                // Fetch a fresh token on deserialization failure
+                Console.WriteLine($"FetchCSRFTokenAsync: JSON parsing error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return false;
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"FetchCSRFTokenAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"FetchCSRFTokenAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
+        public async Task<(bool Success, User? User, string Message)> LoginAsync(string? email, string? password)
+        {
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+                return (false, null, "Failed to retrieve session token.");
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                return (false, null, "Email and password are required.");
+
+            var data = new Dictionary<string, string>
+            {
+                { "action", "login" },
+                { "email", email },
+                { "password", password }
+            };
+            var content = new FormUrlEncodedContent(data);
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+
+            try
+            {
+                return await _loginRetryPolicy.ExecuteAsync(async () =>
+                {
+                    Console.WriteLine($"LoginAsync: Sending request for Email={email}, CSRF={_csrfToken}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"LoginAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    Console.WriteLine("LoginAsync: Response headers:");
+                    foreach (var header in response.Headers)
+                    {
+                        Console.WriteLine($"LoginAsync: {header.Key}: {string.Join(", ", header.Value)}");
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"LoginAsync raw response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("LoginAsync: Empty response received.");
+                        if (await FetchCSRFTokenAsync())
+                            return (false, null, "Empty response. Please try again with new session token.");
+                        return (false, null, "Empty response and unable to refresh session token.");
+                    }
+
+                    LoginResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<LoginResponse>(json, new JsonSerializerSettings
+                    {
+                        MissingMemberHandling = MissingMemberHandling.Ignore,
+                        NullValueHandling = NullValueHandling.Ignore
+                    }));
+
+                    if (!string.IsNullOrEmpty(result?.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"LoginAsync: Updated CSRF token: {_csrfToken}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("LoginAsync: No CSRF token in response. Fetching new token.");
+                        if (!await FetchCSRFTokenAsync())
+                        {
+                            Console.WriteLine("LoginAsync: Failed to fetch new CSRF token.");
+                            return (false, null, "Unable to refresh session token.");
+                        }
+                        Console.WriteLine($"LoginAsync: Fetched new CSRF token: {_csrfToken}");
+                    }
+
+                    if (result?.Success == true)
+                    {
+                        var user = new User
+                        {
+                            Email = result.Email,
+                            Name = result.Name,
+                            Phone = result.Phone,
+                            ProfilePicture = result.ProfilePicture,
+                            Role = result.Role,
+                            UserId = result.UserId,
+                            Vehicles = result.Vehicles
+                        };
+                        App.CurrentUser = user;
+                        Preferences.Set("UserEmail", user.Email);
+                        Preferences.Set("IsLoggedIn", true);
+                        Preferences.Set("UserData", JsonConvert.SerializeObject(user));
+                        Preferences.Set("AuthToken", result.AuthToken);
+                        Console.WriteLine($"LoginAsync: Login successful for Email={email}, Role={result.Role}, UserId={result.UserId}, VehiclesCount={result.Vehicles?.Count ?? 0}, AuthToken={result.AuthToken}");
+                        return (true, user, "Login successful");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"LoginAsync failed: {result?.Message ?? "Unknown error"}");
+                        return (false, null, result?.Message ?? "Login failed.");
+                    }
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"LoginAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
                 if (await FetchCSRFTokenAsync())
-                    return (false, null, "Invalid response format. Please try again with new session token.");
-                return (false, null, "Invalid response format and unable to refresh session token.");
+                    return (false, null, "Network error. Please check your connection and try again.");
+                return (false, null, "Network error and unable to refresh session token.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LoginAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                if (await FetchCSRFTokenAsync())
+                    return (false, null, "An error occurred. Please check your connection and try again.");
+                return (false, null, "An error occurred and unable to refresh session token.");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> RegisterAsync(string? name, string? email, string? phone, string? password)
+        {
+            Console.WriteLine($"RegisterAsync: Starting for Email={email}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("RegisterAsync: Failed to retrieve CSRF token.");
+                return (false, "Failed to retrieve session token.");
             }
 
-            // Update CSRF token from response, if provided
-            if (!string.IsNullOrEmpty(result?.CsrfToken))
+            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                _csrfToken = result.CsrfToken;
-                Console.WriteLine($"Updated CSRF token: {_csrfToken}");
+                Console.WriteLine("RegisterAsync: Missing required fields.");
+                return (false, "Name, email, and password are required.");
             }
-            else
+
+            var data = new Dictionary<string, string>
             {
-                Console.WriteLine("No CSRF token in response. Fetching new token.");
-                if (!await FetchCSRFTokenAsync())
+                { "action", "register" },
+                { "name", name },
+                { "email", email },
+                { "phone", phone ?? string.Empty },
+                { "password", password }
+            };
+            var content = new FormUrlEncodedContent(data);
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+
+            try
+            {
+                return await _genericRetryPolicy.ExecuteAsync(async () =>
                 {
-                    Console.WriteLine("Failed to fetch new CSRF token.");
-                    return (false, null, "Unable to refresh session token.");
-                }
-                Console.WriteLine($"Fetched new CSRF token: {_csrfToken}");
+                    Console.WriteLine($"RegisterAsync: Sending POST request with CSRF={_csrfToken}, Data={JsonConvert.SerializeObject(data)}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"RegisterAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    Console.WriteLine("RegisterAsync: Response headers:");
+                    foreach (var header in response.Headers)
+                    {
+                        Console.WriteLine($"RegisterAsync: {header.Key}: {string.Join(", ", header.Value)}");
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"RegisterAsync response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("RegisterAsync: Empty response received.");
+                        return (false, "Empty response from server.");
+                    }
+
+                    GenericResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(json));
+                    if (result == null)
+                    {
+                        Console.WriteLine("RegisterAsync: Deserialized response is null.");
+                        return (false, "Invalid response format from server.");
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"RegisterAsync: Updated CSRF token: {_csrfToken}");
+                    }
+
+                    if (result.Success)
+                    {
+                        Console.WriteLine($"RegisterAsync: Registration successful for Email={email}");
+                        return (true, result.Message ?? "Registration successful.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"RegisterAsync failed: {result.Message ?? "Unknown error"}");
+                        return (false, result.Message ?? "Registration failed.");
+                    }
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"RegisterAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"Network error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RegisterAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> ForgotPasswordAsync(string? email)
+        {
+            Console.WriteLine($"ForgotPasswordAsync: Starting for Email={email}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("ForgotPasswordAsync: Failed to retrieve CSRF token.");
+                return (false, "Failed to retrieve session token.");
             }
 
-            if (result?.Success == true)
+            if (string.IsNullOrEmpty(email))
             {
-                var user = new User
+                Console.WriteLine("ForgotPasswordAsync: Missing email.");
+                return (false, "Email is required.");
+            }
+
+            var data = new Dictionary<string, string>
+            {
+                { "action", "forgot_password" },
+                { "email", email }
+            };
+            var content = new FormUrlEncodedContent(data);
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+
+            try
+            {
+                return await _genericRetryPolicy.ExecuteAsync(async () =>
                 {
-                    Email = result.Email,
-                    Name = result.Name,
-                    Phone = result.Phone,
-                    ProfilePicture = result.ProfilePicture
-                };
-                Console.WriteLine($"Login successful for: {email}");
-                return (true, user, "Login successful");
+                    Console.WriteLine($"ForgotPasswordAsync: Sending POST request with CSRF={_csrfToken}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"ForgotPasswordAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    Console.WriteLine("ForgotPasswordAsync: Response headers:");
+                    foreach (var header in response.Headers)
+                    {
+                        Console.WriteLine($"ForgotPasswordAsync: {header.Key}: {string.Join(", ", header.Value)}");
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"ForgotPasswordAsync response: {json}");
+
+                    GenericResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(json));
+                    if (result == null)
+                    {
+                        Console.WriteLine("ForgotPasswordAsync: Deserialized response is null.");
+                        return (false, "Invalid response format from server.");
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"ForgotPasswordAsync: Updated CSRF token: {_csrfToken}");
+                    }
+
+                    if (result.Success)
+                    {
+                        Console.WriteLine($"ForgotPasswordAsync: Request successful for Email={email}");
+                        return (true, result.Message ?? "Reset link sent.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"ForgotPasswordAsync failed: {result.Message ?? "Unknown error"}");
+                        return (false, result.Message ?? "Failed to send reset link.");
+                    }
+                });
             }
-            else
+            catch (HttpRequestException ex)
             {
-                Console.WriteLine($"Login failed: {result?.Message ?? "Unknown error"}");
-                return (false, null, result?.Message ?? "Login failed.");
+                Console.WriteLine($"ForgotPasswordAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"Network error: {ex.Message}");
             }
-        }
-        catch (HttpRequestException ex)
-        {
-            Console.WriteLine($"HTTP request error in LoginAsync: {ex.Message}");
-            // Fetch a fresh token on HTTP failure
-            if (await FetchCSRFTokenAsync())
-                return (false, null, "Network error. Please try again with new session token.");
-            return (false, null, "Network error and unable to refresh session token.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error in LoginAsync: {ex.Message}");
-            // Fetch a fresh token on unexpected failure
-            if (await FetchCSRFTokenAsync())
-                return (false, null, "An error occurred. Please try again with new session token.");
-            return (false, null, "An error occurred and unable to refresh session token.");
-        }
-    }
-
-    public async Task<(bool Success, string Message)> RegisterAsync(string? name, string? email, string? phone, string? password)
-    {
-        if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
-            return (false, "Failed to retrieve session token.");
-
-        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            return (false, "Name, email, and password are required.");
-
-        var data = new Dictionary<string, string>
-        {
-            { "action", "register" },
-            { "name", name },
-            { "email", email },
-            { "phone", phone ?? string.Empty },
-            { "password", password }
-        };
-        var content = new FormUrlEncodedContent(data);
-        _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
-        _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
-
-        try
-        {
-            Console.WriteLine($"Sending register request for: {email}");
-            var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Register response: {json}");
-
-            var result = JsonConvert.DeserializeObject<GenericResponse>(json);
-            if (result?.Success == true)
+            catch (Exception ex)
             {
-                _csrfToken = result.CsrfToken;
-                Console.WriteLine($"Registration successful for: {email}");
-                return (true, result.Message ?? "Registration successful.");
+                Console.WriteLine($"ForgotPasswordAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"An error occurred: {ex.Message}");
             }
-            else
+        }
+
+        public async Task<(bool Success, Vehicle? Vehicle, string Message, List<MileageRecord>? IncompleteRecords, int? MileageId)> AssignVehicleAsync(string? vinSuffix, bool allowIncompleteEndingMiles = false)
+        {
+            Console.WriteLine($"AssignVehicleAsync: Starting with VIN suffix={vinSuffix}, allowIncompleteEndingMiles={allowIncompleteEndingMiles}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
             {
-                _csrfToken = result?.CsrfToken ?? _csrfToken;
-                Console.WriteLine($"Registration failed: {result?.Message}");
-                return (false, result?.Message ?? "Registration failed.");
+                Console.WriteLine("AssignVehicleAsync: Failed to retrieve CSRF token.");
+                return (false, null, "Failed to retrieve session token.", null, null);
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"RegisterAsync error: {ex.Message}");
-            return (false, "An error occurred.");
-        }
-    }
 
-    public async Task<(bool Success, string Message)> ForgotPasswordAsync(string? email)
-    {
-        if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
-            return (false, "Failed to retrieve session token.");
-
-        if (string.IsNullOrEmpty(email))
-            return (false, "Email is required.");
-
-        var data = new Dictionary<string, string>
-        {
-            { "action", "forgot_password" },
-            { "email", email }
-        };
-        var content = new FormUrlEncodedContent(data);
-        _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
-        _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
-
-        try
-        {
-            Console.WriteLine($"Sending forgot password request for: {email}");
-            var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
-            var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Forgot password response: {json}");
-
-            var result = JsonConvert.DeserializeObject<GenericResponse>(json);
-            if (result?.Success == true)
+            if (string.IsNullOrEmpty(vinSuffix) || vinSuffix.Length != 6 || !System.Text.RegularExpressions.Regex.IsMatch(vinSuffix, @"^[A-HJ-NPR-Z0-9]{6}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             {
-                _csrfToken = result.CsrfToken;
-                Console.WriteLine($"Forgot password request successful for: {email}");
-                return (true, result.Message ?? "Reset link sent.");
+                Console.WriteLine("AssignVehicleAsync: Invalid VIN suffix.");
+                return (false, null, "VIN suffix must be exactly 6 alphanumeric characters (excluding I, O, Q).", null, null);
             }
-            else
+
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
             {
-                _csrfToken = result?.CsrfToken ?? _csrfToken;
-                Console.WriteLine($"Forgot password failed: {result?.Message}");
-                return (false, result?.Message ?? "Failed to send reset link.");
+                Console.WriteLine("AssignVehicleAsync: No auth_token found in Preferences.");
+                return (false, null, "No authentication token available. Please log in again.", null, null);
+            }
+
+            var data = new Dictionary<string, string>
+            {
+                { "action", allowIncompleteEndingMiles ? "assign_vehicle_by_vin_allow_incomplete" : "assign_vehicle_by_vin" },
+                { "vin_suffix", vinSuffix }
+            };
+            var content = new FormUrlEncodedContent(data);
+
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+            try
+            {
+                return await _assignVehicleRetryPolicy.ExecuteAsync(async () =>
+                {
+                    Console.WriteLine($"AssignVehicleAsync: Sending POST request with CSRF={_csrfToken}, VIN suffix={vinSuffix}, auth_token={authToken}, action={data["action"]}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"AssignVehicleAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    Console.WriteLine("AssignVehicleAsync: Response headers:");
+                    foreach (var header in response.Headers)
+                    {
+                        Console.WriteLine($"AssignVehicleAsync: {header.Key}: {string.Join(", ", header.Value)}");
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"AssignVehicleAsync raw response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("AssignVehicleAsync: Empty response received.");
+                        return (false, null, "Empty response from server.", null, null);
+                    }
+
+                    AssignVehicleResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<AssignVehicleResponse>(json));
+                    if (result == null)
+                    {
+                        Console.WriteLine("AssignVehicleAsync: Deserialized response is null.");
+                        return (false, null, "Invalid response format from server.", null, null);
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"AssignVehicleAsync: Updated CSRF token: {_csrfToken}");
+                    }
+
+                    if (result.Success && result.Vehicle != null)
+                    {
+                        Console.WriteLine($"AssignVehicleAsync: Vehicle assigned successfully, VIN={result.Vehicle.Vin}, VehicleId={result.Vehicle.VehicleId}, CurrentUserId={result.Vehicle.CurrentUserId}, DateAssigned={result.Vehicle.DateAssigned}, MileageId={result.MileageId}");
+                        return (true, result.Vehicle, result.Message ?? "Vehicle assigned successfully.", null, result.MileageId);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"AssignVehicleAsync failed: {result.Message ?? "Unknown error"}");
+                        if (result.Message == "Invalid request" && await FetchCSRFTokenAsync())
+                        {
+                            Console.WriteLine("AssignVehicleAsync: Retrying with new CSRF token");
+                            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                            var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                            var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine($"AssignVehicleAsync retry response: {retryJson}");
+
+                            AssignVehicleResponse? retryResult = await Task.Run(() => JsonConvert.DeserializeObject<AssignVehicleResponse>(retryJson));
+                            if (retryResult?.Success == true && retryResult.Vehicle != null)
+                            {
+                                Console.WriteLine($"AssignVehicleAsync retry: Vehicle assigned successfully, VIN={retryResult.Vehicle.Vin}, VehicleId={retryResult.Vehicle.VehicleId}, CurrentUserId={retryResult.Vehicle.CurrentUserId}, DateAssigned={retryResult.Vehicle.DateAssigned}, MileageId={retryResult.MileageId}");
+                                if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                {
+                                    _csrfToken = retryResult.CsrfToken;
+                                    Console.WriteLine($"AssignVehicleAsync retry: Updated CSRF token: {_csrfToken}");
+                                }
+                                return (true, retryResult.Vehicle, retryResult.Message ?? "Vehicle assigned successfully.", null, retryResult.MileageId);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"AssignVehicleAsync retry failed: {retryResult?.Message ?? "Unknown error"}");
+                                return (false, null, retryResult?.Message ?? "Failed to assign vehicle.", retryResult?.IncompleteRecords, null);
+                            }
+                        }
+                        return (false, null, result.Message ?? "Failed to assign vehicle.", result.IncompleteRecords, null);
+                    }
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"AssignVehicleAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, null, $"Network error: {ex.Message}", null, null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"AssignVehicleAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, null, $"An error occurred: {ex.Message}", null, null);
             }
         }
-        catch (Exception ex)
+
+        public async Task<(bool Success, string Message, int? MileageId)> SubmitStartMileageAsync(int mileageId, double startMiles)
         {
-            Console.WriteLine($"ForgotPasswordAsync error: {ex.Message}");
-            return (false, "An error occurred.");
+            Console.WriteLine($"SubmitStartMileageAsync: Starting with mileage_id={mileageId}, start_miles={startMiles}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+                return (false, "Failed to retrieve session token.", null);
+
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
+                return (false, "No authentication token available. Please log in again.", null);
+
+            var startMilesDatetime = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time")).ToString("yyyy-MM-dd HH:mm:ss");
+            var data = new Dictionary<string, string>
+            {
+                { "action", "submit_start_mileage" },
+                { "mileage_id", mileageId.ToString() },
+                { "start_miles", startMiles.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                { "start_miles_datetime", startMilesDatetime }
+            };
+            var content = new FormUrlEncodedContent(data);
+
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+            try
+            {
+                return await _mileageRetryPolicy.ExecuteAsync(async () =>
+                {
+                    Console.WriteLine($"SubmitStartMileageAsync: Sending POST request with CSRF={_csrfToken}, mileage_id={mileageId}, start_miles={startMiles}, start_miles_datetime={startMilesDatetime}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"SubmitStartMileageAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    Console.WriteLine("SubmitStartMileageAsync: Response headers:");
+                    foreach (var header in response.Headers)
+                    {
+                        Console.WriteLine($"SubmitStartMileageAsync: {header.Key}: {string.Join(", ", header.Value)}");
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"SubmitStartMileageAsync response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                        return (false, "Empty response from server.", null);
+
+                    SubmitMileageResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<SubmitMileageResponse>(json));
+                    if (result == null)
+                        return (false, "Invalid response format from server.", null);
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                        _csrfToken = result.CsrfToken;
+
+                    Console.WriteLine($"SubmitStartMileageAsync: Updated CSRF token: {_csrfToken}");
+                    Console.WriteLine($"SubmitStartMileageAsync: Successfully submitted start mileage for vehicle_id={result.VehicleId}, mileage_id={result.MileageId}");
+                    return (result.Success, result.Message ?? "Failed to submit start mileage.", result.MileageId);
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"SubmitStartMileageAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"Network error: {ex.Message}", null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SubmitStartMileageAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"An error occurred: {ex.Message}", null);
+            }
         }
-    }
 
-    private class CsrfResponse
-    {
-        public bool Success { get; set; }
-        [JsonProperty("csrf_token")]
-        public string? CsrfToken { get; set; }
-    }
+        public async Task<(bool Success, string Message, int? MileageId)> SubmitEndMileageAsync(int vehicleId, double endingMiles)
+        {
+            Console.WriteLine($"SubmitEndMileageAsync: Starting with vehicle_id={vehicleId}, ending_miles={endingMiles}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("SubmitEndMileageAsync: Failed to retrieve CSRF token.");
+                return (false, "Failed to retrieve session token.", null);
+            }
 
-    private class LoginResponse
-    {
-        public bool Success { get; set; }
-        public string? Email { get; set; }
-        public string? Name { get; set; }
-        public string? Phone { get; set; }
-        public string? ProfilePicture { get; set; }
-        [JsonProperty("csrf_token")]
-        public string? CsrfToken { get; set; }
-        public string? Message { get; set; }
-    }
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("SubmitEndMileageAsync: No auth_token found in Preferences.");
+                return (false, "No authentication token available. Please log in again.", null);
+            }
 
-    private class GenericResponse
-    {
-        public bool Success { get; set; }
-        public string? Message { get; set; }
-        [JsonProperty("csrf_token")]
-        public string? CsrfToken { get; set; }
+            var endingMilesDatetime = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time")).ToString("yyyy-MM-dd HH:mm:ss");
+            var data = new Dictionary<string, string>
+            {
+                { "action", "submit_end_mileage" },
+                { "vehicle_id", vehicleId.ToString() },
+                { "ending_miles", endingMiles.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                { "ending_miles_datetime", endingMilesDatetime }
+            };
+            var content = new FormUrlEncodedContent(data);
+
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+            try
+            {
+                return await _mileageRetryPolicy.ExecuteAsync(async () =>
+                {
+                    Console.WriteLine($"SubmitEndMileageAsync: Sending POST request with CSRF={_csrfToken}, vehicle_id={vehicleId}, ending_miles={endingMiles}, ending_miles_datetime={endingMilesDatetime}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"SubmitEndMileageAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    Console.WriteLine("SubmitEndMileageAsync: Response headers:");
+                    foreach (var header in response.Headers)
+                    {
+                        Console.WriteLine($"SubmitEndMileageAsync: {header.Key}: {string.Join(", ", header.Value)}");
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"SubmitEndMileageAsync response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("SubmitEndMileageAsync: Empty response received.");
+                        return (false, "Empty response from server.", null);
+                    }
+
+                    SubmitMileageResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<SubmitMileageResponse>(json));
+                    if (result == null)
+                    {
+                        Console.WriteLine("SubmitEndMileageAsync: Deserialized response is null.");
+                        return (false, "Invalid response format from server.", null);
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"SubmitEndMileageAsync: Updated CSRF token: {_csrfToken}");
+                    }
+
+                    Console.WriteLine($"SubmitEndMileageAsync: Successfully submitted end mileage for vehicle_id={result.VehicleId}, mileage_id={result.MileageId}");
+                    return (result.Success, result.Message ?? "Failed to submit end mileage.", result.MileageId);
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"SubmitEndMileageAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"Network error: {ex.Message}", null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SubmitEndMileageAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"An error occurred: {ex.Message}", null);
+            }
+        }
+
+        private class CsrfResponse
+        {
+            public bool Success { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+            public string? Message { get; set; }
+        }
+
+        private class LoginResponse
+        {
+            public bool Success { get; set; }
+            public string? Email { get; set; }
+            public string? Name { get; set; }
+            public string? Phone { get; set; }
+            public string? ProfilePicture { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+            public string? Message { get; set; }
+            public string? Role { get; set; }
+            [JsonProperty("user_id")]
+            public int UserId { get; set; }
+            public List<Vehicle>? Vehicles { get; set; }
+            [JsonProperty("auth_token")]
+            public string? AuthToken { get; set; }
+        }
+
+        private class GenericResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+        }
+
+        private class AssignVehicleResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+            public Vehicle? Vehicle { get; set; }
+            [JsonProperty("incomplete_records")]
+            public List<MileageRecord>? IncompleteRecords { get; set; }
+            [JsonProperty("mileage_id")]
+            public int? MileageId { get; set; }
+        }
+        
+        private class SubmitMileageResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+            [JsonProperty("mileage_id")]
+            public int? MileageId { get; set; }
+            [JsonProperty("vehicle_id")]
+            public int VehicleId { get; set; }
+            [JsonProperty("user_id")]
+            public int UserId { get; set; }
+            [JsonProperty("start_miles")]
+            public float? StartMiles { get; set; }
+            [JsonProperty("start_miles_datetime")]
+            public string? StartMilesDatetime { get; set; }
+            [JsonProperty("ending_miles")]
+            public float? EndingMiles { get; set; }
+            [JsonProperty("ending_miles_datetime")]
+            public string? EndingMilesDatetime { get; set; }
+            [JsonProperty("created_at")]
+            public string? CreatedAt { get; set; }
+        }
     }
 }

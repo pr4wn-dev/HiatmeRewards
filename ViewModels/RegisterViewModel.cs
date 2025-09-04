@@ -28,20 +28,38 @@ public partial class RegisterViewModel : BaseViewModel
     [ObservableProperty]
     private string? _message;
 
+    [ObservableProperty]
+    private bool _isBusy; // Added to ensure UI notification
+
     public RegisterViewModel(AuthService authService)
     {
         _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         Title = "Register";
+        Console.WriteLine("RegisterViewModel initialized.");
     }
 
     [RelayCommand]
     private async Task RegisterAsync()
     {
-        if (IsBusy) return;
+        Console.WriteLine("RegisterAsync command started.");
+        if (IsBusy)
+        {
+            Console.WriteLine("RegisterAsync skipped: IsBusy is true.");
+            Message = "Operation in progress. Please wait.";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(Name) || string.IsNullOrEmpty(Email) || string.IsNullOrEmpty(Password) || string.IsNullOrEmpty(ConfirmPassword))
+        {
+            Message = "Please fill all required fields.";
+            Console.WriteLine("RegisterAsync failed: Missing required fields.");
+            return;
+        }
 
         if (Password != ConfirmPassword)
         {
             Message = "Passwords do not match.";
+            Console.WriteLine("RegisterAsync failed: Passwords do not match.");
             return;
         }
 
@@ -49,12 +67,15 @@ public partial class RegisterViewModel : BaseViewModel
         {
             IsBusy = true;
             Message = "Registering...";
+            Console.WriteLine($"RegisterAsync: Attempting registration for Email={Email}");
 
             var (success, message) = await _authService.RegisterAsync(Name, Email, Phone, Password);
-            Message = message;
+            Message = message; // Ensure UI updates with backend message
+            Console.WriteLine($"RegisterAsync: AuthService returned Success={success}, Message={message}");
 
             if (success)
             {
+                Console.WriteLine("RegisterAsync: Registration successful, navigating to Login.");
                 await Shell.Current.DisplayAlert("Success", "Registration successful. Check your email to verify.", "OK");
                 await Shell.Current.GoToAsync("//Login");
             }
@@ -62,17 +83,19 @@ public partial class RegisterViewModel : BaseViewModel
         catch (Exception ex)
         {
             Message = $"Error: {ex.Message}";
-            Console.WriteLine($"Register error: {ex.Message}");
+            Console.WriteLine($"RegisterAsync error: {ex.Message}, StackTrace: {ex.StackTrace}");
         }
         finally
         {
             IsBusy = false;
+            Console.WriteLine("RegisterAsync command completed.");
         }
     }
 
     [RelayCommand]
     private async Task GoToLogin()
     {
+        Console.WriteLine("GoToLogin command executed.");
         await Shell.Current.GoToAsync("//Login");
     }
 }

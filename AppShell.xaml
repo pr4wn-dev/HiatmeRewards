@@ -1,18 +1,52 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-       xmlns:local="clr-namespace:HiatMeApp"
-       x:Class="HiatMeApp.AppShell">
-    <ShellContent Title="Login"
-                  ContentTemplate="{DataTemplate local:LoginPage}"
-                  Route="Login" />
+<Shell
+    x:Class="HiatMeApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:HiatMeApp"
+    xmlns:vm="clr-namespace:HiatMeApp.ViewModels"
+    x:DataType="vm:AppShellViewModel">
+    <Shell.BindingContext>
+        <vm:AppShellViewModel />
+    </Shell.BindingContext>
+    <!-- Flyout header to display email -->
+    <Shell.FlyoutHeader>
+        <StackLayout>
+            <Label Text="{Binding UserEmail, StringFormat='Logged in as: {0}', FallbackValue='Not logged in'}" />
+            <Label Text="{Binding LoginMenuTitle, FallbackValue=Login}" />
+        </StackLayout>
+    </Shell.FlyoutHeader>
+    <!-- ShellContent for navigation routes -->
+    <ShellContent ContentTemplate="{DataTemplate local:LoginPage}"
+                  Route="Login"
+                  FlyoutItemIsVisible="False" />
+    <ShellContent ContentTemplate="{DataTemplate local:HomePage}"
+                  Route="Home"
+                  FlyoutItemIsVisible="False" />
+    <ShellContent ContentTemplate="{DataTemplate local:VehiclePage}"
+                  Route="Vehicle"
+                  FlyoutItemIsVisible="False" />
     <ShellContent Title="Register"
                   ContentTemplate="{DataTemplate local:RegisterPage}"
-                  Route="Register" />
+                  Route="Register"
+                  FlyoutItemIsVisible="True" />
     <ShellContent Title="Forgot Password"
                   ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
-                  Route="ForgotPassword" />
-    <ShellContent Title="Home"
-                  ContentTemplate="{DataTemplate local:HomePage}"
-                  Route="Home" />
+                  Route="ForgotPassword"
+                  FlyoutItemIsVisible="True" />
+    <!-- MenuItems with dynamic binding -->
+    <MenuItem x:Name="LoginMenuItem" Text="{Binding LoginMenuTitle, Mode=TwoWay, FallbackValue=Login}"
+              Command="{Binding LoginMenuCommand}"
+              Clicked="OnLoginClicked" />
+    <MenuItem x:Name="HomeMenuItem" Text="Home"
+              Command="{Binding HomeMenuCommand}"
+              Clicked="OnHomeClicked" />
+    <!-- Debug footer with corrected BindingContext and Clicked events -->
+    <Shell.FlyoutFooter>
+        <StackLayout BindingContext="{Binding Source={RelativeSource AncestorType={x:Type Shell}}, Path=BindingContext}">
+            <Label Text="{Binding LoginMenuTitle, FallbackValue=Login}" />
+            <Button Text="Test Login Command" Command="{Binding LoginMenuCommand}" Clicked="OnTestLoginClicked" />
+            <Button Text="Test Home Command" Command="{Binding HomeMenuCommand}" Clicked="OnTestHomeClicked" />
+        </StackLayout>
+    </Shell.FlyoutFooter>
 </Shell>
