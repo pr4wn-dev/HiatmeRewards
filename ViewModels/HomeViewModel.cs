@@ -327,4 +327,19 @@ public partial class HomeViewModel : BaseViewModel
             await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle page.", "OK");
         }
     }
+
+    [RelayCommand]
+    private async Task GoToIssues()
+    {
+        try
+        {
+            Console.WriteLine("GoToIssues: Navigating to Vehicle Issues");
+            await Shell.Current.GoToAsync($"//VehicleIssues?refresh={Guid.NewGuid()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
+            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle Issues page.", "OK");
+        }
+    }
 }

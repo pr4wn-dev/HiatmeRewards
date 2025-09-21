@@ -39,5 +39,9 @@
                 IsVisible="{Binding IsVehicleButtonVisible}" 
                 Command="{Binding GoToVehicleCommand}" />
         <!-- Car icon -->
+        <Button Text="&#xE8B2;" Style="{StaticResource NavButtonStyle}" 
+                IsVisible="{Binding IsIssuesButtonVisible}" 
+                Command="{Binding GoToIssuesCommand}" />
+        <!-- Report problem icon for issues -->
     </HorizontalStackLayout>
 </ContentView>
