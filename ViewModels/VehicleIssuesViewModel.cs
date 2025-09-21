@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HiatMeApp.Models;
+using HiatMeApp.Services;
 
 namespace HiatMeApp.ViewModels;
 
@@ -31,7 +33,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         try
         {
             Console.WriteLine("GoToVehicle: Navigating to Vehicle");
-            await Shell.Current.GoToAsync($"Vehicle?refresh={Guid.NewGuid()}");
+            await Shell.Current.GoToAsync($"//Vehicle?refresh={Guid.NewGuid()}");
         }
         catch (Exception ex)
         {

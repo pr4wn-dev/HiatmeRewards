@@ -5,7 +5,7 @@ namespace HiatMeApp;
 
 public partial class VehiclePage : ContentPage
 {
-    public VehiclePage()
+    public VehiclePage(VehicleViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = new VehicleViewModel();

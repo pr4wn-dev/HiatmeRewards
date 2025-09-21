@@ -27,7 +27,7 @@
     <ShellContent ContentTemplate="{DataTemplate local:VehiclePage}"
                   Route="Vehicle"
                   FlyoutItemIsVisible="False" />
-    <ShellContent ContentTemplate="{DataTemplate pages:VehicleIssuesPage}"
+    <ShellContent ContentTemplate="{DataTemplate local:VehicleIssuesPage}"
                   Route="VehicleIssues"
                   FlyoutItemIsVisible="False" />
     <ShellContent Title="Register"

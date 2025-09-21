@@ -319,7 +319,7 @@ public partial class HomeViewModel : BaseViewModel
         try
         {
             Console.WriteLine("GoToVehicle: Navigating to Vehicle");
-            await Shell.Current.GoToAsync($"Vehicle?refresh={Guid.NewGuid()}");
+            await Shell.Current.GoToAsync($"//Vehicle?refresh={Guid.NewGuid()}");
         }
         catch (Exception ex)
         {

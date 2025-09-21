@@ -56,7 +56,7 @@ public static class MauiProgram
         builder.Services.AddTransient<DriverPage>();
         builder.Services.AddTransient<ManagerPage>();
         builder.Services.AddTransient<OwnerPage>();
-        builder.Services.AddTransient<Pages.VehicleIssuesPage>(); // Added
+        builder.Services.AddTransient<VehicleIssuesPage>(); // Added
         builder.Services.AddTransient<NavigationBar>();
 
         return builder.Build();
