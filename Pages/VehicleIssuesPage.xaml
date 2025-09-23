@@ -3,15 +3,50 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.VehicleIssuesPage"
-             Title="Vehicle Issues">
+             Title="{Binding Title}">
     <Grid RowDefinitions="*,Auto">
-        <VerticalStackLayout Grid.Row="0" Padding="20" Spacing="10">
-            <Label Text="Vehicle Issues Page (Blank for now)" 
-                   SemanticProperties.HeadingLevel="Level1"
-                   FontSize="32"
-                   HorizontalOptions="Center" 
-                   VerticalOptions="CenterAndExpand" />
-        </VerticalStackLayout>
+        <Grid RowDefinitions="Auto,*" IsVisible="{Binding IsBusy}">
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                              Color="Blue"
+                              HorizontalOptions="Center"
+                              VerticalOptions="Center"
+                              Margin="0,20,0,0" />
+            <Label Text="Loading vehicle issues..."
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   Margin="0,60,0,0"
+                   Grid.Row="1" />
+        </Grid>
+        <CollectionView ItemsSource="{Binding Issues}"
+                        Grid.Row="0"
+                        Margin="20">
+            <CollectionView.EmptyView>
+                <Label Text="No issues found for this vehicle."
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       FontSize="16"
+                       TextColor="Gray" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="10" Margin="5">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="{Binding IssueType}"
+                                   FontAttributes="Bold"
+                                   FontSize="18" />
+                            <Label Text="{Binding Description, FallbackValue='No description'}"
+                                   FontSize="16" />
+                            <Label Text="{Binding CreatedAt, StringFormat='Reported: {0}'}"
+                                   FontSize="14"
+                                   TextColor="Gray" />
+                            <Label Text="{Binding Status, StringFormat='Status: {0}'}"
+                                   FontSize="14"
+                                   TextColor="Gray" />
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
         <controls:NavigationBar Grid.Row="1" />
     </Grid>
 </ContentPage>

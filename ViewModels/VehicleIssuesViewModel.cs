@@ -2,18 +2,69 @@
 using CommunityToolkit.Mvvm.Input;
 using HiatMeApp.Models;
 using HiatMeApp.Services;
+using System;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace HiatMeApp.ViewModels;
 
 public partial class VehicleIssuesViewModel : BaseViewModel
 {
-    public VehicleIssuesViewModel()
+    private readonly AuthService _authService;
+    private int _vehicleId;
+
+    [ObservableProperty]
+    private ObservableCollection<VehicleIssue> _issues;
+
+    public VehicleIssuesViewModel(AuthService authService)
     {
         Title = "Vehicle Issues";
+        _authService = authService;
+        _issues = new ObservableCollection<VehicleIssue>();
+    }
+
+    public void Initialize(int vehicleId)
+    {
+        _vehicleId = vehicleId;
+    }
+
+    public async Task LoadIssuesAsync() // Public, no RelayCommand
+    {
+        try
+        {
+            IsBusy = true;
+            Console.WriteLine($"LoadIssuesAsync: Fetching issues for vehicle_id={_vehicleId}");
+            var (success, issues, message) = await _authService.GetVehicleIssuesAsync(_vehicleId);
+            if (success && issues != null)
+            {
+                Issues.Clear();
+                foreach (var issue in issues)
+                {
+                    Issues.Add(issue);
+                    Console.WriteLine($"LoadIssuesAsync: Added issue: Id={issue.IssueId}, Type={issue.IssueType}, Status={issue.Status}");
+                }
+                Console.WriteLine($"LoadIssuesAsync: Loaded {issues.Count} issues, Issues collection count={Issues.Count}");
+            }
+            else
+            {
+                Console.WriteLine($"LoadIssuesAsync: Failed to load issues: {message}");
+                await Application.Current.MainPage.DisplayAlert("Error", message, "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"LoadIssuesAsync: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
+            await Application.Current.MainPage.DisplayAlert("Error", "Failed to load issues.", "OK");
+        }
+        finally
+        {
+            IsBusy = false;
+            Console.WriteLine($"LoadIssuesAsync: IsBusy set to false, Issues count={Issues.Count}");
+        }
     }
 
     [RelayCommand]
-    private async Task GoToHome()
+    async Task GoToHome()
     {
         try
         {
@@ -28,7 +79,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task GoToVehicle()
+    async Task GoToVehicle()
     {
         try
         {
@@ -43,7 +94,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task GoToIssues()
+    async Task GoToIssues()
     {
         try
         {
