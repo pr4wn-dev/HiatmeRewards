@@ -28,7 +28,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         _vehicleId = vehicleId;
     }
 
-    public async Task LoadIssuesAsync() // Public, no RelayCommand
+    public async Task LoadIssuesAsync()
     {
         try
         {
@@ -38,12 +38,12 @@ public partial class VehicleIssuesViewModel : BaseViewModel
             if (success && issues != null)
             {
                 Issues.Clear();
-                foreach (var issue in issues)
+                foreach (var issue in issues.Where(i => i.Status == "Open"))
                 {
                     Issues.Add(issue);
-                    Console.WriteLine($"LoadIssuesAsync: Added issue: Id={issue.IssueId}, Type={issue.IssueType}, Status={issue.Status}");
+                    Console.WriteLine($"LoadIssuesAsync: Added open issue: Id={issue.IssueId}, Type={issue.IssueType}, Status={issue.Status}");
                 }
-                Console.WriteLine($"LoadIssuesAsync: Loaded {issues.Count} issues, Issues collection count={Issues.Count}");
+                Console.WriteLine($"LoadIssuesAsync: Loaded {issues.Count} total issues, {Issues.Count} open issues for vehicle_id={_vehicleId}");
             }
             else
             {
@@ -60,6 +60,66 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         {
             IsBusy = false;
             Console.WriteLine($"LoadIssuesAsync: IsBusy set to false, Issues count={Issues.Count}");
+        }
+    }
+
+    public async Task ReportIssueAsync()
+    {
+        try
+        {
+            Console.WriteLine("ReportIssueAsync: Button clicked, showing issue type popup");
+            string[] issueTypes = { "Brakes", "Tires", "Engine", "Transmission", "Suspension", "Electrical", "Custom" };
+            string? issueType = await Application.Current.MainPage.DisplayActionSheet(
+                "Select Issue Type",
+                "Cancel",
+                null,
+                issueTypes
+            );
+
+            if (string.IsNullOrEmpty(issueType) || issueType == "Cancel")
+            {
+                Console.WriteLine("ReportIssueAsync: Issue type selection cancelled.");
+                return;
+            }
+
+            Console.WriteLine($"ReportIssueAsync: Selected issue_type={issueType}, showing description popup");
+            string? description = await Application.Current.MainPage.DisplayPromptAsync(
+                "Describe Issue",
+                "Enter a description (optional):",
+                maxLength: 500,
+                keyboard: Keyboard.Text
+            );
+
+            if (description == null)
+            {
+                Console.WriteLine("ReportIssueAsync: Description input cancelled.");
+                return;
+            }
+
+            IsBusy = true;
+            Console.WriteLine($"ReportIssueAsync: Submitting issue for vehicle_id={_vehicleId}, issue_type={issueType}, description={description}");
+            var (success, message) = await _authService.AddVehicleIssueAsync(_vehicleId, issueType, description);
+            if (success)
+            {
+                Console.WriteLine($"ReportIssueAsync: Successfully added issue for vehicle_id={_vehicleId}");
+                await Application.Current.MainPage.DisplayAlert("Success", "Issue reported successfully.", "OK");
+                await LoadIssuesAsync(); // Refresh issues
+            }
+            else
+            {
+                Console.WriteLine($"ReportIssueAsync: Failed to add issue: {message}");
+                await Application.Current.MainPage.DisplayAlert("Error", message, "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ReportIssueAsync: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
+            await Application.Current.MainPage.DisplayAlert("Error", "Failed to report issue.", "OK");
+        }
+        finally
+        {
+            IsBusy = false;
+            Console.WriteLine("ReportIssueAsync: Completed, IsBusy=false");
         }
     }
 
@@ -105,6 +165,21 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         {
             Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
             await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle Issues page.", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoToFinishDay()
+    {
+        try
+        {
+            Console.WriteLine("GoToFinishDay: Navigating to Finish Day");
+            await Shell.Current.GoToAsync($"//FinishDay?refresh={Guid.NewGuid()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
+            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Finish Day page.", "OK");
         }
     }
 }

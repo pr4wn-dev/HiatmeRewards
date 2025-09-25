@@ -21,7 +21,7 @@ public partial class VehicleIssuesPage : ContentPage
         {
             var vehicleId = App.CurrentUser.Vehicles.First(v => v.CurrentUserId == App.CurrentUser.UserId).VehicleId;
             _viewModel.Initialize(vehicleId);
-            await _viewModel.LoadIssuesAsync(); // Call directly
+            await _viewModel.LoadIssuesAsync();
         }
         else
         {
@@ -29,5 +29,11 @@ public partial class VehicleIssuesPage : ContentPage
             await DisplayAlert("Error", "No vehicle assigned. Please assign a vehicle first.", "OK");
             await Shell.Current.GoToAsync("//Vehicle");
         }
+    }
+
+    private async void OnReportIssueClicked(object sender, EventArgs e)
+    {
+        Console.WriteLine("OnReportIssueClicked: Button clicked");
+        await _viewModel.ReportIssueAsync();
     }
 }

@@ -43,5 +43,8 @@
                 IsVisible="{Binding IsIssuesButtonVisible}" 
                 Command="{Binding GoToIssuesCommand}" />
         <!-- Report problem icon for issues -->
+        <Button Text="&#xE8AF;" Style="{StaticResource NavButtonStyle}" 
+                Command="{Binding GoToFinishDayCommand}" />
+        <!-- Done icon for Finish Day -->
     </HorizontalStackLayout>
 </ContentView>

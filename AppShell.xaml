@@ -4,7 +4,6 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:HiatMeApp"
-    xmlns:pages="clr-namespace:HiatMeApp.Pages"
     xmlns:vm="clr-namespace:HiatMeApp.ViewModels"
     x:DataType="vm:AppShellViewModel">
     <Shell.BindingContext>
@@ -26,6 +25,9 @@
                   FlyoutItemIsVisible="False" />
     <ShellContent ContentTemplate="{DataTemplate local:VehiclePage}"
                   Route="Vehicle"
+                  FlyoutItemIsVisible="False" />
+    <ShellContent ContentTemplate="{DataTemplate local:FinishDayPage}"
+                  Route="FinishDay"
                   FlyoutItemIsVisible="False" />
     <ShellContent ContentTemplate="{DataTemplate local:VehicleIssuesPage}"
                   Route="VehicleIssues"

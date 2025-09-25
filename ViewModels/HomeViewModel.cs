@@ -342,4 +342,19 @@ public partial class HomeViewModel : BaseViewModel
             await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle Issues page.", "OK");
         }
     }
+
+    [RelayCommand]
+    private async Task GoToFinishDay()
+    {
+        try
+        {
+            Console.WriteLine("GoToFinishDay: Navigating to Finish Day");
+            await Shell.Current.GoToAsync($"//FinishDay?refresh={Guid.NewGuid()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
+            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Finish Day page.", "OK");
+        }
+    }
 }

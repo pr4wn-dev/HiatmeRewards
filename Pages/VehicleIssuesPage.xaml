@@ -4,8 +4,15 @@
              xmlns:controls="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.VehicleIssuesPage"
              Title="{Binding Title}">
-    <Grid RowDefinitions="*,Auto">
-        <Grid RowDefinitions="Auto,*" IsVisible="{Binding IsBusy}">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Button Text="Report Issue"
+                Clicked="OnReportIssueClicked"
+                HorizontalOptions="Center"
+                Margin="20,10"
+                Grid.Row="0" />
+        <Grid RowDefinitions="Auto,*" 
+              IsVisible="{Binding IsBusy}"
+              Grid.Row="1">
             <ActivityIndicator IsRunning="{Binding IsBusy}"
                               Color="Blue"
                               HorizontalOptions="Center"
@@ -18,7 +25,7 @@
                    Grid.Row="1" />
         </Grid>
         <CollectionView ItemsSource="{Binding Issues}"
-                        Grid.Row="0"
+                        Grid.Row="1"
                         Margin="20">
             <CollectionView.EmptyView>
                 <Label Text="No issues found for this vehicle."
@@ -47,6 +54,6 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
-        <controls:NavigationBar Grid.Row="1" />
+        <controls:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>

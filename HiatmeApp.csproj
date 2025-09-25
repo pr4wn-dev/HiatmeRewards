@@ -85,10 +85,16 @@
     <Compile Update="Pages\OwnerPage.xaml.cs">
       <DependentUpon>OwnerPage.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Pages\FinishDayPage.xaml.cs">
+      <DependentUpon>FinishDayPage.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
     <MauiXaml Update="Pages\VehicleIssuesPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\FinishDayPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
   </ItemGroup>
