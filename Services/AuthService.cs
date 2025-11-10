@@ -21,6 +21,7 @@ namespace HiatMeApp.Services
 
         public AuthService(HttpClient httpClient)
         {
+            //boo
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _httpClient.Timeout = TimeSpan.FromSeconds(200);
             _csrfToken = string.Empty;
