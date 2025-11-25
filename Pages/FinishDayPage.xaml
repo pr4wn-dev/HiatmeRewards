@@ -9,6 +9,18 @@
                HorizontalOptions="Center"
                VerticalOptions="Center"
                FontSize="18" />
+        <Button
+            Text="Finish My Day"
+            BackgroundColor="{DynamicResource Primary}"
+            TextColor="White"
+            CornerRadius="12"
+            HeightRequest="60"
+            FontSize="18"
+            HorizontalOptions="Center"
+            Margin="20,40"
+            Command="{Binding SubmitEndOfDayCommand}"
+            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanConverter}}"
+            Grid.Row="0" />
         <controls:NavigationBar Grid.Row="1" />
     </Grid>
 </ContentPage>
