@@ -1,5 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using HiatMeApp.Helpers;
+using HiatMeApp.Messages;
 using HiatMeApp.Models;
 using HiatMeApp.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,11 +33,11 @@ public partial class HomeViewModel : BaseViewModel
             IsVehicleButtonVisible = user?.Role is "Driver" or "Manager" or "Owner";
             Console.WriteLine($"HomeViewModel: Initialized with IsVehicleButtonVisible={IsVehicleButtonVisible}, Role={user?.Role}, UserId={user?.UserId}, VehiclesCount={user?.Vehicles?.Count ?? 0}");
         }
-        MessagingCenter.Subscribe<VehicleViewModel, Vehicle>(this, "VehicleAssigned", (sender, vehicle) =>
+        WeakReferenceMessenger.Default.Register<HomeViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
         {
-            Console.WriteLine($"HomeViewModel: Received VehicleAssigned message, VIN ending={vehicle.LastSixVin}");
-            AssignedVehicle = vehicle;
-            OnPropertyChanged(nameof(AssignedVehicle));
+            Console.WriteLine($"HomeViewModel: Received VehicleAssigned message, VIN ending={message.Value.LastSixVin}");
+            recipient.AssignedVehicle = message.Value;
+            recipient.OnPropertyChanged(nameof(AssignedVehicle));
         });
         CheckVehicleAssignmentAsync();
     }
@@ -49,7 +52,7 @@ public partial class HomeViewModel : BaseViewModel
                 AssignedVehicle = null;
                 OnPropertyChanged(nameof(AssignedVehicle));
                 await Shell.Current.GoToAsync("Vehicle");
-                await Application.Current.MainPage.DisplayAlert("No Vehicle", "No vehicles assigned. Please select a vehicle.", "OK");
+                await PageDialogService.DisplayAlertAsync("No Vehicle", "No vehicles assigned. Please select a vehicle.", "OK");
                 return;
             }
 
@@ -67,7 +70,7 @@ public partial class HomeViewModel : BaseViewModel
                     OnPropertyChanged(nameof(AssignedVehicle));
                 }
 
-                bool isStillInVehicle = await Application.Current.MainPage.DisplayAlert(
+                bool isStillInVehicle = await PageDialogService.DisplayAlertAsync(
                     "Vehicle Confirmation",
                     $"Is this your current vehicle: {AssignedVehicle.Make} {AssignedVehicle.Model} (VIN ending {AssignedVehicle.LastSixVin})?",
                     "Yes",
@@ -94,7 +97,7 @@ public partial class HomeViewModel : BaseViewModel
                 if (AssignedVehicle.MileageRecord != null && AssignedVehicle.MileageRecord.StartMiles == null && AssignedVehicle.MileageRecord.MileageId != 0)
                 {
                     Console.WriteLine($"CheckVehicleAssignmentAsync: Prompting for start miles for vehicle_id={AssignedVehicle.VehicleId}, mileage_id={AssignedVehicle.MileageRecord.MileageId}");
-                    string? startMilesInput = await Application.Current.MainPage.DisplayPromptAsync(
+                    string? startMilesInput = await PageDialogService.DisplayPromptAsync(
                         "Start Mileage Required",
                         $"Please enter the starting miles for {AssignedVehicle.Make} {AssignedVehicle.Model} (VIN ending {AssignedVehicle.LastSixVin}):",
                         maxLength: 8,
@@ -104,7 +107,7 @@ public partial class HomeViewModel : BaseViewModel
                     if (string.IsNullOrEmpty(startMilesInput) || !double.TryParse(startMilesInput, out double startMiles) || startMiles < 0 || startMiles > 999999.99)
                     {
                         Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or cancelled start miles input.");
-                        await Application.Current.MainPage.DisplayAlert("Error", "Invalid starting miles. Please try again.", "OK");
+                        await PageDialogService.DisplayAlertAsync("Error", "Invalid starting miles. Please try again.", "OK");
                         return;
                     }
 
@@ -114,13 +117,16 @@ public partial class HomeViewModel : BaseViewModel
                     if (submitSuccess)
                     {
                         Console.WriteLine($"CheckVehicleAssignmentAsync: Successfully submitted start miles for mileage_id={returnedMileageId}, vehicle_id={AssignedVehicle.VehicleId}");
-                        await Application.Current.MainPage.DisplayAlert("Success", "Starting miles submitted successfully.", "OK");
+                        await PageDialogService.DisplayAlertAsync("Success", "Starting miles submitted successfully.", "OK");
                         AssignedVehicle.MileageRecord.StartMiles = (float?)startMiles;
                         AssignedVehicle.MileageRecord.StartMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                         App.CurrentUser.Vehicles = App.CurrentUser.Vehicles;
                         Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
                         OnPropertyChanged(nameof(AssignedVehicle));
-                        MessagingCenter.Send(this, "VehicleAssigned", AssignedVehicle);
+                        if (AssignedVehicle != null)
+                        {
+                            WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(AssignedVehicle));
+                        }
                     }
                     else
                     {
@@ -134,7 +140,7 @@ public partial class HomeViewModel : BaseViewModel
                         {
                             errorMessage = "Failed to submit starting miles. Please try again or reassign the vehicle.";
                         }
-                        await Application.Current.MainPage.DisplayAlert("Error", errorMessage, "OK");
+                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                     }
                 }
                 else
@@ -144,7 +150,7 @@ public partial class HomeViewModel : BaseViewModel
                     if (string.IsNullOrEmpty(vinSuffix))
                     {
                         Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or empty VIN suffix.");
-                        await Application.Current.MainPage.DisplayAlert("Error", "Vehicle VIN is invalid.", "OK");
+                        await PageDialogService.DisplayAlertAsync("Error", "Vehicle VIN is invalid.", "OK");
                         await Shell.Current.GoToAsync("Vehicle");
                         return;
                     }
@@ -163,9 +169,9 @@ public partial class HomeViewModel : BaseViewModel
                         AssignedVehicle = newVehicle;
                         Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
                         OnPropertyChanged(nameof(AssignedVehicle));
-                        MessagingCenter.Send(this, "VehicleAssigned", newVehicle);
+                        WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
 
-                        string? startMilesInput = await Application.Current.MainPage.DisplayPromptAsync(
+                        string? startMilesInput = await PageDialogService.DisplayPromptAsync(
                             "New Mileage Entry",
                             $"Please enter the starting miles for {newVehicle.Make} {newVehicle.Model} (VIN ending {newVehicle.LastSixVin}):",
                             maxLength: 8,
@@ -175,7 +181,7 @@ public partial class HomeViewModel : BaseViewModel
                         if (string.IsNullOrEmpty(startMilesInput) || !double.TryParse(startMilesInput, out double startMiles) || startMiles < 0 || startMiles > 999999.99)
                         {
                             Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or cancelled start miles input.");
-                            await Application.Current.MainPage.DisplayAlert("Error", "Invalid starting miles. Please try again.", "OK");
+                            await PageDialogService.DisplayAlertAsync("Error", "Invalid starting miles. Please try again.", "OK");
                             return;
                         }
 
@@ -183,7 +189,7 @@ public partial class HomeViewModel : BaseViewModel
                         if (submitSuccess)
                         {
                             Console.WriteLine($"CheckVehicleAssignmentAsync: Successfully submitted start miles for mileage_id={returnedMileageId}, vehicle_id={newVehicle.VehicleId}");
-                            await Application.Current.MainPage.DisplayAlert("Success", "Vehicle reassigned and starting miles submitted successfully.", "OK");
+                            await PageDialogService.DisplayAlertAsync("Success", "Vehicle reassigned and starting miles submitted successfully.", "OK");
                             newVehicle.MileageRecord = new MileageRecord
                             {
                                 MileageId = returnedMileageId ?? 0,
@@ -196,7 +202,7 @@ public partial class HomeViewModel : BaseViewModel
                             AssignedVehicle = newVehicle;
                             Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
                             OnPropertyChanged(nameof(AssignedVehicle));
-                            MessagingCenter.Send(this, "VehicleAssigned", newVehicle);
+                            WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
                         }
                         else
                         {
@@ -210,7 +216,7 @@ public partial class HomeViewModel : BaseViewModel
                             {
                                 errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
                             }
-                            await Application.Current.MainPage.DisplayAlert("Error", errorMessage, "OK");
+                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
                     }
                     else if (incompleteRecords != null && incompleteRecords.Any())
@@ -221,7 +227,7 @@ public partial class HomeViewModel : BaseViewModel
                             bool needsStartMiles = record.MissingFields?.Contains("start_miles") == true || record.MissingFields?.Contains("start_miles_datetime") == true;
                             if (needsStartMiles)
                             {
-                                string? startMilesInput = await Application.Current.MainPage.DisplayPromptAsync(
+                                string? startMilesInput = await PageDialogService.DisplayPromptAsync(
                                     "Incomplete Mileage",
                                     $"Please enter the starting miles for vehicle ID {record.VehicleId}:",
                                     maxLength: 8,
@@ -231,7 +237,7 @@ public partial class HomeViewModel : BaseViewModel
                                 if (string.IsNullOrEmpty(startMilesInput) || !double.TryParse(startMilesInput, out double startMiles) || startMiles < 0 || startMiles > 999999.99)
                                 {
                                     Console.WriteLine($"CheckVehicleAssignmentAsync: Invalid start miles input for mileage_id={record.MileageId}.");
-                                    await Application.Current.MainPage.DisplayAlert("Error", "Invalid starting miles. Please try again.", "OK");
+                                    await PageDialogService.DisplayAlertAsync("Error", "Invalid starting miles. Please try again.", "OK");
                                     continue;
                                 }
 
@@ -239,7 +245,7 @@ public partial class HomeViewModel : BaseViewModel
                                 if (submitSuccess)
                                 {
                                     Console.WriteLine($"CheckVehicleAssignmentAsync: Successfully submitted start miles for mileage_id={returnedMileageId}, vehicle_id={record.VehicleId}");
-                                    await Application.Current.MainPage.DisplayAlert("Success", "Starting miles submitted successfully.", "OK");
+                                    await PageDialogService.DisplayAlertAsync("Success", "Starting miles submitted successfully.", "OK");
                                     var updatedVehicle = App.CurrentUser.Vehicles.FirstOrDefault(v => v.VehicleId == record.VehicleId);
                                     if (updatedVehicle != null)
                                     {
@@ -256,7 +262,7 @@ public partial class HomeViewModel : BaseViewModel
                                         {
                                             AssignedVehicle = updatedVehicle;
                                             OnPropertyChanged(nameof(AssignedVehicle));
-                                            MessagingCenter.Send(this, "VehicleAssigned", updatedVehicle);
+                                            WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(updatedVehicle));
                                         }
                                         Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
                                     }
@@ -269,7 +275,7 @@ public partial class HomeViewModel : BaseViewModel
                                     {
                                         errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
                                     }
-                                    await Application.Current.MainPage.DisplayAlert("Error", errorMessage, "OK");
+                                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                                 }
                             }
                         }
@@ -277,7 +283,7 @@ public partial class HomeViewModel : BaseViewModel
                     else
                     {
                         Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to reassign vehicle: {message}");
-                        await Application.Current.MainPage.DisplayAlert("Error", message, "OK");
+                        await PageDialogService.DisplayAlertAsync("Error", message, "OK");
                         await Shell.Current.GoToAsync("Vehicle");
                     }
                 }
@@ -288,13 +294,13 @@ public partial class HomeViewModel : BaseViewModel
                 AssignedVehicle = null;
                 OnPropertyChanged(nameof(AssignedVehicle));
                 await Shell.Current.GoToAsync("Vehicle");
-                await Application.Current.MainPage.DisplayAlert("No Vehicle", "No vehicles assigned. Please select a vehicle.", "OK");
+                await PageDialogService.DisplayAlertAsync("No Vehicle", "No vehicles assigned. Please select a vehicle.", "OK");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"CheckVehicleAssignmentAsync: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to check vehicle.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to check vehicle.", "OK");
         }
     }
 
@@ -309,7 +315,7 @@ public partial class HomeViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToHome: Error navigating to Home: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Home page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Home page.", "OK");
         }
     }
 
@@ -324,7 +330,7 @@ public partial class HomeViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToVehicle: Error navigating to Vehicle: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle page.", "OK");
         }
     }
 
@@ -339,7 +345,7 @@ public partial class HomeViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle Issues page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle Issues page.", "OK");
         }
     }
 
@@ -354,7 +360,7 @@ public partial class HomeViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Finish Day page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
         }
     }
 }

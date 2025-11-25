@@ -2,13 +2,38 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:HiatMeApp.Controls"
+             xmlns:converters="clr-namespace:HiatMeApp.Converters"
              x:Class="HiatMeApp.FinishDayPage"
              Title="{Binding Title}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
     <Grid RowDefinitions="*,Auto">
-        <Label Text="Finish Day Page (Placeholder)"
-               HorizontalOptions="Center"
-               VerticalOptions="Center"
-               FontSize="18" />
+        <VerticalStackLayout Grid.Row="0"
+                             Padding="20"
+                             Spacing="18"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center">
+            <Label Text="Finish your day by submitting the ending mileage."
+                   FontSize="20"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center" />
+
+            <Button Text="Finish My Day"
+                    FontSize="22"
+                    WidthRequest="240"
+                    HorizontalOptions="Center"
+                    Command="{Binding SubmitEndOfDayCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"/>
+        </VerticalStackLayout>
+
         <controls:NavigationBar Grid.Row="1" />
     </Grid>
 </ContentPage>

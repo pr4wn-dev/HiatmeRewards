@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HiatMeApp.Helpers;
 using HiatMeApp.Models;
 using HiatMeApp.Services;
 using System;
@@ -48,13 +49,13 @@ public partial class VehicleIssuesViewModel : BaseViewModel
             else
             {
                 Console.WriteLine($"LoadIssuesAsync: Failed to load issues: {message}");
-                await Application.Current.MainPage.DisplayAlert("Error", message, "OK");
+                await PageDialogService.DisplayAlertAsync("Error", message, "OK");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"LoadIssuesAsync: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to load issues.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to load issues.", "OK");
         }
         finally
         {
@@ -69,12 +70,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         {
             Console.WriteLine("ReportIssueAsync: Button clicked, showing issue type popup");
             string[] issueTypes = { "Brakes", "Tires", "Engine", "Transmission", "Suspension", "Electrical", "Custom" };
-            string? issueType = await Application.Current.MainPage.DisplayActionSheet(
-                "Select Issue Type",
-                "Cancel",
-                null,
-                issueTypes
-            );
+            string? issueType = await PageDialogService.DisplayActionSheetAsync("Select Issue Type", "Cancel", null, issueTypes);
 
             if (string.IsNullOrEmpty(issueType) || issueType == "Cancel")
             {
@@ -83,12 +79,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
             }
 
             Console.WriteLine($"ReportIssueAsync: Selected issue_type={issueType}, showing description popup");
-            string? description = await Application.Current.MainPage.DisplayPromptAsync(
-                "Describe Issue",
-                "Enter a description (optional):",
-                maxLength: 500,
-                keyboard: Keyboard.Text
-            );
+            string? description = await PageDialogService.DisplayPromptAsync("Describe Issue", "Enter a description (optional):", maxLength: 500, keyboard: Keyboard.Text);
 
             if (description == null)
             {
@@ -102,19 +93,19 @@ public partial class VehicleIssuesViewModel : BaseViewModel
             if (success)
             {
                 Console.WriteLine($"ReportIssueAsync: Successfully added issue for vehicle_id={_vehicleId}");
-                await Application.Current.MainPage.DisplayAlert("Success", "Issue reported successfully.", "OK");
+                await PageDialogService.DisplayAlertAsync("Success", "Issue reported successfully.", "OK");
                 await LoadIssuesAsync(); // Refresh issues
             }
             else
             {
                 Console.WriteLine($"ReportIssueAsync: Failed to add issue: {message}");
-                await Application.Current.MainPage.DisplayAlert("Error", message, "OK");
+                await PageDialogService.DisplayAlertAsync("Error", message, "OK");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"ReportIssueAsync: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to report issue.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to report issue.", "OK");
         }
         finally
         {
@@ -134,7 +125,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToHome: Error navigating to Home: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Home page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Home page.", "OK");
         }
     }
 
@@ -149,7 +140,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToVehicle: Error navigating to Vehicle: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle page.", "OK");
         }
     }
 
@@ -164,7 +155,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Vehicle Issues page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle Issues page.", "OK");
         }
     }
 
@@ -179,7 +170,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to navigate to Finish Day page.", "OK");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
         }
     }
 }

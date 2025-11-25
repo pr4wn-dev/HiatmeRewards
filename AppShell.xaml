@@ -4,8 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:HiatMeApp"
-    xmlns:vm="clr-namespace:HiatMeApp.ViewModels"
-    x:DataType="vm:AppShellViewModel">
+    xmlns:vm="clr-namespace:HiatMeApp.ViewModels">
     <Shell.BindingContext>
         <vm:AppShellViewModel />
     </Shell.BindingContext>

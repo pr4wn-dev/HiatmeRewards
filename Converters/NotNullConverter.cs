@@ -2,7 +2,7 @@
 using System.Globalization;
 using Microsoft.Maui.Controls;
 
-namespace HiatmeApp.Converters;
+namespace HiatMeApp.Converters;
 
 public class NotNullConverter : IValueConverter
 {
