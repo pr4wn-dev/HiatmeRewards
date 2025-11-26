@@ -70,22 +70,30 @@ public partial class HomeViewModel : BaseViewModel
                     OnPropertyChanged(nameof(AssignedVehicle));
                 }
 
-                bool isStillInVehicle = await PageDialogService.DisplayAlertAsync(
-                    "Vehicle Confirmation",
-                    $"Is this your current vehicle: {AssignedVehicle.Make} {AssignedVehicle.Model} (VIN ending {AssignedVehicle.LastSixVin})?",
-                    "Yes",
-                    "No"
-                );
-
-                if (!isStillInVehicle)
+                // Only show vehicle confirmation if we just logged in
+                bool shouldConfirm = Preferences.Get("ShouldConfirmVehicle", false);
+                if (shouldConfirm)
                 {
-                    AssignedVehicle = null;
-                    OnPropertyChanged(nameof(AssignedVehicle));
-                    App.CurrentUser.Vehicles = App.CurrentUser.Vehicles;
-                    Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
-                    Console.WriteLine("CheckVehicleAssignmentAsync: User denied vehicle, navigating to Vehicle page.");
-                    await Shell.Current.GoToAsync("Vehicle");
-                    return;
+                    bool isStillInVehicle = await PageDialogService.DisplayAlertAsync(
+                        "Vehicle Confirmation",
+                        $"Is this your current vehicle: {AssignedVehicle.Make} {AssignedVehicle.Model} (VIN ending {AssignedVehicle.LastSixVin})?",
+                        "Yes",
+                        "No"
+                    );
+
+                    if (!isStillInVehicle)
+                    {
+                        AssignedVehicle = null;
+                        OnPropertyChanged(nameof(AssignedVehicle));
+                        App.CurrentUser.Vehicles = App.CurrentUser.Vehicles;
+                        Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
+                        Console.WriteLine("CheckVehicleAssignmentAsync: User denied vehicle, navigating to Vehicle page.");
+                        Preferences.Set("ShouldConfirmVehicle", false); // Clear flag after confirmation
+                        await Shell.Current.GoToAsync("Vehicle");
+                        return;
+                    }
+                    // Clear the flag after showing confirmation once
+                    Preferences.Set("ShouldConfirmVehicle", false);
                 }
 
                 if (AssignedVehicle.MileageRecord != null && AssignedVehicle.MileageRecord.StartMiles != null && AssignedVehicle.MileageRecord.EndingMiles == null)

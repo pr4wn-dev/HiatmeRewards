@@ -53,6 +53,7 @@ public partial class LoginViewModel : BaseViewModel
                 Preferences.Set("UserEmail", user.Email ?? string.Empty);
                 Preferences.Set("UserRole", user.Role ?? string.Empty);
                 Preferences.Set("UserData", Newtonsoft.Json.JsonConvert.SerializeObject(user)); // Ensure vehicles are stored
+                Preferences.Set("ShouldConfirmVehicle", true); // Flag to show vehicle confirmation after login
                 Console.WriteLine($"LoginAsync: Success, Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
 
                 // Navigate to Home for all roles
