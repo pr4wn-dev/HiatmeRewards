@@ -13,7 +13,8 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("ForgotPassword", typeof(ForgotPasswordPage));
         Routing.RegisterRoute("Home", typeof(HomePage));
         Routing.RegisterRoute("Vehicle", typeof(VehiclePage)); // Updated
-        Routing.RegisterRoute("VehicleIssuesPage", typeof(VehicleIssuesPage));
+        Routing.RegisterRoute("FinishDay", typeof(FinishDayPage));
+        Routing.RegisterRoute("VehicleIssues", typeof(VehicleIssuesPage));
         Console.WriteLine("AppShell: Initialized with routes");
         Loaded += async (s, e) =>
         {
