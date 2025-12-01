@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:HiatMeApp.Controls"
+             x:Class="HiatMeApp.ProfilePage"
+             Title="{Binding Title}">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20" Spacing="15">
+                <Label Text="Profile" FontSize="24" HorizontalOptions="Center" FontAttributes="Bold" />
+                
+                <!-- Profile Picture -->
+                <Frame HorizontalOptions="Center" Padding="10" BorderColor="LightGray" CornerRadius="5" Margin="0,10,0,20">
+                    <Image Source="{Binding ProfilePicture}" 
+                           HeightRequest="120" 
+                           WidthRequest="120"
+                           Aspect="AspectFill"
+                           HorizontalOptions="Center" />
+                </Frame>
+                
+                <!-- User Information -->
+                <Frame Padding="15" BorderColor="LightGray" CornerRadius="5">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Name" FontSize="14" FontAttributes="Bold" />
+                        <Label Text="{Binding Name}" FontSize="16" />
+                        
+                        <Label Text="Email" FontSize="14" FontAttributes="Bold" Margin="0,10,0,0" />
+                        <Label Text="{Binding Email}" FontSize="16" />
+                        
+                        <Label Text="Phone" FontSize="14" FontAttributes="Bold" Margin="0,10,0,0" />
+                        <Label Text="{Binding Phone, TargetNullValue='Not provided'}" FontSize="16" />
+                        
+                        <Label Text="Role" FontSize="14" FontAttributes="Bold" Margin="0,10,0,0" />
+                        <Label Text="{Binding Role}" FontSize="16" />
+                    </VerticalStackLayout>
+                </Frame>
+                
+                <!-- Placeholder for future edit controls -->
+                <Label Text="Edit functionality coming soon..." 
+                       FontSize="14" 
+                       HorizontalOptions="Center" 
+                       TextColor="Gray"
+                       Margin="0,20,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
+        <local:NavigationBar Grid.Row="1" />
+    </Grid>
+</ContentPage>
+

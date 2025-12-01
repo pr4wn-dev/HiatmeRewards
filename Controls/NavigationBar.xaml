@@ -31,7 +31,8 @@
         <Button Text="&#xE88A;" Style="{StaticResource NavButtonStyle}" 
                 Command="{Binding GoToHomeCommand}" />
         <!-- Home icon -->
-        <Button Text="&#xE853;" Style="{StaticResource NavButtonStyle}" />
+        <Button Text="&#xE853;" Style="{StaticResource NavButtonStyle}" 
+                Command="{Binding GoToProfileCommand}" />
         <!-- Person icon -->
         <Button Text="&#xE8B8;" Style="{StaticResource NavButtonStyle}" />
         <!-- Settings icon -->

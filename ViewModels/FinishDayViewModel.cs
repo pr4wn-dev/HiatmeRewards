@@ -198,4 +198,19 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
             await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
         }
     }
+
+    [RelayCommand]
+    private async Task GoToProfile()
+    {
+        try
+        {
+            Console.WriteLine("GoToProfile: Navigating to Profile");
+            await Shell.Current.GoToAsync($"//Profile?refresh={Guid.NewGuid()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToProfile: Error navigating to Profile: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Profile page.", "OK");
+        }
+    }
 }

@@ -48,6 +48,7 @@ public static class MauiProgram
         builder.Services.AddTransient<VehicleViewModel>();
         builder.Services.AddTransient<VehicleIssuesViewModel>();
         builder.Services.AddTransient<FinishDayViewModel>();
+        builder.Services.AddTransient<ProfileViewModel>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddTransient<ForgotPasswordPage>();
@@ -59,6 +60,7 @@ public static class MauiProgram
         builder.Services.AddTransient<OwnerPage>();
         builder.Services.AddTransient<VehicleIssuesPage>();
         builder.Services.AddTransient<FinishDayPage>();
+        builder.Services.AddTransient<ProfilePage>();
         builder.Services.AddTransient<NavigationBar>();
 
         return builder.Build();
