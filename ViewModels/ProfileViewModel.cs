@@ -52,6 +52,7 @@ public partial class ProfileViewModel : BaseViewModel
             Phone = App.CurrentUser.Phone;
             ProfilePicture = App.CurrentUser.ProfilePicture;
             Role = App.CurrentUser.Role;
+            Console.WriteLine($"LoadUserData: Loaded profile picture: {ProfilePicture}");
         }
         else
         {
@@ -68,9 +69,13 @@ public partial class ProfileViewModel : BaseViewModel
                     Phone = user.Phone;
                     ProfilePicture = user.ProfilePicture;
                     Role = user.Role;
+                    Console.WriteLine($"LoadUserData: Loaded profile picture from preferences: {ProfilePicture}");
                 }
             }
         }
+        
+        // Force property change notification for ProfilePicture
+        OnPropertyChanged(nameof(ProfilePicture));
     }
 
     [RelayCommand]

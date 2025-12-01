@@ -18,7 +18,7 @@
                 <!-- Profile Picture -->
                 <Frame HorizontalOptions="Center" Padding="10" BorderColor="LightGray" CornerRadius="5" Margin="0,10,0,20">
                     <VerticalStackLayout Spacing="10">
-                        <Image Source="{Binding ProfilePicture}" 
+                        <Image x:Name="ProfileImage"
                                HeightRequest="120" 
                                WidthRequest="120"
                                Aspect="AspectFill"
