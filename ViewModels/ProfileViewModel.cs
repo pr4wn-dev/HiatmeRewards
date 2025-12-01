@@ -1,7 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HiatMeApp.Helpers;
+using HiatMeApp.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Media;
 using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
@@ -10,6 +13,10 @@ namespace HiatMeApp.ViewModels;
 
 public partial class ProfileViewModel : BaseViewModel
 {
+    private readonly AuthService _authService;
+    private string? _originalEmail;
+    private FileResult? _selectedImageFile;
+
     [ObservableProperty]
     private string? _name;
 
@@ -25,9 +32,13 @@ public partial class ProfileViewModel : BaseViewModel
     [ObservableProperty]
     private string? _role;
 
+    [ObservableProperty]
+    private bool _isEditing;
+
     public ProfileViewModel()
     {
         Title = "Profile";
+        _authService = App.Services.GetRequiredService<AuthService>();
         LoadUserData();
     }
 
@@ -37,6 +48,7 @@ public partial class ProfileViewModel : BaseViewModel
         {
             Name = App.CurrentUser.Name;
             Email = App.CurrentUser.Email;
+            _originalEmail = App.CurrentUser.Email;
             Phone = App.CurrentUser.Phone;
             ProfilePicture = App.CurrentUser.ProfilePicture;
             Role = App.CurrentUser.Role;
@@ -52,6 +64,7 @@ public partial class ProfileViewModel : BaseViewModel
                 {
                     Name = user.Name;
                     Email = user.Email;
+                    _originalEmail = user.Email;
                     Phone = user.Phone;
                     ProfilePicture = user.ProfilePicture;
                     Role = user.Role;
@@ -132,6 +145,111 @@ public partial class ProfileViewModel : BaseViewModel
         {
             Console.WriteLine($"GoToProfile: Error navigating to Profile: {ex.Message}");
             await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Profile page.", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private void StartEditing()
+    {
+        IsEditing = true;
+        Console.WriteLine("StartEditing: Entered edit mode");
+    }
+
+    [RelayCommand]
+    private void CancelEditing()
+    {
+        // Reload original data
+        LoadUserData();
+        _selectedImageFile = null;
+        IsEditing = false;
+        Console.WriteLine("CancelEditing: Cancelled edit, reloaded original data");
+    }
+
+    [RelayCommand]
+    private async Task PickImage()
+    {
+        try
+        {
+            var result = await MediaPicker.PickPhotoAsync(new MediaPickerOptions
+            {
+                Title = "Select Profile Picture"
+            });
+
+            if (result != null)
+            {
+                _selectedImageFile = result;
+                // Display the selected image immediately using the local file path
+                if (!string.IsNullOrEmpty(result.FullPath))
+                {
+                    ProfilePicture = result.FullPath;
+                }
+                Console.WriteLine($"PickImage: Selected image: {result.FileName}, Path: {result.FullPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"PickImage: Error picking image: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to pick image.", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveProfile()
+    {
+        try
+        {
+            if (IsBusy) return;
+
+            if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Email))
+            {
+                await PageDialogService.DisplayAlertAsync("Error", "Name and Email are required.", "OK");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_originalEmail))
+            {
+                await PageDialogService.DisplayAlertAsync("Error", "Current email not found. Please log in again.", "OK");
+                return;
+            }
+
+            IsBusy = true;
+            Console.WriteLine($"SaveProfile: Saving profile for currentEmail={_originalEmail}, email={Email}, name={Name}, hasImage={_selectedImageFile != null}");
+
+            var (success, updatedUser, message) = await _authService.UpdateProfileAsync(
+                _originalEmail,
+                Name,
+                Email,
+                Phone,
+                _selectedImageFile
+            );
+
+            if (success && updatedUser != null)
+            {
+                Console.WriteLine($"SaveProfile: Profile updated successfully");
+                // Update all properties from the server response
+                Name = updatedUser.Name;
+                Email = updatedUser.Email;
+                Phone = updatedUser.Phone;
+                ProfilePicture = updatedUser.ProfilePicture; // Use server URL instead of local path
+                _originalEmail = updatedUser.Email; // Update original email in case it changed
+                _selectedImageFile = null; // Clear selected file
+                IsEditing = false;
+                await PageDialogService.DisplayAlertAsync("Success", message, "OK");
+            }
+            else
+            {
+                Console.WriteLine($"SaveProfile: Failed to update profile: {message}");
+                await PageDialogService.DisplayAlertAsync("Error", message, "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SaveProfile: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to save profile.", "OK");
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 }

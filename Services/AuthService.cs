@@ -928,5 +928,147 @@ namespace HiatMeApp.Services
             public string? CsrfToken { get; set; }
             public string? Message { get; set; }
         }
+
+        public async Task<(bool Success, Models.User? User, string Message)> UpdateProfileAsync(string currentEmail, string name, string email, string? phone, FileResult? profilePicture)
+        {
+            Console.WriteLine($"UpdateProfileAsync: Starting for Email={email}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("UpdateProfileAsync: Failed to retrieve CSRF token.");
+                return (false, null, "Failed to retrieve session token.");
+            }
+
+            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(currentEmail))
+            {
+                Console.WriteLine("UpdateProfileAsync: Missing required fields.");
+                return (false, null, "Name, email, and current email are required.");
+            }
+
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("UpdateProfileAsync: No auth_token found in Preferences.");
+                return (false, null, "No authentication token available. Please log in again.");
+            }
+
+            try
+            {
+                return await _genericRetryPolicy.ExecuteAsync(async () =>
+                {
+                    using var multipartContent = new MultipartFormDataContent();
+                    
+                    multipartContent.Add(new StringContent("update_profile"), "action");
+                    multipartContent.Add(new StringContent(currentEmail), "current_email");
+                    multipartContent.Add(new StringContent(name), "name");
+                    multipartContent.Add(new StringContent(email), "email");
+                    multipartContent.Add(new StringContent(phone ?? string.Empty), "phone");
+
+                    // Add profile picture if provided
+                    if (profilePicture != null)
+                    {
+                        try
+                        {
+                            var fileStream = await profilePicture.OpenReadAsync();
+                            var streamContent = new StreamContent(fileStream);
+                            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(profilePicture.ContentType ?? "image/jpeg");
+                            multipartContent.Add(streamContent, "profile_picture", profilePicture.FileName ?? "profile.jpg");
+                            Console.WriteLine($"UpdateProfileAsync: Added profile picture: {profilePicture.FileName}, ContentType: {profilePicture.ContentType}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateProfileAsync: Error reading profile picture: {ex.Message}");
+                            return (false, null, "Failed to read profile picture.");
+                        }
+                    }
+
+                    _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                    _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                    _httpClient.DefaultRequestHeaders.Remove("Authorization");
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+                    Console.WriteLine($"UpdateProfileAsync: Sending POST request with CSRF={_csrfToken}, currentEmail={currentEmail}, email={email}, name={name}, hasPicture={profilePicture != null}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", multipartContent);
+                    Console.WriteLine($"UpdateProfileAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"UpdateProfileAsync response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("UpdateProfileAsync: Empty response received.");
+                        return (false, null, "Empty response from server.");
+                    }
+
+                    UpdateProfileResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<UpdateProfileResponse>(json, new JsonSerializerSettings
+                    {
+                        MissingMemberHandling = MissingMemberHandling.Ignore,
+                        NullValueHandling = NullValueHandling.Ignore
+                    }));
+
+                    if (result == null)
+                    {
+                        Console.WriteLine("UpdateProfileAsync: Deserialized response is null.");
+                        return (false, null, "Invalid response format from server.");
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"UpdateProfileAsync: Updated CSRF token: {_csrfToken}");
+                    }
+
+                    if (result.Success && result.User != null)
+                    {
+                        var updatedUser = new Models.User
+                        {
+                            Email = result.User.Email ?? email,
+                            Name = result.User.Name ?? name,
+                            Phone = result.User.Phone ?? phone,
+                            ProfilePicture = result.User.ProfilePicture,
+                            Role = App.CurrentUser?.Role, // Preserve existing role
+                            UserId = App.CurrentUser?.UserId ?? 0, // Preserve existing user ID
+                            Vehicles = App.CurrentUser?.Vehicles // Preserve existing vehicles
+                        };
+                        App.CurrentUser = updatedUser;
+                        Preferences.Set("UserData", JsonConvert.SerializeObject(updatedUser));
+                        Console.WriteLine($"UpdateProfileAsync: Profile updated successfully for Email={email}");
+                        return (true, updatedUser, result.Message ?? "Profile updated successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"UpdateProfileAsync failed: {result.Message ?? "Unknown error"}");
+                        return (false, null, result.Message ?? "Failed to update profile.");
+                    }
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"UpdateProfileAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, null, $"Network error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateProfileAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, null, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        private class UpdateProfileResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+            public UpdateProfileUser? User { get; set; }
+        }
+
+        private class UpdateProfileUser
+        {
+            public string? Email { get; set; }
+            public string? Name { get; set; }
+            public string? Phone { get; set; }
+            [JsonProperty("profile_picture")]
+            public string? ProfilePicture { get; set; }
+        }
     }
 }
