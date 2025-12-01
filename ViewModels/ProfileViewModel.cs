@@ -42,7 +42,7 @@ public partial class ProfileViewModel : BaseViewModel
         LoadUserData();
     }
 
-    private void LoadUserData()
+    public void LoadUserData()
     {
         if (App.CurrentUser != null)
         {
@@ -52,14 +52,21 @@ public partial class ProfileViewModel : BaseViewModel
             Phone = App.CurrentUser.Phone;
             ProfilePicture = App.CurrentUser.ProfilePicture;
             Role = App.CurrentUser.Role;
-            Console.WriteLine($"LoadUserData: Loaded profile picture: {ProfilePicture}");
+            Console.WriteLine($"LoadUserData: App.CurrentUser exists");
+            Console.WriteLine($"  - Name: {Name}");
+            Console.WriteLine($"  - Email: {Email}");
+            Console.WriteLine($"  - Phone: {Phone ?? "null"}");
+            Console.WriteLine($"  - ProfilePicture: '{ProfilePicture ?? "null"}' (length: {ProfilePicture?.Length ?? 0})");
+            Console.WriteLine($"  - Role: {Role}");
         }
         else
         {
+            Console.WriteLine("LoadUserData: App.CurrentUser is null, loading from preferences");
             // Try to load from preferences
             var userJson = Preferences.Get("UserData", string.Empty);
             if (!string.IsNullOrEmpty(userJson))
             {
+                Console.WriteLine($"LoadUserData: UserData JSON length: {userJson.Length}");
                 var user = JsonConvert.DeserializeObject<Models.User>(userJson);
                 if (user != null)
                 {
@@ -69,8 +76,21 @@ public partial class ProfileViewModel : BaseViewModel
                     Phone = user.Phone;
                     ProfilePicture = user.ProfilePicture;
                     Role = user.Role;
-                    Console.WriteLine($"LoadUserData: Loaded profile picture from preferences: {ProfilePicture}");
+                    Console.WriteLine($"LoadUserData: Loaded from preferences");
+                    Console.WriteLine($"  - Name: {Name}");
+                    Console.WriteLine($"  - Email: {Email}");
+                    Console.WriteLine($"  - Phone: {Phone ?? "null"}");
+                    Console.WriteLine($"  - ProfilePicture: '{ProfilePicture ?? "null"}' (length: {ProfilePicture?.Length ?? 0})");
+                    Console.WriteLine($"  - Role: {Role}");
                 }
+                else
+                {
+                    Console.WriteLine("LoadUserData: Failed to deserialize user from preferences");
+                }
+            }
+            else
+            {
+                Console.WriteLine("LoadUserData: No user data in preferences");
             }
         }
         

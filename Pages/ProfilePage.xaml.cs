@@ -5,10 +5,13 @@ namespace HiatMeApp;
 
 public partial class ProfilePage : ContentPage
 {
+    private ProfileViewModel? _viewModel;
+    
     public ProfilePage(ProfileViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;
+        _viewModel = viewModel;
         
         // Subscribe to property changes to update image
         viewModel.PropertyChanged += (sender, e) =>
@@ -18,11 +21,31 @@ public partial class ProfilePage : ContentPage
                 UpdateProfileImage(viewModel.ProfilePicture);
             }
         };
+    }
+    
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
         
-        // Set initial image
-        if (!string.IsNullOrEmpty(viewModel.ProfilePicture))
+        if (_viewModel != null)
         {
-            UpdateProfileImage(viewModel.ProfilePicture);
+            // Reload user data to ensure we have the latest
+            _viewModel.LoadUserData();
+            
+            // Update image if we have a profile picture
+            if (!string.IsNullOrWhiteSpace(_viewModel.ProfilePicture))
+            {
+                Console.WriteLine($"ProfilePage.OnAppearing: Setting profile image: {_viewModel.ProfilePicture}");
+                UpdateProfileImage(_viewModel.ProfilePicture);
+            }
+            else
+            {
+                Console.WriteLine($"ProfilePage.OnAppearing: ProfilePicture is empty, setting to null");
+                if (ProfileImage != null)
+                {
+                    ProfileImage.Source = null;
+                }
+            }
         }
     }
     
@@ -32,18 +55,25 @@ public partial class ProfilePage : ContentPage
         {
             if (string.IsNullOrEmpty(imageSource))
             {
+                Console.WriteLine("UpdateProfileImage: Image source is empty, setting to null");
                 ProfileImage.Source = null;
             }
             else if (imageSource.StartsWith("http://") || imageSource.StartsWith("https://"))
             {
                 // URL image
+                Console.WriteLine($"UpdateProfileImage: Loading URL image: {imageSource}");
                 ProfileImage.Source = ImageSource.FromUri(new Uri(imageSource));
             }
             else
             {
                 // Local file path
+                Console.WriteLine($"UpdateProfileImage: Loading local file: {imageSource}");
                 ProfileImage.Source = ImageSource.FromFile(imageSource);
             }
+        }
+        else
+        {
+            Console.WriteLine("UpdateProfileImage: ProfileImage control is null");
         }
     }
 }

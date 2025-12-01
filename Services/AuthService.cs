@@ -221,6 +221,8 @@ namespace HiatMeApp.Services
                         Preferences.Set("UserData", JsonConvert.SerializeObject(user));
                         Preferences.Set("AuthToken", result.AuthToken);
                         Console.WriteLine($"LoginAsync: Login successful for Email={email}, Role={result.Role}, UserId={result.UserId}, VehiclesCount={result.Vehicles?.Count ?? 0}, AuthToken={result.AuthToken}");
+                        Console.WriteLine($"LoginAsync: ProfilePicture from server: '{result.ProfilePicture ?? "null"}' (length: {result.ProfilePicture?.Length ?? 0})");
+                        Console.WriteLine($"LoginAsync: User.ProfilePicture after assignment: '{user.ProfilePicture ?? "null"}' (length: {user.ProfilePicture?.Length ?? 0})");
                         return (true, user, "Login successful");
                     }
                     else
