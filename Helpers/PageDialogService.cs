@@ -8,7 +8,7 @@ public static class PageDialogService
 {
     private static Page? GetActivePage()
     {
-        return Application.Current?.Windows.FirstOrDefault()?.Page ?? Application.Current?.MainPage;
+        return Application.Current?.Windows.FirstOrDefault()?.Page;
     }
 
     public static async Task DisplayAlertAsync(string title, string message, string cancel = "OK")

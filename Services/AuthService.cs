@@ -17,7 +17,8 @@ namespace HiatMeApp.Services
         private readonly AsyncRetryPolicy<(bool, User?, string)> _loginRetryPolicy;
         private readonly AsyncRetryPolicy<(bool, string)> _genericRetryPolicy;
         private readonly AsyncRetryPolicy<(bool, Vehicle?, string, List<MileageRecord>?, int?)> _assignVehicleRetryPolicy;
-        private readonly AsyncRetryPolicy<(bool, List<VehicleIssue>?, string)> _vehicleIssuesRetryPolicy; // Add this line
+        private readonly AsyncRetryPolicy<(bool, List<VehicleIssue>?, string)> _vehicleIssuesRetryPolicy;
+        private readonly AsyncRetryPolicy<(bool, Models.User?, string)> _updateProfileRetryPolicy;
 
         public AuthService(HttpClient httpClient)
         {
@@ -73,6 +74,15 @@ namespace HiatMeApp.Services
         {
             Console.WriteLine($"VehicleIssues Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
         });
+
+            _updateProfileRetryPolicy = Policy<(bool, Models.User?, string)>
+                .Handle<HttpRequestException>()
+                .Or<TaskCanceledException>()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (result, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"UpdateProfile Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
+                    });
         }
 
         public async Task<bool> FetchCSRFTokenAsync()
@@ -953,7 +963,7 @@ namespace HiatMeApp.Services
 
             try
             {
-                return await _genericRetryPolicy.ExecuteAsync(async () =>
+                return await _updateProfileRetryPolicy.ExecuteAsync(async () =>
                 {
                     using var multipartContent = new MultipartFormDataContent();
                     
