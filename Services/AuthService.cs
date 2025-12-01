@@ -875,6 +875,7 @@ namespace HiatMeApp.Services
             public string? Email { get; set; }
             public string? Name { get; set; }
             public string? Phone { get; set; }
+            [JsonProperty("profile_picture")]
             public string? ProfilePicture { get; set; }
             [JsonProperty("csrf_token")]
             public string? CsrfToken { get; set; }
