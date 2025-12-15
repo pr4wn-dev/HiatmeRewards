@@ -188,4 +188,19 @@ public partial class VehicleIssuesViewModel : BaseViewModel
             await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Profile page.", "OK");
         }
     }
+
+    [RelayCommand]
+    private async Task GoToRequestDayOff()
+    {
+        try
+        {
+            Console.WriteLine("GoToRequestDayOff: Navigating to Request Day Off");
+            await Shell.Current.GoToAsync($"//RequestDayOff?refresh={Guid.NewGuid()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToRequestDayOff: Error navigating to Request Day Off: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Request Day Off page.", "OK");
+        }
+    }
 }
