@@ -1096,7 +1096,8 @@ namespace HiatMeApp.Services
             var data = new Dictionary<string, string>
             {
                 { "action", "request_day_off" },
-                { "request_date", easternTime.ToString("yyyy-MM-dd") }
+                { "request_date", easternTime.ToString("yyyy-MM-dd") },
+                { "auth_token", authToken }
             };
 
             if (!string.IsNullOrWhiteSpace(reason))
