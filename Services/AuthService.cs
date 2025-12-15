@@ -19,6 +19,7 @@ namespace HiatMeApp.Services
         private readonly AsyncRetryPolicy<(bool, Vehicle?, string, List<MileageRecord>?, int?)> _assignVehicleRetryPolicy;
         private readonly AsyncRetryPolicy<(bool, List<VehicleIssue>?, string)> _vehicleIssuesRetryPolicy;
         private readonly AsyncRetryPolicy<(bool, Models.User?, string)> _updateProfileRetryPolicy;
+        private readonly AsyncRetryPolicy<(bool, string)> _dayOffRequestRetryPolicy;
 
         public AuthService(HttpClient httpClient)
         {
@@ -82,6 +83,15 @@ namespace HiatMeApp.Services
                     onRetry: (result, timeSpan, retryCount, context) =>
                     {
                         Console.WriteLine($"UpdateProfile Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
+                    });
+
+            _dayOffRequestRetryPolicy = Policy<(bool, string)>
+                .Handle<HttpRequestException>()
+                .Or<TaskCanceledException>()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    onRetry: (result, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"DayOffRequest Retry {retryCount} after {timeSpan.TotalSeconds}s due to: {result.Exception?.Message}");
                     });
         }
 
@@ -1063,6 +1073,95 @@ namespace HiatMeApp.Services
             {
                 Console.WriteLine($"UpdateProfileAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
                 return (false, null, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> SubmitDayOffRequestAsync(DateTime date, string? reason)
+        {
+            Console.WriteLine($"SubmitDayOffRequestAsync: Starting for date={date:yyyy-MM-dd}");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("SubmitDayOffRequestAsync: Failed to retrieve CSRF token.");
+                return (false, "Failed to retrieve session token.");
+            }
+
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("SubmitDayOffRequestAsync: No auth_token found in Preferences.");
+                return (false, "No authentication token available. Please log in again.");
+            }
+
+            var easternTime = TimeZoneInfo.ConvertTime(date, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
+            var data = new Dictionary<string, string>
+            {
+                { "action", "request_day_off" },
+                { "request_date", easternTime.ToString("yyyy-MM-dd") }
+            };
+
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                data.Add("reason", reason);
+            }
+
+            var content = new FormUrlEncodedContent(data);
+
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+            try
+            {
+                return await _dayOffRequestRetryPolicy.ExecuteAsync(async () =>
+                {
+                    Console.WriteLine($"SubmitDayOffRequestAsync: Sending POST request with CSRF={_csrfToken}, date={data["request_date"]}, auth_token={authToken}");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"SubmitDayOffRequestAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"SubmitDayOffRequestAsync response: {json}");
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("SubmitDayOffRequestAsync: Empty response received.");
+                        return (false, "Empty response from server.");
+                    }
+
+                    GenericResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(json));
+                    if (result == null)
+                    {
+                        Console.WriteLine("SubmitDayOffRequestAsync: Deserialized response is null.");
+                        return (false, "Invalid response format from server.");
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Console.WriteLine($"SubmitDayOffRequestAsync: Updated CSRF token: {_csrfToken}");
+                    }
+
+                    if (result.Success)
+                    {
+                        Console.WriteLine("SubmitDayOffRequestAsync: Request submitted successfully.");
+                        return (true, result.Message ?? "Request submitted successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"SubmitDayOffRequestAsync failed: {result.Message ?? "Unknown error"}");
+                        return (false, result.Message ?? "Failed to submit request.");
+                    }
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"SubmitDayOffRequestAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"Network error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SubmitDayOffRequestAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                return (false, $"An error occurred: {ex.Message}");
             }
         }
 

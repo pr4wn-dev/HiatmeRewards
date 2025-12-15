@@ -34,8 +34,9 @@
         <Button Text="&#xE853;" Style="{StaticResource NavButtonStyle}" 
                 Command="{Binding GoToProfileCommand}" />
         <!-- Person icon -->
-        <Button Text="&#xE8B8;" Style="{StaticResource NavButtonStyle}" />
-        <!-- Settings icon -->
+        <Button Text="&#xE916;" Style="{StaticResource NavButtonStyle}"
+                Command="{Binding GoToRequestDayOffCommand}" />
+        <!-- Calendar icon for Request Day Off -->
         <Button Text="&#xE531;" Style="{StaticResource NavButtonStyle}" 
                 IsVisible="{Binding IsVehicleButtonVisible}" 
                 Command="{Binding GoToVehicleCommand}" />

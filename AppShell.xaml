@@ -34,6 +34,9 @@
     <ShellContent ContentTemplate="{DataTemplate local:ProfilePage}"
                   Route="Profile"
                   FlyoutItemIsVisible="False" />
+    <ShellContent ContentTemplate="{DataTemplate local:RequestDayOffPage}"
+                  Route="RequestDayOff"
+                  FlyoutItemIsVisible="False" />
     <ShellContent Title="Register"
                   ContentTemplate="{DataTemplate local:RegisterPage}"
                   Route="Register"
