@@ -22,6 +22,12 @@ public partial class RequestDayOffViewModel : BaseViewModel
     [ObservableProperty]
     private string? _reason;
 
+    [ObservableProperty]
+    private TimeSpan? _startTime;
+
+    [ObservableProperty]
+    private TimeSpan? _endTime;
+
     public RequestDayOffViewModel()
     {
         Title = "Request Day Off";
@@ -40,13 +46,23 @@ public partial class RequestDayOffViewModel : BaseViewModel
 
             IsBusy = true;
 
-            var (success, message) = await _authService.SubmitDayOffRequestAsync(SelectedDate, Reason);
+            if (StartTime.HasValue && EndTime.HasValue && StartTime.Value >= EndTime.Value)
+            {
+                await PageDialogService.DisplayAlertAsync("Request Day Off", "End time must be after start time.", "OK");
+                return;
+            }
+
+            var (success, message) = await _authService.SubmitDayOffRequestAsync(SelectedDate, Reason, StartTime, EndTime);
 
             if (success)
             {
                 await PageDialogService.DisplayAlertAsync("Request Day Off", "Your request has been submitted.", "OK");
                 Reason = string.Empty;
                 OnPropertyChanged(nameof(Reason));
+                StartTime = null;
+                EndTime = null;
+                OnPropertyChanged(nameof(StartTime));
+                OnPropertyChanged(nameof(EndTime));
             }
             else
             {

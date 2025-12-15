@@ -20,6 +20,30 @@
                 <DatePicker Date="{Binding SelectedDate}"
                             MinimumDate="{Binding MinimumDate}" />
 
+                <Label Text="Optional: pick a time range if you don't need the whole day off."
+                       FontSize="12"
+                       TextColor="LightGray"
+                       HorizontalOptions="Center" />
+
+                <HorizontalStackLayout Spacing="10"
+                                       HorizontalOptions="Center">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Start Time"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                        <TimePicker Time="{Binding StartTime}"
+                                    Format="HH:mm" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="End Time"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                        <TimePicker Time="{Binding EndTime}"
+                                    Format="HH:mm" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+
                 <Editor Placeholder="Reason (optional)"
                         AutoSize="TextChanges"
                         Text="{Binding Reason}" />

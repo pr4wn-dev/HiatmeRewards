@@ -1076,7 +1076,7 @@ namespace HiatMeApp.Services
             }
         }
 
-        public async Task<(bool Success, string Message)> SubmitDayOffRequestAsync(DateTime date, string? reason)
+        public async Task<(bool Success, string Message)> SubmitDayOffRequestAsync(DateTime date, string? reason, TimeSpan? startTime = null, TimeSpan? endTime = null)
         {
             Console.WriteLine($"SubmitDayOffRequestAsync: Starting for date={date:yyyy-MM-dd}");
             if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
@@ -1103,6 +1103,15 @@ namespace HiatMeApp.Services
             if (!string.IsNullOrWhiteSpace(reason))
             {
                 data.Add("reason", reason);
+            }
+
+            if (startTime.HasValue && endTime.HasValue)
+            {
+                // Only send time range if both are provided; server will treat missing times as full day
+                var start = startTime.Value;
+                var end = endTime.Value;
+                data.Add("start_time", new DateTime(1, 1, 1, start.Hours, start.Minutes, 0).ToString("HH:mm:ss"));
+                data.Add("end_time", new DateTime(1, 1, 1, end.Hours, end.Minutes, 0).ToString("HH:mm:ss"));
             }
 
             var content = new FormUrlEncodedContent(data);
