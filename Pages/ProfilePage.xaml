@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:HiatMeApp.Controls"
              xmlns:converters="clr-namespace:HiatMeApp.Converters"
              x:Class="HiatMeApp.ProfilePage"
-             Title="{Binding Title}">
+             Title="{Binding Title}"
+             BackgroundColor="#333333">
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
@@ -64,13 +65,20 @@
                                    FontSize="18"
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Entry Text="{Binding Name}" 
-                                   FontSize="18"
-                                   BackgroundColor="#555"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing}"
-                                   Placeholder="Enter your name"
-                                   PlaceholderColor="#999" />
+                            <Border Stroke="#666666"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 4,4,4,4"
+                                    BackgroundColor="#555555"
+                                    Padding="12,0"
+                                    IsVisible="{Binding IsEditing}">
+                                <Entry Text="{Binding Name}" 
+                                       FontSize="18"
+                                       BackgroundColor="Transparent"
+                                       TextColor="White"
+                                       Placeholder="Enter your name"
+                                       PlaceholderColor="#999"
+                                       HeightRequest="50" />
+                            </Border>
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
@@ -82,14 +90,21 @@
                                    FontSize="18"
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Entry Text="{Binding Email}" 
-                                   FontSize="18"
-                                   BackgroundColor="#555"
-                                   TextColor="White"
-                                   Keyboard="Email"
-                                   IsVisible="{Binding IsEditing}"
-                                   Placeholder="Enter your email"
-                                   PlaceholderColor="#999" />
+                            <Border Stroke="#666666"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 4,4,4,4"
+                                    BackgroundColor="#555555"
+                                    Padding="12,0"
+                                    IsVisible="{Binding IsEditing}">
+                                <Entry Text="{Binding Email}" 
+                                       FontSize="18"
+                                       BackgroundColor="Transparent"
+                                       TextColor="White"
+                                       Keyboard="Email"
+                                       Placeholder="Enter your email"
+                                       PlaceholderColor="#999"
+                                       HeightRequest="50" />
+                            </Border>
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
@@ -101,14 +116,21 @@
                                    FontSize="18"
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Entry Text="{Binding Phone}" 
-                                   FontSize="18"
-                                   BackgroundColor="#555"
-                                   TextColor="White"
-                                   Keyboard="Telephone"
-                                   IsVisible="{Binding IsEditing}"
-                                   Placeholder="Enter your phone number"
-                                   PlaceholderColor="#999" />
+                            <Border Stroke="#666666"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 4,4,4,4"
+                                    BackgroundColor="#555555"
+                                    Padding="12,0"
+                                    IsVisible="{Binding IsEditing}">
+                                <Entry Text="{Binding Phone}" 
+                                       FontSize="18"
+                                       BackgroundColor="Transparent"
+                                       TextColor="White"
+                                       Keyboard="Telephone"
+                                       Placeholder="Enter your phone number"
+                                       PlaceholderColor="#999"
+                                       HeightRequest="50" />
+                            </Border>
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
