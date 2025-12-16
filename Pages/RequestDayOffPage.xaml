@@ -19,11 +19,15 @@
                        FontAttributes="Bold"
                        TextColor="White"
                        HorizontalOptions="Center"
-                       Margin="0,10,0,20" />
+                       Margin="0,10,0,10" />
+                <BoxView HeightRequest="2"
+                         BackgroundColor="#007BFF"
+                         HorizontalOptions="FillAndExpand"
+                         Margin="0,0,0,20" />
 
                 <Label Text="Select Date" 
                        FontSize="18"
-                       TextColor="White"
+                       TextColor="#007BFF"
                        Margin="0,0,0,5" />
                 <DatePicker Date="{Binding SelectedDate}"
                             MinimumDate="{Binding MinimumDate}"
@@ -41,7 +45,7 @@
                     <VerticalStackLayout Spacing="8">
                         <Label Text="Start Time"
                                FontSize="16"
-                               TextColor="White"
+                               TextColor="#007BFF"
                                HorizontalOptions="Center" />
                         <TimePicker Time="{Binding StartTime}"
                                     Format="HH:mm"
@@ -52,7 +56,7 @@
                     <VerticalStackLayout Spacing="8">
                         <Label Text="End Time"
                                FontSize="16"
-                               TextColor="White"
+                               TextColor="#007BFF"
                                HorizontalOptions="Center" />
                         <TimePicker Time="{Binding EndTime}"
                                     Format="HH:mm"
@@ -63,14 +67,16 @@
 
                 <Label Text="Reason (optional)" 
                        FontSize="18"
-                       TextColor="White"
+                       TextColor="#007BFF"
                        Margin="0,10,0,5" />
                 <Editor Placeholder="Enter reason for day off request..."
                         AutoSize="TextChanges"
                         Text="{Binding Reason}"
                         BackgroundColor="#444"
                         TextColor="White"
-                        MinimumHeightRequest="100" />
+                        PlaceholderColor="#AAAAAA"
+                        MinimumHeightRequest="100"
+                        Padding="12,8" />
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    IsVisible="{Binding IsBusy}"

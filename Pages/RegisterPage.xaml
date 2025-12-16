@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.RegisterPage"
              Title="{Binding Title}"
              BackgroundColor="#333333">
@@ -74,90 +75,109 @@
             </Setter>
         </Style>
         <Style x:Key="EntryStyle" TargetType="Entry">
-            <Setter Property="BackgroundColor" Value="#333333" />
+            <Setter Property="BackgroundColor" Value="#444444" />
             <Setter Property="TextColor" Value="White" />
             <Setter Property="PlaceholderColor" Value="#AAAAAA" />
-            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontSize" Value="18" />
             <Setter Property="FontFamily" Value="Arial" />
-            <Setter Property="HeightRequest" Value="48" />
-            <Setter Property="Margin" Value="0,6" />
+            <Setter Property="HeightRequest" Value="50" />
+            <Setter Property="Margin" Value="0,8" />
+            <Setter Property="Padding" Value="12,0" />
             <Setter Property="HorizontalOptions" Value="FillAndExpand" />
             <Setter Property="ClearButtonVisibility" Value="WhileEditing" />
         </Style>
+        <Style x:Key="LabelStyle" TargetType="Label">
+            <Setter Property="TextColor" Value="#007BFF" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontFamily" Value="Arial" />
+            <Setter Property="Margin" Value="0,15,0,5" />
+        </Style>
     </ContentPage.Resources>
-    <VerticalStackLayout Spacing="12"
-                        Padding="20,40,20,30"
-                        VerticalOptions="CenterAndExpand"
-                        HorizontalOptions="FillAndExpand">
-        <Grid ColumnDefinitions="*,*"
-              HorizontalOptions="FillAndExpand">
-            <Button Grid.Column="0"
-                    Text="Login"
-                    Command="{Binding GoToLoginCommand}"
-                    Style="{StaticResource ToggleButtonStyle}" />
-            <Button Grid.Column="1"
-                    Text="Sign Up"
-                    Style="{StaticResource ActiveToggleButtonStyle}" />
-        </Grid>
-        <Label Text="Sign Up"
-               FontSize="24"
-               FontFamily="Arial"
-               FontAttributes="Bold"
-               TextColor="White"
-               HorizontalOptions="Center"
-               Margin="0,6" />
-        <BoxView HeightRequest="1"
-                 BackgroundColor="#007BFF"
-                 HorizontalOptions="FillAndExpand"
-                 Margin="0,6" />
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-              RowSpacing="6"
-              HorizontalOptions="FillAndExpand">
-            <Entry Grid.Row="0"
-                   Placeholder="Name"
-                   Text="{Binding Name}"
-                   Style="{StaticResource EntryStyle}" />
-            <Entry Grid.Row="1"
-                   Placeholder="Email"
-                   Text="{Binding Email}"
-                   Keyboard="Email"
-                   Style="{StaticResource EntryStyle}" />
-            <Entry Grid.Row="2"
-                   Placeholder="Phone"
-                   Text="{Binding Phone}"
-                   Keyboard="Telephone"
-                   Style="{StaticResource EntryStyle}" />
-            <Entry Grid.Row="3"
-                   Placeholder="Password"
-                   Text="{Binding Password}"
-                   IsPassword="True"
-                   Style="{StaticResource EntryStyle}" />
-            <Entry Grid.Row="4"
-                   Placeholder="Confirm Password"
-                   Text="{Binding ConfirmPassword}"
-                   IsPassword="True"
-                   Style="{StaticResource EntryStyle}" />
-        </Grid>
-        <Button Text="Register"
-                Command="{Binding RegisterCommand}"
-                Style="{StaticResource FormButtonStyle}" />
-        <Label Text="{Binding Message}"
-               TextColor="#F2A8AE"
-               FontSize="14"
-               FontFamily="Arial"
-               HorizontalOptions="Center"
-               Margin="0,2">
-            <Label.Triggers>
-                <DataTrigger TargetType="Label"
-                             Binding="{Binding Message}"
-                             Value="">
-                    <Setter Property="IsVisible" Value="False" />
-                </DataTrigger>
-            </Label.Triggers>
-        </Label>
-        <Button Text="Back to Login"
-                Command="{Binding GoToLoginCommand}"
-                Style="{StaticResource LinkButtonStyle}" />
-    </VerticalStackLayout>
+    <Grid RowDefinitions="Auto,*">
+        <controls:TopBar Grid.Row="0" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="15"
+                                Padding="20,30,20,30"
+                                VerticalOptions="CenterAndExpand"
+                                HorizontalOptions="FillAndExpand">
+                <Grid ColumnDefinitions="*,*"
+                      HorizontalOptions="FillAndExpand"
+                      Margin="0,0,0,10">
+                    <Button Grid.Column="0"
+                            Text="Login"
+                            Command="{Binding GoToLoginCommand}"
+                            Style="{StaticResource ToggleButtonStyle}" />
+                    <Button Grid.Column="1"
+                            Text="Sign Up"
+                            Style="{StaticResource ActiveToggleButtonStyle}" />
+                </Grid>
+                <Label Text="Sign Up"
+                       FontSize="24"
+                       FontFamily="Arial"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center"
+                       Margin="0,10" />
+                <BoxView HeightRequest="2"
+                         BackgroundColor="#007BFF"
+                         HorizontalOptions="FillAndExpand"
+                         Margin="0,0,0,20" />
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Name"
+                           Style="{StaticResource LabelStyle}" />
+                    <Entry Text="{Binding Name}"
+                           Style="{StaticResource EntryStyle}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Email"
+                           Style="{StaticResource LabelStyle}" />
+                    <Entry Text="{Binding Email}"
+                           Keyboard="Email"
+                           Style="{StaticResource EntryStyle}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Phone"
+                           Style="{StaticResource LabelStyle}" />
+                    <Entry Text="{Binding Phone}"
+                           Keyboard="Telephone"
+                           Style="{StaticResource EntryStyle}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Password"
+                           Style="{StaticResource LabelStyle}" />
+                    <Entry Text="{Binding Password}"
+                           IsPassword="True"
+                           Style="{StaticResource EntryStyle}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Confirm Password"
+                           Style="{StaticResource LabelStyle}" />
+                    <Entry Text="{Binding ConfirmPassword}"
+                           IsPassword="True"
+                           Style="{StaticResource EntryStyle}" />
+                </VerticalStackLayout>
+                <Button Text="Register"
+                        Command="{Binding RegisterCommand}"
+                        Style="{StaticResource FormButtonStyle}" />
+                <Label Text="{Binding Message}"
+                       TextColor="#F2A8AE"
+                       FontSize="16"
+                       FontFamily="Arial"
+                       HorizontalOptions="Center"
+                       Margin="0,5">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label"
+                                     Binding="{Binding Message}"
+                                     Value="">
+                            <Setter Property="IsVisible" Value="False" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+                <Button Text="Back to Login"
+                        Command="{Binding GoToLoginCommand}"
+                        Style="{StaticResource LinkButtonStyle}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>
 
