@@ -70,10 +70,7 @@
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing}"
                                    Placeholder="Enter your name"
-                                   PlaceholderColor="#999"
-                                   BorderColor="#666"
-                                   BorderWidth="1"
-                                   CornerRadius="4" />
+                                   PlaceholderColor="#999" />
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
@@ -92,10 +89,7 @@
                                    Keyboard="Email"
                                    IsVisible="{Binding IsEditing}"
                                    Placeholder="Enter your email"
-                                   PlaceholderColor="#999"
-                                   BorderColor="#666"
-                                   BorderWidth="1"
-                                   CornerRadius="4" />
+                                   PlaceholderColor="#999" />
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
@@ -114,10 +108,7 @@
                                    Keyboard="Telephone"
                                    IsVisible="{Binding IsEditing}"
                                    Placeholder="Enter your phone number"
-                                   PlaceholderColor="#999"
-                                   BorderColor="#666"
-                                   BorderWidth="1"
-                                   CornerRadius="4" />
+                                   PlaceholderColor="#999" />
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
