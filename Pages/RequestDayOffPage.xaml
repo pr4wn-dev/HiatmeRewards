@@ -75,8 +75,7 @@
                         BackgroundColor="#444"
                         TextColor="White"
                         PlaceholderColor="#AAAAAA"
-                        MinimumHeightRequest="100"
-                        Padding="12,8" />
+                        MinimumHeightRequest="100" />
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    IsVisible="{Binding IsBusy}"
