@@ -84,6 +84,9 @@
             <Setter Property="Margin" Value="0,8" />
             <Setter Property="HorizontalOptions" Value="FillAndExpand" />
             <Setter Property="ClearButtonVisibility" Value="WhileEditing" />
+            <Setter Property="BorderColor" Value="#666666" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
         </Style>
         <Style x:Key="LabelStyle" TargetType="Label">
             <Setter Property="TextColor" Value="#007BFF" />
