@@ -4,11 +4,22 @@
              xmlns:local="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.HomePage"
              Title="{Binding Title}">
-    <Grid RowDefinitions="*,Auto">
-        <VerticalStackLayout Padding="20" Spacing="10" Grid.Row="0">
-            <Label Text="Welcome to HiatMe" FontSize="24" HorizontalOptions="Center" />
-            <Label Text="This is your home page." HorizontalOptions="Center" />
-        </VerticalStackLayout>
-        <local:NavigationBar Grid.Row="1" />
+    <Grid RowDefinitions="Auto,*,Auto">
+        <local:TopBar Grid.Row="0" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="15">
+                <Label Text="Welcome to HiatMe" 
+                       FontSize="28" 
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center" 
+                       Margin="0,20,0,10" />
+                <Label Text="This is your home page." 
+                       FontSize="18"
+                       TextColor="White"
+                       HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </ScrollView>
+        <local:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>

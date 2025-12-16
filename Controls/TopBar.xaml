@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HiatMeApp.Controls.TopBar"
+             HeightRequest="61">
+    <Grid BackgroundColor="{StaticResource WebsiteDark}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Blue accent bar on left -->
+        <BoxView Grid.Column="0" 
+                 BackgroundColor="{StaticResource WebsiteAccent}" />
+        
+        <!-- Logo -->
+        <Image Grid.Column="1"
+               Source="https://hiatme.com/images/hereiam.png"
+               HeightRequest="24"
+               WidthRequest="Auto"
+               Margin="8,0,0,0"
+               VerticalOptions="Center" />
+    </Grid>
+</ContentView>
+

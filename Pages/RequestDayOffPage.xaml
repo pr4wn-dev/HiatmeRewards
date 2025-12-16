@@ -10,55 +10,85 @@
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="20" Spacing="12">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <controls:TopBar Grid.Row="0" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="18">
                 <Label Text="Request a Day Off"
-                       FontSize="24"
-                       HorizontalOptions="Center" />
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center"
+                       Margin="0,10,0,20" />
 
+                <Label Text="Select Date" 
+                       FontSize="18"
+                       TextColor="White"
+                       Margin="0,0,0,5" />
                 <DatePicker Date="{Binding SelectedDate}"
-                            MinimumDate="{Binding MinimumDate}" />
+                            MinimumDate="{Binding MinimumDate}"
+                            BackgroundColor="#444"
+                            TextColor="White" />
 
                 <Label Text="Optional: pick a time range if you don't need the whole day off."
-                       FontSize="12"
-                       TextColor="LightGray"
-                       HorizontalOptions="Center" />
+                       FontSize="16"
+                       TextColor="#cccccc"
+                       HorizontalOptions="Center"
+                       Margin="0,10,0,10" />
 
-                <HorizontalStackLayout Spacing="10"
+                <HorizontalStackLayout Spacing="15"
                                        HorizontalOptions="Center">
-                    <VerticalStackLayout Spacing="4">
+                    <VerticalStackLayout Spacing="8">
                         <Label Text="Start Time"
-                               FontSize="12"
+                               FontSize="16"
+                               TextColor="White"
                                HorizontalOptions="Center" />
                         <TimePicker Time="{Binding StartTime}"
-                                    Format="HH:mm" />
+                                    Format="HH:mm"
+                                    BackgroundColor="#444"
+                                    TextColor="White" />
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Spacing="4">
+                    <VerticalStackLayout Spacing="8">
                         <Label Text="End Time"
-                               FontSize="12"
+                               FontSize="16"
+                               TextColor="White"
                                HorizontalOptions="Center" />
                         <TimePicker Time="{Binding EndTime}"
-                                    Format="HH:mm" />
+                                    Format="HH:mm"
+                                    BackgroundColor="#444"
+                                    TextColor="White" />
                     </VerticalStackLayout>
                 </HorizontalStackLayout>
 
-                <Editor Placeholder="Reason (optional)"
+                <Label Text="Reason (optional)" 
+                       FontSize="18"
+                       TextColor="White"
+                       Margin="0,10,0,5" />
+                <Editor Placeholder="Enter reason for day off request..."
                         AutoSize="TextChanges"
-                        Text="{Binding Reason}" />
+                        Text="{Binding Reason}"
+                        BackgroundColor="#444"
+                        TextColor="White"
+                        MinimumHeightRequest="100" />
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    IsVisible="{Binding IsBusy}"
-                                   HorizontalOptions="Center" />
+                                   Color="White"
+                                   HorizontalOptions="Center"
+                                   Margin="0,10,0,10" />
 
                 <Button Text="Submit Request"
+                        FontSize="18"
                         Command="{Binding SubmitRequestCommand}"
-                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}" />
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"
+                        BackgroundColor="#007bff"
+                        TextColor="White"
+                        Margin="0,10,0,0" />
             </VerticalStackLayout>
         </ScrollView>
 
-        <controls:NavigationBar Grid.Row="1" />
+        <controls:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>
 

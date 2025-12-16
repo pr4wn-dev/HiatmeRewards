@@ -11,29 +11,35 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="*,Auto">
-        <VerticalStackLayout Grid.Row="0"
+    <Grid RowDefinitions="Auto,*,Auto">
+        <controls:TopBar Grid.Row="0" />
+        <VerticalStackLayout Grid.Row="1"
                              Padding="20"
-                             Spacing="18"
+                             Spacing="25"
                              VerticalOptions="Center"
                              HorizontalOptions="Center">
             <Label Text="Finish your day by submitting the ending mileage."
-                   FontSize="20"
+                   FontSize="22"
+                   TextColor="White"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
             <ActivityIndicator IsRunning="{Binding IsBusy}"
                                IsVisible="{Binding IsBusy}"
+                               Color="White"
                                HorizontalOptions="Center" />
 
             <Button Text="Finish My Day"
                     FontSize="22"
-                    WidthRequest="240"
+                    WidthRequest="280"
+                    HeightRequest="60"
                     HorizontalOptions="Center"
+                    BackgroundColor="#28a745"
+                    TextColor="White"
                     Command="{Binding SubmitEndOfDayCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"/>
         </VerticalStackLayout>
 
-        <controls:NavigationBar Grid.Row="1" />
+        <controls:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>

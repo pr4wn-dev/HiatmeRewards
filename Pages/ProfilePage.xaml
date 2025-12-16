@@ -10,92 +10,143 @@
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="20" Spacing="15">
-                <Label Text="Profile" FontSize="24" HorizontalOptions="Center" FontAttributes="Bold" />
+    <Grid RowDefinitions="Auto,*,Auto">
+        <local:TopBar Grid.Row="0" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="18">
+                <Label Text="Profile" 
+                       FontSize="26" 
+                       HorizontalOptions="Center" 
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       Margin="0,10,0,20" />
                 
                 <!-- Profile Picture -->
-                <Frame HorizontalOptions="Center" Padding="10" BorderColor="LightGray" CornerRadius="5" Margin="0,10,0,20">
-                    <VerticalStackLayout Spacing="10">
+                <Frame HorizontalOptions="Center" 
+                       Padding="15" 
+                       BorderColor="#666" 
+                       BackgroundColor="#444"
+                       CornerRadius="8" 
+                       Margin="0,0,0,20">
+                    <VerticalStackLayout Spacing="12">
                         <Image x:Name="ProfileImage"
                                HeightRequest="120" 
                                WidthRequest="120"
                                Aspect="AspectFill"
                                HorizontalOptions="Center" />
                         <Button Text="Change Picture" 
+                                FontSize="16"
                                 Command="{Binding PickImageCommand}"
                                 IsVisible="{Binding IsEditing}"
+                                BackgroundColor="#007bff"
+                                TextColor="White"
                                 HorizontalOptions="Center"
-                                Padding="10,5" />
+                                Padding="15,8" />
                     </VerticalStackLayout>
                 </Frame>
                 
                 <!-- User Information -->
-                <Frame Padding="15" BorderColor="LightGray" CornerRadius="5">
-                    <VerticalStackLayout Spacing="10">
-                        <Label Text="Name" FontSize="14" FontAttributes="Bold" />
+                <Frame Padding="18" 
+                       BorderColor="#666" 
+                       BackgroundColor="#444"
+                       CornerRadius="8">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Name" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="White" />
                         <Label Text="{Binding Name}" 
-                               FontSize="16" 
+                               FontSize="18"
+                               TextColor="White"
                                IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
                         <Entry Text="{Binding Name}" 
-                               FontSize="16"
+                               FontSize="18"
+                               BackgroundColor="#555"
+                               TextColor="White"
                                IsVisible="{Binding IsEditing}"
-                               Placeholder="Enter your name" />
+                               Placeholder="Enter your name"
+                               PlaceholderColor="#999" />
                         
-                        <Label Text="Email" FontSize="14" FontAttributes="Bold" Margin="0,10,0,0" />
+                        <Label Text="Email" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               Margin="0,10,0,0" />
                         <Label Text="{Binding Email}" 
-                               FontSize="16"
+                               FontSize="18"
+                               TextColor="White"
                                IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
                         <Entry Text="{Binding Email}" 
-                               FontSize="16"
+                               FontSize="18"
+                               BackgroundColor="#555"
+                               TextColor="White"
                                Keyboard="Email"
                                IsVisible="{Binding IsEditing}"
-                               Placeholder="Enter your email" />
+                               Placeholder="Enter your email"
+                               PlaceholderColor="#999" />
                         
-                        <Label Text="Phone" FontSize="14" FontAttributes="Bold" Margin="0,10,0,0" />
+                        <Label Text="Phone" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               Margin="0,10,0,0" />
                         <Label Text="{Binding Phone, TargetNullValue='Not provided'}" 
-                               FontSize="16"
+                               FontSize="18"
+                               TextColor="White"
                                IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
                         <Entry Text="{Binding Phone}" 
-                               FontSize="16"
+                               FontSize="18"
+                               BackgroundColor="#555"
+                               TextColor="White"
                                Keyboard="Telephone"
                                IsVisible="{Binding IsEditing}"
-                               Placeholder="Enter your phone number" />
+                               Placeholder="Enter your phone number"
+                               PlaceholderColor="#999" />
                         
-                        <Label Text="Role" FontSize="14" FontAttributes="Bold" Margin="0,10,0,0" />
-                        <Label Text="{Binding Role}" FontSize="16" />
+                        <Label Text="Role" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               Margin="0,10,0,0" />
+                        <Label Text="{Binding Role}" 
+                               FontSize="18"
+                               TextColor="White" />
                     </VerticalStackLayout>
                 </Frame>
                 
                 <!-- Action Buttons -->
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,20,0,0">
+                <Grid ColumnDefinitions="*,*" 
+                      ColumnSpacing="12" 
+                      Margin="0,25,0,0">
                     <Button Text="Edit" 
+                            FontSize="18"
                             Command="{Binding StartEditingCommand}"
                             IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}"
                             Grid.Column="0"
                             Grid.ColumnSpan="2"
-                            BackgroundColor="#007ACC"
+                            BackgroundColor="#007bff"
                             TextColor="White" />
                     
                     <Button Text="Cancel" 
+                            FontSize="18"
                             Command="{Binding CancelEditingCommand}"
                             IsVisible="{Binding IsEditing}"
                             Grid.Column="0"
-                            BackgroundColor="Gray"
+                            BackgroundColor="#6c757d"
                             TextColor="White" />
                     
                     <Button Text="Save" 
+                            FontSize="18"
                             Command="{Binding SaveProfileCommand}"
                             IsVisible="{Binding IsEditing}"
                             IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"
                             Grid.Column="1"
-                            BackgroundColor="#28A745"
+                            BackgroundColor="#28a745"
                             TextColor="White" />
                 </Grid>
             </VerticalStackLayout>
         </ScrollView>
-        <local:NavigationBar Grid.Row="1" />
+        <local:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>
 

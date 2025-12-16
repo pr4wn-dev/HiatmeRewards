@@ -4,44 +4,79 @@
              xmlns:local="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.VehiclePage"
              Title="{Binding Title}">
-    <Grid RowDefinitions="*,Auto">
-        <VerticalStackLayout Padding="20" Spacing="10" Grid.Row="0">
-            <Label Text="Your Vehicle" FontSize="24" HorizontalOptions="Center" />
-            <Frame IsVisible="{Binding Vehicle, Converter={StaticResource NotNullConverter}}"
-                   Padding="10" BorderColor="LightGray" CornerRadius="5">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="{Binding Vehicle.Make}" FontSize="18" FontAttributes="Bold" />
-                    <Label Text="{Binding Vehicle.Model}" FontSize="16" />
-                    <Label Text="{Binding Vehicle.LastSixVin, StringFormat='VIN Ending: {0}'}" FontSize="14" />
-                    <Label Text="{Binding Vehicle.LicensePlate, StringFormat='License Plate: {0}'}" FontSize="14" />
-                    <Label Text="{Binding Vehicle.Year, StringFormat='Year: {0}'}" FontSize="14" />
-                    <Label Text="{Binding Vehicle.Color, StringFormat='Color: {0}'}" FontSize="14" />
-                    <Label Text="{Binding Vehicle.Vin, StringFormat='Full VIN: {0}'}" FontSize="14" />
-                    <Label Text="{Binding Vehicle.MileageRecord.StartMiles, StringFormat='Start Miles: {0:F2}'}"
-                           IsVisible="{Binding Vehicle.MileageRecord, Converter={StaticResource NotNullConverter}}"
-                           FontSize="14" />
-                    <Label Text="{Binding Vehicle.MileageRecord.EndingMiles, StringFormat='End Miles: {0:F2}'}"
-                           IsVisible="{Binding Vehicle.MileageRecord.EndingMiles, Converter={StaticResource NotNullConverter}}"
-                           FontSize="14" />
-                </VerticalStackLayout>
-            </Frame>
-            <Label Text="No vehicle assigned."
-                   IsVisible="{Binding NoVehicleMessageVisible}"
-                   HorizontalOptions="Center"
-                   FontSize="16"
-                   TextColor="Red" />
-            <Button Text="Assign/Change Vehicle"
-                    IsVisible="{Binding IsVehicleButtonVisible}"
-                    Command="{Binding AssignVehicleByVinCommand}"
-                    HorizontalOptions="Center"
-                    Margin="0,10,0,0" />
-            <Button Text="Submit End Mileage"
-                    IsVisible="{Binding Vehicle.MileageRecord, Converter={StaticResource NotNullConverter}}"
-                    IsEnabled="{Binding Vehicle.MileageRecord.EndingMiles, Converter={StaticResource NotNullConverter}, ConverterParameter=Inverse}"
-                    Command="{Binding SubmitEndMileageCommand}"
-                    HorizontalOptions="Center"
-                    Margin="0,10,0,0" />
-        </VerticalStackLayout>
-        <local:NavigationBar Grid.Row="1" />
+    <Grid RowDefinitions="Auto,*,Auto">
+        <local:TopBar Grid.Row="0" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="15">
+                <Label Text="Your Vehicle" 
+                       FontSize="26" 
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center" 
+                       Margin="0,10,0,20" />
+                <Frame IsVisible="{Binding Vehicle, Converter={StaticResource NotNullConverter}}"
+                       Padding="15" 
+                       BorderColor="#666" 
+                       BackgroundColor="#444"
+                       CornerRadius="8"
+                       Margin="0,0,0,15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="{Binding Vehicle.Make}" 
+                               FontSize="22" 
+                               FontAttributes="Bold"
+                               TextColor="White" />
+                        <Label Text="{Binding Vehicle.Model}" 
+                               FontSize="18"
+                               TextColor="White" />
+                        <Label Text="{Binding Vehicle.LastSixVin, StringFormat='VIN Ending: {0}'}" 
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                        <Label Text="{Binding Vehicle.LicensePlate, StringFormat='License Plate: {0}'}" 
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                        <Label Text="{Binding Vehicle.Year, StringFormat='Year: {0}'}" 
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                        <Label Text="{Binding Vehicle.Color, StringFormat='Color: {0}'}" 
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                        <Label Text="{Binding Vehicle.Vin, StringFormat='Full VIN: {0}'}" 
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                        <Label Text="{Binding Vehicle.MileageRecord.StartMiles, StringFormat='Start Miles: {0:F2}'}"
+                               IsVisible="{Binding Vehicle.MileageRecord, Converter={StaticResource NotNullConverter}}"
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                        <Label Text="{Binding Vehicle.MileageRecord.EndingMiles, StringFormat='End Miles: {0:F2}'}"
+                               IsVisible="{Binding Vehicle.MileageRecord.EndingMiles, Converter={StaticResource NotNullConverter}}"
+                               FontSize="16"
+                               TextColor="#cccccc" />
+                    </VerticalStackLayout>
+                </Frame>
+                <Label Text="No vehicle assigned."
+                       IsVisible="{Binding NoVehicleMessageVisible}"
+                       HorizontalOptions="Center"
+                       FontSize="18"
+                       TextColor="#ff6b6b" />
+                <Button Text="Assign/Change Vehicle"
+                        FontSize="18"
+                        IsVisible="{Binding IsVehicleButtonVisible}"
+                        Command="{Binding AssignVehicleByVinCommand}"
+                        BackgroundColor="#007bff"
+                        TextColor="White"
+                        HorizontalOptions="Center"
+                        Margin="0,10,0,10" />
+                <Button Text="Submit End Mileage"
+                        FontSize="18"
+                        IsVisible="{Binding Vehicle.MileageRecord, Converter={StaticResource NotNullConverter}}"
+                        IsEnabled="{Binding Vehicle.MileageRecord.EndingMiles, Converter={StaticResource NotNullConverter}, ConverterParameter=Inverse}"
+                        Command="{Binding SubmitEndMileageCommand}"
+                        BackgroundColor="#28a745"
+                        TextColor="White"
+                        HorizontalOptions="Center"
+                        Margin="0,10,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
+        <local:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>
