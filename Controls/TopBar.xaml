@@ -18,7 +18,6 @@
         <Image Grid.Column="1"
                Source="https://hiatme.com/images/hereiam.png"
                HeightRequest="24"
-               WidthRequest="Auto"
                Margin="8,0,0,0"
                VerticalOptions="Center" />
     </Grid>
