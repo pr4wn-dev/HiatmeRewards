@@ -7,7 +7,6 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="14"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
@@ -19,31 +18,31 @@
         <Button Grid.Column="1"
                 Text="&#xE5D2;"
                 FontFamily="MaterialIcons"
-                FontSize="28"
+                FontSize="32"
                 BackgroundColor="Transparent"
                 TextColor="White"
-                Padding="16,0"
+                Padding="20,0"
                 Margin="0"
                 Clicked="OnMenuButtonClicked"
                 VerticalOptions="Center"
-                WidthRequest="56"
-                HeightRequest="56" />
+                WidthRequest="64"
+                HeightRequest="64" />
         
-        <!-- Logo Text -->
+        <!-- Logo Text - centered in remaining space -->
         <Label Grid.Column="2"
-               Margin="6,0,0,0"
+               HorizontalOptions="Center"
                VerticalOptions="Center"
                VerticalTextAlignment="Center">
             <Label.FormattedText>
                 <FormattedString>
                     <Span Text="HERE" 
                           TextColor="White" 
-                          FontSize="22"
+                          FontSize="26"
                           FontFamily="Arial"
                           FontAttributes="Bold" />
                     <Span Text="IAM" 
                           TextColor="#007BFF" 
-                          FontSize="22"
+                          FontSize="26"
                           FontFamily="Arial"
                           FontAttributes="Bold" />
                 </FormattedString>
