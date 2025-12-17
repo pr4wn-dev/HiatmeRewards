@@ -23,16 +23,32 @@
                 BackgroundColor="Transparent"
                 TextColor="White"
                 Padding="12,0"
-                Margin="8,0,0,0"
+                Margin="0"
                 Clicked="OnMenuButtonClicked"
-                VerticalOptions="Center" />
+                VerticalOptions="Center"
+                WidthRequest="48"
+                HeightRequest="48" />
         
-        <!-- Logo -->
-        <Image Grid.Column="2"
-               Source="https://hiatme.com/images/hereiam.png"
-               HeightRequest="24"
-               Margin="8,0,0,0"
-               VerticalOptions="Center" />
+        <!-- Logo Text -->
+        <Label Grid.Column="2"
+               Margin="4,0,0,0"
+               VerticalOptions="Center"
+               VerticalTextAlignment="Center">
+            <Label.FormattedText>
+                <FormattedString>
+                    <Span Text="HERE" 
+                          TextColor="White" 
+                          FontSize="18"
+                          FontFamily="Arial"
+                          FontAttributes="Bold" />
+                    <Span Text="IAM" 
+                          TextColor="#007BFF" 
+                          FontSize="18"
+                          FontFamily="Arial"
+                          FontAttributes="Bold" />
+                </FormattedString>
+            </Label.FormattedText>
+        </Label>
     </Grid>
 </ContentView>
 
