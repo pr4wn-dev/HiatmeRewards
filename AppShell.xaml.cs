@@ -23,8 +23,7 @@ public partial class AppShell : Shell
             if (BindingContext is AppShellViewModel vm)
             {
                 vm.UpdateMenuItems();
-                LoginMenuItem.Text = vm.LoginMenuTitle;
-                Console.WriteLine($"AppShell: Set LoginMenuItem.Text={vm.LoginMenuTitle}");
+                Console.WriteLine($"AppShell: Updated menu items, LoginMenuTitle={vm.LoginMenuTitle}");
             }
             try
             {
@@ -50,7 +49,6 @@ public partial class AppShell : Shell
                 if (BindingContext is AppShellViewModel vm)
                 {
                     vm.UpdateMenuItems();
-                    LoginMenuItem.Text = vm.LoginMenuTitle;
                 }
             }
             await Shell.Current.GoToAsync("//Login");
@@ -89,7 +87,6 @@ public partial class AppShell : Shell
                 if (BindingContext is AppShellViewModel vm)
                 {
                     vm.UpdateMenuItems();
-                    LoginMenuItem.Text = vm.LoginMenuTitle;
                 }
             }
             await Shell.Current.GoToAsync("//Login");
