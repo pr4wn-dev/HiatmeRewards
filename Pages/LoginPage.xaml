@@ -4,7 +4,8 @@
              xmlns:controls="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.LoginPage"
              Title="{Binding Title}"
-             BackgroundColor="#333333">
+             BackgroundColor="#333333"
+             Shell.NavBarIsVisible="False">
     <ContentPage.Resources>
         <Style x:Key="FormButtonStyle" TargetType="Button">
             <Setter Property="BackgroundColor" Value="#007BFF" />
