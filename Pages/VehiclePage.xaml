@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.VehiclePage"
              Title="{Binding Title}"
-             BackgroundColor="#333333">
+             BackgroundColor="#333333"
+             Shell.NavBarIsVisible="False">
     <Grid RowDefinitions="Auto,*,Auto">
         <local:TopBar Grid.Row="0" />
         <ScrollView Grid.Row="1">

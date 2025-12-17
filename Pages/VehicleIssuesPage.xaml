@@ -4,7 +4,8 @@
              xmlns:controls="clr-namespace:HiatMeApp.Controls"
              x:Class="HiatMeApp.VehicleIssuesPage"
              Title="{Binding Title}"
-             BackgroundColor="#333333">
+             BackgroundColor="#333333"
+             Shell.NavBarIsVisible="False">
     <Grid RowDefinitions="Auto,Auto,*,Auto">
         <controls:TopBar Grid.Row="0" />
         <Button Text="Report Issue"

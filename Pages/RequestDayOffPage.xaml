@@ -5,7 +5,8 @@
              xmlns:converters="clr-namespace:HiatMeApp.Converters"
              x:Class="HiatMeApp.RequestDayOffPage"
              Title="{Binding Title}"
-             BackgroundColor="#333333">
+             BackgroundColor="#333333"
+             Shell.NavBarIsVisible="False">
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
