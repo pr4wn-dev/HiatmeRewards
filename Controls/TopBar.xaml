@@ -18,36 +18,40 @@
         <Button Grid.Column="1"
                 Text="&#xE5D2;"
                 FontFamily="MaterialIcons"
-                FontSize="32"
+                FontSize="44"
                 BackgroundColor="Transparent"
                 TextColor="White"
-                Padding="20,0"
+                Padding="32,0"
                 Margin="0"
                 Clicked="OnMenuButtonClicked"
                 VerticalOptions="Center"
-                WidthRequest="64"
-                HeightRequest="64" />
+                WidthRequest="88"
+                HeightRequest="88" />
         
         <!-- Logo Text - centered in remaining space -->
-        <Label Grid.Column="2"
-               HorizontalOptions="Center"
-               VerticalOptions="Center"
-               VerticalTextAlignment="Center">
-            <Label.FormattedText>
-                <FormattedString>
-                    <Span Text="HERE" 
-                          TextColor="White" 
-                          FontSize="26"
-                          FontFamily="Arial"
-                          FontAttributes="Bold" />
-                    <Span Text="IAM" 
-                          TextColor="#007BFF" 
-                          FontSize="26"
-                          FontFamily="Arial"
-                          FontAttributes="Bold" />
-                </FormattedString>
-            </Label.FormattedText>
-        </Label>
+        <Grid Grid.Column="2"
+              HorizontalOptions="FillAndExpand"
+              VerticalOptions="FillAndExpand">
+            <Label HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   VerticalTextAlignment="Center"
+                   HorizontalTextAlignment="Center">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="HERE" 
+                              TextColor="White" 
+                              FontSize="38"
+                              FontFamily="Arial"
+                              FontAttributes="Bold" />
+                        <Span Text="IAM" 
+                              TextColor="#007BFF" 
+                              FontSize="38"
+                              FontFamily="Arial"
+                              FontAttributes="Bold" />
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
+        </Grid>
     </Grid>
 </ContentView>
 
