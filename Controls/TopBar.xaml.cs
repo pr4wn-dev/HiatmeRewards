@@ -8,5 +8,13 @@ public partial class TopBar : ContentView
     {
         InitializeComponent();
     }
+
+    private void OnMenuButtonClicked(object sender, EventArgs e)
+    {
+        if (Shell.Current != null)
+        {
+            Shell.Current.FlyoutIsPresented = !Shell.Current.FlyoutIsPresented;
+        }
+    }
 }
 

@@ -6,6 +6,8 @@
     <Grid BackgroundColor="{StaticResource WebsiteDark}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
@@ -13,11 +15,23 @@
         <BoxView Grid.Column="0" 
                  BackgroundColor="{StaticResource WebsiteAccent}" />
         
-        <!-- Logo - centered in the remaining space -->
-        <Image Grid.Column="1"
+        <!-- Hamburger Menu Button -->
+        <Button Grid.Column="1"
+                Text="&#xE5D2;"
+                FontFamily="MaterialIcons"
+                FontSize="24"
+                BackgroundColor="Transparent"
+                TextColor="White"
+                Padding="12,0"
+                Margin="8,0,0,0"
+                Clicked="OnMenuButtonClicked"
+                VerticalOptions="Center" />
+        
+        <!-- Logo -->
+        <Image Grid.Column="2"
                Source="https://hiatme.com/images/hereiam.png"
                HeightRequest="24"
-               HorizontalOptions="Center"
+               Margin="8,0,0,0"
                VerticalOptions="Center" />
     </Grid>
 </ContentView>
