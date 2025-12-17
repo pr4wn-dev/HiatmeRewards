@@ -29,10 +29,12 @@
                 HeightRequest="88" />
         
         <!-- Logo Text - centered in remaining space -->
-        <Grid Grid.Column="2"
-              HorizontalOptions="FillAndExpand"
-              VerticalOptions="FillAndExpand">
-            <Label HorizontalOptions="Center"
+        <AbsoluteLayout Grid.Column="2"
+                        HorizontalOptions="FillAndExpand"
+                        VerticalOptions="FillAndExpand">
+            <Label AbsoluteLayout.LayoutBounds="0.5,0.5,-1,-1"
+                   AbsoluteLayout.LayoutFlags="PositionProportional"
+                   HorizontalOptions="Center"
                    VerticalOptions="Center"
                    VerticalTextAlignment="Center"
                    HorizontalTextAlignment="Center">
@@ -51,7 +53,7 @@
                     </FormattedString>
                 </Label.FormattedText>
             </Label>
-        </Grid>
+        </AbsoluteLayout>
     </Grid>
 </ContentView>
 
