@@ -6,7 +6,6 @@
     <Grid BackgroundColor="{StaticResource WebsiteDark}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="14"/>
-            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
@@ -14,11 +13,11 @@
         <BoxView Grid.Column="0" 
                  BackgroundColor="{StaticResource WebsiteAccent}" />
         
-        <!-- Logo -->
+        <!-- Logo - centered in the remaining space -->
         <Image Grid.Column="1"
                Source="https://hiatme.com/images/hereiam.png"
                HeightRequest="24"
-               Margin="8,0,0,0"
+               HorizontalOptions="Center"
                VerticalOptions="Center" />
     </Grid>
 </ContentView>
