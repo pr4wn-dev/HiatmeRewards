@@ -19,31 +19,31 @@
         <Button Grid.Column="1"
                 Text="&#xE5D2;"
                 FontFamily="MaterialIcons"
-                FontSize="24"
+                FontSize="28"
                 BackgroundColor="Transparent"
                 TextColor="White"
-                Padding="12,0"
+                Padding="16,0"
                 Margin="0"
                 Clicked="OnMenuButtonClicked"
                 VerticalOptions="Center"
-                WidthRequest="48"
-                HeightRequest="48" />
+                WidthRequest="56"
+                HeightRequest="56" />
         
         <!-- Logo Text -->
         <Label Grid.Column="2"
-               Margin="4,0,0,0"
+               Margin="6,0,0,0"
                VerticalOptions="Center"
                VerticalTextAlignment="Center">
             <Label.FormattedText>
                 <FormattedString>
                     <Span Text="HERE" 
                           TextColor="White" 
-                          FontSize="18"
+                          FontSize="22"
                           FontFamily="Arial"
                           FontAttributes="Bold" />
                     <Span Text="IAM" 
                           TextColor="#007BFF" 
-                          FontSize="18"
+                          FontSize="22"
                           FontFamily="Arial"
                           FontAttributes="Bold" />
                 </FormattedString>
