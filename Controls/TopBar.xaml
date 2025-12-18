@@ -21,20 +21,19 @@
                 FontSize="44"
                 BackgroundColor="Transparent"
                 TextColor="White"
-                Padding="32,0"
+                Padding="8,0"
                 Margin="0"
                 Clicked="OnMenuButtonClicked"
                 VerticalOptions="Center"
-                WidthRequest="88"
-                HeightRequest="88" />
+                HorizontalOptions="Start"
+                WidthRequest="56"
+                HeightRequest="56" />
         
         <!-- Logo Text - centered in remaining space -->
-        <AbsoluteLayout Grid.Column="2"
-                        HorizontalOptions="FillAndExpand"
-                        VerticalOptions="FillAndExpand">
-            <Label AbsoluteLayout.LayoutBounds="0.5,0.5,-1,-1"
-                   AbsoluteLayout.LayoutFlags="PositionProportional"
-                   HorizontalOptions="Center"
+        <Grid Grid.Column="2"
+              HorizontalOptions="FillAndExpand"
+              VerticalOptions="FillAndExpand">
+            <Label HorizontalOptions="Center"
                    VerticalOptions="Center"
                    VerticalTextAlignment="Center"
                    HorizontalTextAlignment="Center">
@@ -53,7 +52,7 @@
                     </FormattedString>
                 </Label.FormattedText>
             </Label>
-        </AbsoluteLayout>
+        </Grid>
     </Grid>
 </ContentView>
 
