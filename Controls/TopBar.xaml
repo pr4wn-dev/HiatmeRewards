@@ -8,6 +8,8 @@
             <ColumnDefinition Width="14"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
         <!-- Blue accent bar on left -->
@@ -29,30 +31,35 @@
                 WidthRequest="56"
                 HeightRequest="56" />
         
-        <!-- Logo Text - centered in remaining space -->
-        <Grid Grid.Column="2"
-              HorizontalOptions="FillAndExpand"
-              VerticalOptions="FillAndExpand">
-            <Label HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   VerticalTextAlignment="Center"
-                   HorizontalTextAlignment="Center">
-                <Label.FormattedText>
-                    <FormattedString>
-                        <Span Text="HERE" 
-                              TextColor="White" 
-                              FontSize="38"
-                              FontFamily="Arial"
-                              FontAttributes="Bold" />
-                        <Span Text="IAM" 
-                              TextColor="#007BFF" 
-                              FontSize="38"
-                              FontFamily="Arial"
-                              FontAttributes="Bold" />
-                    </FormattedString>
-                </Label.FormattedText>
-            </Label>
-        </Grid>
+        <!-- Empty spacer to balance burger menu -->
+        <BoxView Grid.Column="2"
+                 BackgroundColor="Transparent" />
+        
+        <!-- Logo Text - centered in the app -->
+        <Label Grid.Column="3"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               VerticalTextAlignment="Center"
+               HorizontalTextAlignment="Center">
+            <Label.FormattedText>
+                <FormattedString>
+                    <Span Text="HERE" 
+                          TextColor="White" 
+                          FontSize="38"
+                          FontFamily="Arial"
+                          FontAttributes="Bold" />
+                    <Span Text="IAM" 
+                          TextColor="#007BFF" 
+                          FontSize="38"
+                          FontFamily="Arial"
+                          FontAttributes="Bold" />
+                </FormattedString>
+            </Label.FormattedText>
+        </Label>
+        
+        <!-- Empty spacer on right to balance -->
+        <BoxView Grid.Column="4"
+                 BackgroundColor="Transparent" />
     </Grid>
 </ContentView>
 
