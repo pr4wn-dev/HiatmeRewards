@@ -228,8 +228,15 @@ public partial class AppShell : Shell
         }
     }
 
-    private void UpdateMenuVisibility()
+    public void UpdateMenuVisibility()
     {
+        // Ensure this runs on the main thread
+        if (!MainThread.IsMainThread)
+        {
+            MainThread.BeginInvokeOnMainThread(UpdateMenuVisibility);
+            return;
+        }
+        
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
         
         // Show/hide menu items based on login status
@@ -237,76 +244,57 @@ public partial class AppShell : Shell
         // Order: Home (top), Profile, Request Day Off, then Logout (bottom) when logged in
         // Only Login when logged out
         
-        // Show/Hide Login (at bottom when logged out)
-        if (_loginMenuItem != null)
+        // First, remove all our dynamic menu items to avoid duplicates
+        // Use try-catch in case items aren't in the collection
+        try
         {
-            if (!isLoggedIn && !Items.Contains(_loginMenuItem))
-            {
-                // Add Login at the bottom when logged out
-                Items.Add(_loginMenuItem);
-            }
-            else if (isLoggedIn && Items.Contains(_loginMenuItem))
-            {
-                Items.Remove(_loginMenuItem);
-            }
-        }
-        
-        // Show/Hide Home (at top when logged in)
-        if (_homeMenuItem != null)
-        {
-            if (isLoggedIn && !Items.Contains(_homeMenuItem))
-            {
-                // Insert Home at the beginning (index 0)
-                Items.Insert(0, _homeMenuItem);
-            }
-            else if (!isLoggedIn && Items.Contains(_homeMenuItem))
-            {
+            if (_homeMenuItem != null && Items.Contains(_homeMenuItem))
                 Items.Remove(_homeMenuItem);
-            }
-        }
-        
-        // Show/Hide Profile (after Home when logged in)
-        if (_profileMenuItem != null)
-        {
-            if (isLoggedIn && !Items.Contains(_profileMenuItem))
-            {
-                // Insert Profile after Home
-                int homeIndex = Items.IndexOf(_homeMenuItem);
-                Items.Insert(homeIndex >= 0 ? homeIndex + 1 : Items.Count, _profileMenuItem);
-            }
-            else if (!isLoggedIn && Items.Contains(_profileMenuItem))
-            {
+            if (_profileMenuItem != null && Items.Contains(_profileMenuItem))
                 Items.Remove(_profileMenuItem);
-            }
-        }
-        
-        // Show/Hide Request Day Off (after Profile when logged in)
-        if (_requestDayOffMenuItem != null)
-        {
-            if (isLoggedIn && !Items.Contains(_requestDayOffMenuItem))
-            {
-                // Insert Request Day Off after Profile
-                int profileIndex = Items.IndexOf(_profileMenuItem);
-                Items.Insert(profileIndex >= 0 ? profileIndex + 1 : Items.Count, _requestDayOffMenuItem);
-            }
-            else if (!isLoggedIn && Items.Contains(_requestDayOffMenuItem))
-            {
+            if (_requestDayOffMenuItem != null && Items.Contains(_requestDayOffMenuItem))
                 Items.Remove(_requestDayOffMenuItem);
-            }
+            if (_loginMenuItem != null && Items.Contains(_loginMenuItem))
+                Items.Remove(_loginMenuItem);
+            if (_logoutMenuItem != null && Items.Contains(_logoutMenuItem))
+                Items.Remove(_logoutMenuItem);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"UpdateMenuVisibility: Error removing items: {ex.Message}");
         }
         
-        // Show/Hide Logout (at bottom when logged in)
-        if (_logoutMenuItem != null)
+        // Now add items in the correct order based on login status
+        try
         {
-            if (isLoggedIn && !Items.Contains(_logoutMenuItem))
+            if (isLoggedIn)
             {
-                // Add Logout at the end
-                Items.Add(_logoutMenuItem);
+                // When logged in: Home, Profile, Request Day Off, Logout
+                if (_homeMenuItem != null && !Items.Contains(_homeMenuItem))
+                    Items.Insert(0, _homeMenuItem);
+                if (_profileMenuItem != null && !Items.Contains(_profileMenuItem))
+                {
+                    int insertIndex = Items.IndexOf(_homeMenuItem) >= 0 ? Items.IndexOf(_homeMenuItem) + 1 : Items.Count;
+                    Items.Insert(insertIndex, _profileMenuItem);
+                }
+                if (_requestDayOffMenuItem != null && !Items.Contains(_requestDayOffMenuItem))
+                {
+                    int insertIndex = Items.IndexOf(_profileMenuItem) >= 0 ? Items.IndexOf(_profileMenuItem) + 1 : Items.Count;
+                    Items.Insert(insertIndex, _requestDayOffMenuItem);
+                }
+                if (_logoutMenuItem != null && !Items.Contains(_logoutMenuItem))
+                    Items.Add(_logoutMenuItem);
             }
-            else if (!isLoggedIn && Items.Contains(_logoutMenuItem))
+            else
             {
-                Items.Remove(_logoutMenuItem);
+                // When logged out: only Login
+                if (_loginMenuItem != null && !Items.Contains(_loginMenuItem))
+                    Items.Add(_loginMenuItem);
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"UpdateMenuVisibility: Error adding items: {ex.Message}");
         }
         
         Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, MenuItemsCount={Items.Count}");

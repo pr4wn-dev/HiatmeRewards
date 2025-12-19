@@ -66,6 +66,16 @@ public partial class LoginViewModel : BaseViewModel
                     shellViewModel.UpdateMenuItems();
                     Console.WriteLine("LoginAsync: Menu items updated");
                 }
+                
+                // Update menu visibility in AppShell (on main thread)
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (Shell.Current is AppShell appShell)
+                    {
+                        appShell.UpdateMenuVisibility();
+                        Console.WriteLine("LoginAsync: Menu visibility updated");
+                    }
+                });
             }
         }
         catch (Exception ex)
