@@ -7,6 +7,10 @@ namespace HiatMeApp;
 
 public partial class AppShell : Shell
 {
+    private MenuItem? _homeMenuItem;
+    private MenuItem? _profileMenuItem;
+    private MenuItem? _requestDayOffMenuItem;
+
     public AppShell()
     {
         InitializeComponent();
@@ -18,7 +22,19 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("FinishDay", typeof(FinishDayPage));
         Routing.RegisterRoute("VehicleIssues", typeof(VehicleIssuesPage));
         Routing.RegisterRoute("Profile", typeof(ProfilePage));
+        Routing.RegisterRoute("RequestDayOff", typeof(RequestDayOffPage));
         Console.WriteLine("AppShell: Initialized with routes");
+        
+        // Create menu items programmatically (will be added/removed based on login status)
+        _homeMenuItem = new MenuItem { Text = "Home" };
+        _homeMenuItem.Clicked += OnHomeClicked;
+        
+        _profileMenuItem = new MenuItem { Text = "Profile" };
+        _profileMenuItem.Clicked += OnProfileClicked;
+        
+        _requestDayOffMenuItem = new MenuItem { Text = "Request Day Off" };
+        _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
+        
         Loaded += async (s, e) =>
         {
             Console.WriteLine($"AppShell: Loaded, BindingContext={BindingContext?.GetType()?.Name ?? "null"}");
@@ -30,6 +46,21 @@ public partial class AppShell : Shell
                 UpdateMenuVisibility();
                 Console.WriteLine($"AppShell: Updated menu items, LoginMenuTitle={vm.LoginMenuTitle}");
             }
+            
+            // Set flyout width after loaded to ensure it fills screen on mobile
+            // Use MainThread to ensure UI is ready
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (DeviceInfo.Idiom == DeviceIdiom.Phone)
+                {
+                    // Calculate screen width in device-independent units
+                    var displayInfo = DeviceDisplay.MainDisplayInfo;
+                    var screenWidth = displayInfo.Width / displayInfo.Density;
+                    this.FlyoutWidth = screenWidth;
+                    Console.WriteLine($"AppShell: Set FlyoutWidth to {screenWidth} (screen width, density={displayInfo.Density})");
+                }
+            });
+            
             try
             {
                 await Shell.Current.GoToAsync("//Login");
@@ -91,7 +122,7 @@ public partial class AppShell : Shell
         }
     }
 
-    private async void OnHomeClicked(object sender, EventArgs e)
+    private async void OnHomeClicked(object? sender, EventArgs e)
     {
         Console.WriteLine("AppShell: OnHomeClicked triggered");
         try
@@ -192,41 +223,60 @@ public partial class AppShell : Shell
     private void UpdateMenuVisibility()
     {
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
-        string? userRole = null;
         
-        if (isLoggedIn)
+        // Show/hide menu items based on login status
+        // MenuItem doesn't have IsVisible, so we need to add/remove from the Items collection
+        if (_homeMenuItem != null)
         {
-            var userJson = Preferences.Get("UserData", string.Empty);
-            if (!string.IsNullOrEmpty(userJson))
+            if (isLoggedIn && !Items.Contains(_homeMenuItem))
             {
-                try
-                {
-                    var user = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
-                    userRole = user?.Role;
-                }
-                catch { }
+                // Insert Home before Login (which should be last)
+                int loginIndex = Items.IndexOf(LoginMenuItem);
+                Items.Insert(loginIndex >= 0 ? loginIndex : Items.Count, _homeMenuItem);
+            }
+            else if (!isLoggedIn && Items.Contains(_homeMenuItem))
+            {
+                Items.Remove(_homeMenuItem);
             }
         }
-
-        // Add/Remove menu items based on login status and role
-        // Note: MenuItem doesn't support IsVisible, so we manage the collection
-        bool isManagerOrOwner = userRole == "Manager" || userRole == "Owner";
         
-        // Home and Profile are always available when logged in
-        // Manage Users, Vehicles, and Day Off Requests only for Managers/Owners
-        // Login/Logout is always available
+        if (_profileMenuItem != null)
+        {
+            if (isLoggedIn && !Items.Contains(_profileMenuItem))
+            {
+                int loginIndex = Items.IndexOf(LoginMenuItem);
+                Items.Insert(loginIndex >= 0 ? loginIndex : Items.Count, _profileMenuItem);
+            }
+            else if (!isLoggedIn && Items.Contains(_profileMenuItem))
+            {
+                Items.Remove(_profileMenuItem);
+            }
+        }
         
-        // The menu items are defined in XAML, so we'll handle visibility through navigation logic
-        // For now, all items remain in the menu but navigation will be restricted
+        if (_requestDayOffMenuItem != null)
+        {
+            if (isLoggedIn && !Items.Contains(_requestDayOffMenuItem))
+            {
+                int loginIndex = Items.IndexOf(LoginMenuItem);
+                Items.Insert(loginIndex >= 0 ? loginIndex : Items.Count, _requestDayOffMenuItem);
+            }
+            else if (!isLoggedIn && Items.Contains(_requestDayOffMenuItem))
+            {
+                Items.Remove(_requestDayOffMenuItem);
+            }
+        }
+        
+        // Login/Logout menu item is always visible
+        Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, MenuItemsCount={Items.Count}");
     }
 
-    private async void OnProfileClicked(object sender, EventArgs e)
+    private async void OnProfileClicked(object? sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("//Profile");
         Shell.Current.FlyoutIsPresented = false;
     }
 
-    private async void OnRequestDayOffClicked(object sender, EventArgs e)
+    private async void OnRequestDayOffClicked(object? sender, EventArgs e)
     {
         try
         {
