@@ -36,6 +36,8 @@
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
     <MauiImage Include="Resources\Images\*" />
     <MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+    <!-- Exclude corrupted avatar.png - file is not a valid PNG (contains WAV/RIFF data) -->
+    <MauiImage Remove="Resources\Images\avatar.png" />
     <MauiFont Include="Resources\Fonts\*" />
     <MauiFont Include="Resources\Fonts\MaterialIcons-Regular.ttf" />
     <!-- Added -->

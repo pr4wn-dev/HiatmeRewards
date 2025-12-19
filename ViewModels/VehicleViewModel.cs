@@ -171,7 +171,7 @@ public partial class VehicleViewModel : BaseViewModel
                         {
                             MileageId = returnedMileageId ?? 0,
                             VehicleId = newVehicle.VehicleId,
-                            UserId = App.CurrentUser.UserId,
+                            UserId = App.CurrentUser?.UserId ?? 0,
                             StartMiles = (float?)startMiles,
                             StartMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                         };
@@ -211,7 +211,7 @@ public partial class VehicleViewModel : BaseViewModel
 
                         if (needsStartMiles)
                         {
-                            var vehicle = App.CurrentUser.Vehicles.FirstOrDefault(v => v.VehicleId == record.VehicleId);
+                            var vehicle = App.CurrentUser?.Vehicles?.FirstOrDefault(v => v.VehicleId == record.VehicleId);
                             string vehicleDescription = vehicle != null ? $"{vehicle.Make} {vehicle.Model} (VIN ending {vehicle.LastSixVin})" : $"vehicle ID {record.VehicleId}";
 
                             string? startMilesInput = await PageDialogService.DisplayPromptAsync(
@@ -249,7 +249,7 @@ public partial class VehicleViewModel : BaseViewModel
 
                         if (needsEndMiles)
                         {
-                            var vehicle = App.CurrentUser.Vehicles.FirstOrDefault(v => v.VehicleId == record.VehicleId);
+                            var vehicle = App.CurrentUser?.Vehicles?.FirstOrDefault(v => v.VehicleId == record.VehicleId);
                             string vehicleDescription = vehicle != null ? $"{vehicle.Make} {vehicle.Model} (VIN ending {vehicle.LastSixVin})" : $"vehicle ID {record.VehicleId}";
 
                             string? endMilesInput = await PageDialogService.DisplayPromptAsync(
@@ -314,7 +314,7 @@ public partial class VehicleViewModel : BaseViewModel
                             {
                                 MileageId = returnedMileageId ?? 0,
                                 VehicleId = newVehicle.VehicleId,
-                                UserId = App.CurrentUser.UserId,
+                                UserId = App.CurrentUser?.UserId ?? 0,
                                 StartMiles = (float?)startMiles,
                                 StartMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                             };

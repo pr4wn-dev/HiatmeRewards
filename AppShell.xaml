@@ -31,14 +31,15 @@
                 </Grid.ColumnDefinitions>
                 
                 <!-- Profile Picture (Square) -->
+                <!-- Note: avatar.png is excluded from build due to corruption. 
+                     The image source will be set programmatically in UpdateFlyoutAvatar -->
                 <Image x:Name="FlyoutAvatarImage"
                        Grid.Column="0"
                        Aspect="AspectFill"
                        HeightRequest="60"
                        WidthRequest="60"
                        HorizontalOptions="Start"
-                       Margin="0,0,12,0"
-                       Source="avatar.png" />
+                       Margin="0,0,12,0" />
                 
                 <!-- User Name and Email (in blue) -->
                 <VerticalStackLayout Grid.Column="1" 

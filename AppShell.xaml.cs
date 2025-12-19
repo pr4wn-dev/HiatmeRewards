@@ -159,7 +159,18 @@ public partial class AppShell : Shell
             {
                 if (string.IsNullOrEmpty(profilePicture))
                 {
-                    image.Source = ImageSource.FromFile("avatar.png");
+                    // avatar.png is excluded from build due to corruption - use a placeholder or leave empty
+                    // You can replace this with a valid PNG file in Resources/Images/avatar.png
+                    try
+                    {
+                        image.Source = ImageSource.FromFile("avatar.png");
+                    }
+                    catch
+                    {
+                        // If avatar.png doesn't exist or is invalid, leave image source as default
+                        // or set to null to use a placeholder
+                        image.Source = null;
+                    }
                 }
                 else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
                 {
