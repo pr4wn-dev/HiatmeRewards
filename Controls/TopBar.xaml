@@ -28,7 +28,7 @@
                AbsoluteLayout.LayoutFlags="PositionProportional"
                Source="hereiam.png"
                Aspect="AspectFit"
-               HeightRequest="40"
+               HeightRequest="30"
                HorizontalOptions="Center"
                VerticalOptions="Center" />
     </AbsoluteLayout>
