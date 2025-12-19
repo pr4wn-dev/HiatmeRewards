@@ -17,6 +17,12 @@ public partial class AppShellViewModel : ObservableObject
     [ObservableProperty]
     private string _userEmail = "Not logged in"; // For flyout header
 
+    [ObservableProperty]
+    private string? _userName;
+
+    [ObservableProperty]
+    private string? _profilePicture;
+
     public AppShellViewModel()
     {
         UpdateMenuItems();
@@ -28,10 +34,41 @@ public partial class AppShellViewModel : ObservableObject
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
         LoginMenuTitle = isLoggedIn ? "Logout" : "Login";
         HomeMenuRoute = isLoggedIn ? "Home" : "Login";
-        UserEmail = isLoggedIn ? Preferences.Get("UserEmail", "Not logged in") : "Not logged in";
+        
+        if (isLoggedIn)
+        {
+            UserEmail = Preferences.Get("UserEmail", "Not logged in");
+            // Load user data from preferences
+            var userJson = Preferences.Get("UserData", string.Empty);
+            if (!string.IsNullOrEmpty(userJson))
+            {
+                try
+                {
+                    var user = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
+                    if (user != null)
+                    {
+                        UserName = user.Name;
+                        ProfilePicture = user.ProfilePicture;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error deserializing user data: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            UserEmail = "Not logged in";
+            UserName = null;
+            ProfilePicture = null;
+        }
+        
         OnPropertyChanged(nameof(LoginMenuTitle));
         OnPropertyChanged(nameof(HomeMenuRoute));
         OnPropertyChanged(nameof(UserEmail));
+        OnPropertyChanged(nameof(UserName));
+        OnPropertyChanged(nameof(ProfilePicture));
         Console.WriteLine($"UpdateMenuItems: IsLoggedIn={isLoggedIn}, LoginMenuTitle={LoginMenuTitle}, HomeMenuRoute={HomeMenuRoute}, UserEmail={UserEmail}");
         // Force UI refresh
         MainThread.BeginInvokeOnMainThread(() =>
@@ -83,5 +120,42 @@ public partial class AppShellViewModel : ObservableObject
         {
             Console.WriteLine($"HomeMenuCommand error: {ex.Message}");
         }
+    }
+
+    [RelayCommand]
+    private async Task ProfileMenuCommand()
+    {
+        try
+        {
+            await Shell.Current.GoToAsync("//Profile");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ProfileMenuCommand error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ManageUsersMenuCommand()
+    {
+        // This would navigate to a web view or external page
+        // For now, just log it
+        Console.WriteLine("ManageUsersMenuCommand: Would open manage users page");
+    }
+
+    [RelayCommand]
+    private async Task ManageVehiclesMenuCommand()
+    {
+        // This would navigate to a web view or external page
+        // For now, just log it
+        Console.WriteLine("ManageVehiclesMenuCommand: Would open manage vehicles page");
+    }
+
+    [RelayCommand]
+    private async Task DayOffRequestsMenuCommand()
+    {
+        // This would navigate to a web view or external page
+        // For now, just log it
+        Console.WriteLine("DayOffRequestsMenuCommand: Would open day off requests page");
     }
 }

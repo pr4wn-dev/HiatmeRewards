@@ -8,12 +8,53 @@
     <Shell.BindingContext>
         <vm:AppShellViewModel />
     </Shell.BindingContext>
-    <!-- Flyout header to display email -->
+    <!-- Custom Flyout Header with Avatar Box (matching website design) -->
     <Shell.FlyoutHeader>
-        <StackLayout>
-            <Label Text="{Binding UserEmail, StringFormat='Logged in as: {0}', FallbackValue='Not logged in'}" />
-            <Label Text="{Binding LoginMenuTitle, FallbackValue=Login}" />
-        </StackLayout>
+        <Grid BackgroundColor="{StaticResource WebsiteDark}" 
+              HeightRequest="140">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Blue accent bar on left -->
+            <BoxView Grid.Column="0" 
+                     BackgroundColor="{StaticResource WebsiteAccent}" />
+            
+            <!-- Avatar Content -->
+            <Grid Grid.Column="1" 
+                  Padding="16,24,16,16"
+                  VerticalOptions="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Profile Picture (Square) -->
+                <Image x:Name="FlyoutAvatarImage"
+                       Grid.Column="0"
+                       Aspect="AspectFill"
+                       HeightRequest="60"
+                       WidthRequest="60"
+                       HorizontalOptions="Start"
+                       Margin="0,0,12,0"
+                       Source="avatar.png" />
+                
+                <!-- User Name and Email (in blue) -->
+                <VerticalStackLayout Grid.Column="1" 
+                                     Spacing="4"
+                                     VerticalOptions="Center">
+                    <Label Text="{Binding UserName, TargetNullValue='Guest'}"
+                           FontSize="16"
+                           TextColor="{StaticResource WebsiteAccent}"
+                           HorizontalOptions="Start" />
+                    <Label Text="{Binding UserEmail, TargetNullValue='Guest@localhost'}"
+                           FontSize="14"
+                           TextColor="{StaticResource WebsiteAccent}"
+                           HorizontalOptions="Start" />
+                </VerticalStackLayout>
+            </Grid>
+        </Grid>
     </Shell.FlyoutHeader>
     <!-- ShellContent for navigation routes -->
     <ShellContent ContentTemplate="{DataTemplate local:LoginPage}"
@@ -46,18 +87,37 @@
                   Route="ForgotPassword"
                   FlyoutItemIsVisible="True" />
     <!-- MenuItems with dynamic binding -->
-    <MenuItem x:Name="LoginMenuItem" Text="{Binding LoginMenuTitle, Mode=TwoWay, FallbackValue=Login}"
-              Command="{Binding LoginMenuCommand}"
-              Clicked="OnLoginClicked" />
     <MenuItem x:Name="HomeMenuItem" Text="Home"
               Command="{Binding HomeMenuCommand}"
               Clicked="OnHomeClicked" />
-    <!-- Debug footer with corrected BindingContext and Clicked events -->
+    <MenuItem x:Name="ProfileMenuItem" Text="Profile"
+              Command="{Binding ProfileMenuCommand}"
+              Clicked="OnProfileClicked" />
+    <MenuItem x:Name="ManageUsersMenuItem" Text="Manage Users"
+              Command="{Binding ManageUsersMenuCommand}"
+              Clicked="OnManageUsersClicked" />
+    <MenuItem x:Name="ManageVehiclesMenuItem" Text="Manage Vehicles"
+              Command="{Binding ManageVehiclesMenuCommand}"
+              Clicked="OnManageVehiclesClicked" />
+    <MenuItem x:Name="DayOffRequestsMenuItem" Text="Day Off Requests"
+              Command="{Binding DayOffRequestsMenuCommand}"
+              Clicked="OnDayOffRequestsClicked" />
+    <MenuItem x:Name="LoginMenuItem" Text="{Binding LoginMenuTitle, Mode=TwoWay, FallbackValue=Login}"
+              Command="{Binding LoginMenuCommand}"
+              Clicked="OnLoginClicked" />
+    <!-- Footer with Copyright -->
     <Shell.FlyoutFooter>
-        <StackLayout BindingContext="{Binding Source={RelativeSource AncestorType={x:Type Shell}}, Path=BindingContext}">
-            <Label Text="{Binding LoginMenuTitle, FallbackValue=Login}" />
-            <Button Text="Test Login Command" Command="{Binding LoginMenuCommand}" Clicked="OnTestLoginClicked" />
-            <Button Text="Test Home Command" Command="{Binding HomeMenuCommand}" Clicked="OnTestHomeClicked" />
-        </StackLayout>
+        <Grid BackgroundColor="{StaticResource WebsiteDark}"
+              Padding="16,12">
+            <BoxView HeightRequest="1"
+                     BackgroundColor="#666666"
+                     VerticalOptions="Start"
+                     Margin="0,0,0,12" />
+            <Label Text="© 2025 Hiatme. All rights reserved."
+                   FontSize="12"
+                   TextColor="White"
+                   HorizontalOptions="Center"
+                   VerticalOptions="End" />
+        </Grid>
     </Shell.FlyoutFooter>
 </Shell>

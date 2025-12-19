@@ -409,6 +409,18 @@
         <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
         <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
         <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+        <Setter Property="Shell.FlyoutBackgroundColor" Value="{StaticResource WebsiteDark}" />
+        <Setter Property="Shell.FlyoutHeaderBehavior" Value="Fixed" />
+        <Setter Property="Shell.FlyoutBehavior" Value="Flyout" />
+    </Style>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontFamily" Value="Arial" />
+        <Setter Property="BackgroundColor" Value="{StaticResource WebsiteDark}" />
+        <Setter Property="Padding" Value="24,16,16,16" />
+        <Setter Property="Margin" Value="0" />
     </Style>
 
     <Style TargetType="NavigationPage">
