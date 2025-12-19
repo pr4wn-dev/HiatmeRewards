@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Controls;
 using Microsoft.Maui.Devices;
+using Microsoft.Maui.Graphics;
 using HiatMeApp.ViewModels;
 
 namespace HiatMeApp;
@@ -59,6 +60,10 @@ public partial class AppShell : Shell
         {
             this.FlyoutWidth = 300; // Fixed width on desktop
         }
+        
+        // Ensure flyout background is WebsiteDark (dark gray #333333) to match website
+        // Note: This is also set in Styles.xaml, but explicitly setting here to ensure it's applied
+        this.FlyoutBackgroundColor = Color.FromArgb("#333333");
     }
 
     private async void OnLoginClicked(object sender, EventArgs e)
@@ -221,63 +226,16 @@ public partial class AppShell : Shell
         Shell.Current.FlyoutIsPresented = false;
     }
 
-    private void OnManageUsersClicked(object sender, EventArgs e)
+    private async void OnRequestDayOffClicked(object sender, EventArgs e)
     {
-        Shell.Current.FlyoutIsPresented = false;
-        // Check if user has permission (Manager or Owner)
-        var userJson = Preferences.Get("UserData", string.Empty);
-        if (!string.IsNullOrEmpty(userJson))
+        try
         {
-            try
-            {
-                var user = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
-                if (user?.Role == "Manager" || user?.Role == "Owner")
-                {
-                    // Would open web view or external page for manage users
-                    Console.WriteLine("ManageUsers: Would open manage users page");
-                }
-            }
-            catch { }
+            Shell.Current.FlyoutIsPresented = false;
+            await Shell.Current.GoToAsync("//RequestDayOff");
         }
-    }
-
-    private void OnManageVehiclesClicked(object sender, EventArgs e)
-    {
-        Shell.Current.FlyoutIsPresented = false;
-        // Check if user has permission (Manager or Owner)
-        var userJson = Preferences.Get("UserData", string.Empty);
-        if (!string.IsNullOrEmpty(userJson))
+        catch (Exception ex)
         {
-            try
-            {
-                var user = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
-                if (user?.Role == "Manager" || user?.Role == "Owner")
-                {
-                    // Would open web view or external page for manage vehicles
-                    Console.WriteLine("ManageVehicles: Would open manage vehicles page");
-                }
-            }
-            catch { }
-        }
-    }
-
-    private void OnDayOffRequestsClicked(object sender, EventArgs e)
-    {
-        Shell.Current.FlyoutIsPresented = false;
-        // Check if user has permission (Manager or Owner)
-        var userJson = Preferences.Get("UserData", string.Empty);
-        if (!string.IsNullOrEmpty(userJson))
-        {
-            try
-            {
-                var user = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
-                if (user?.Role == "Manager" || user?.Role == "Owner")
-                {
-                    // Would open web view or external page for day off requests
-                    Console.WriteLine("DayOffRequests: Would open day off requests page");
-                }
-            }
-            catch { }
+            Console.WriteLine($"OnRequestDayOffClicked: Error navigating: {ex.Message}");
         }
     }
 }

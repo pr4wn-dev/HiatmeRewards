@@ -136,26 +136,15 @@ public partial class AppShellViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ManageUsersMenuCommand()
+    private async Task RequestDayOffMenuCommand()
     {
-        // This would navigate to a web view or external page
-        // For now, just log it
-        Console.WriteLine("ManageUsersMenuCommand: Would open manage users page");
-    }
-
-    [RelayCommand]
-    private async Task ManageVehiclesMenuCommand()
-    {
-        // This would navigate to a web view or external page
-        // For now, just log it
-        Console.WriteLine("ManageVehiclesMenuCommand: Would open manage vehicles page");
-    }
-
-    [RelayCommand]
-    private async Task DayOffRequestsMenuCommand()
-    {
-        // This would navigate to a web view or external page
-        // For now, just log it
-        Console.WriteLine("DayOffRequestsMenuCommand: Would open day off requests page");
+        try
+        {
+            await Shell.Current.GoToAsync("//RequestDayOff");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"RequestDayOffMenuCommand error: {ex.Message}");
+        }
     }
 }

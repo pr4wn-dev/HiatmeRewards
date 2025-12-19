@@ -87,22 +87,16 @@
                   ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
                   Route="ForgotPassword"
                   FlyoutItemIsVisible="True" />
-    <!-- MenuItems with dynamic binding -->
+    <!-- MenuItems - only app pages, not website-only features -->
     <MenuItem x:Name="HomeMenuItem" Text="Home"
               Command="{Binding HomeMenuCommand}"
               Clicked="OnHomeClicked" />
     <MenuItem x:Name="ProfileMenuItem" Text="Profile"
               Command="{Binding ProfileMenuCommand}"
               Clicked="OnProfileClicked" />
-    <MenuItem x:Name="ManageUsersMenuItem" Text="Manage Users"
-              Command="{Binding ManageUsersMenuCommand}"
-              Clicked="OnManageUsersClicked" />
-    <MenuItem x:Name="ManageVehiclesMenuItem" Text="Manage Vehicles"
-              Command="{Binding ManageVehiclesMenuCommand}"
-              Clicked="OnManageVehiclesClicked" />
-    <MenuItem x:Name="DayOffRequestsMenuItem" Text="Day Off Requests"
-              Command="{Binding DayOffRequestsMenuCommand}"
-              Clicked="OnDayOffRequestsClicked" />
+    <MenuItem x:Name="RequestDayOffMenuItem" Text="Request Day Off"
+              Command="{Binding RequestDayOffMenuCommand}"
+              Clicked="OnRequestDayOffClicked" />
     <MenuItem x:Name="LoginMenuItem" Text="{Binding LoginMenuTitle, Mode=TwoWay, FallbackValue=Login}"
               Command="{Binding LoginMenuCommand}"
               Clicked="OnLoginClicked" />
