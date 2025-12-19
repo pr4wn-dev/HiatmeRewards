@@ -150,19 +150,25 @@ public partial class AppShell : Shell
 
     private void UpdateFlyoutAvatar(string? profilePicture)
     {
-        if (FlyoutAvatarImage != null)
+        // Find the image in the flyout header
+        var flyoutHeader = this.FlyoutHeader as Grid;
+        if (flyoutHeader != null)
         {
-            if (string.IsNullOrEmpty(profilePicture))
+            var image = flyoutHeader.FindByName("FlyoutAvatarImage") as Image;
+            if (image != null)
             {
-                FlyoutAvatarImage.Source = ImageSource.FromFile("avatar.png");
-            }
-            else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
-            {
-                FlyoutAvatarImage.Source = ImageSource.FromUri(new Uri(profilePicture));
-            }
-            else
-            {
-                FlyoutAvatarImage.Source = ImageSource.FromFile(profilePicture);
+                if (string.IsNullOrEmpty(profilePicture))
+                {
+                    image.Source = ImageSource.FromFile("avatar.png");
+                }
+                else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
+                {
+                    image.Source = ImageSource.FromUri(new Uri(profilePicture));
+                }
+                else
+                {
+                    image.Source = ImageSource.FromFile(profilePicture);
+                }
             }
         }
     }

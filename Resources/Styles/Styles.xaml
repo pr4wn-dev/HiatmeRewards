@@ -414,14 +414,6 @@
         <Setter Property="Shell.FlyoutBehavior" Value="Flyout" />
     </Style>
 
-    <Style TargetType="MenuItem">
-        <Setter Property="TextColor" Value="White" />
-        <Setter Property="FontSize" Value="18" />
-        <Setter Property="FontFamily" Value="Arial" />
-        <Setter Property="BackgroundColor" Value="{StaticResource WebsiteDark}" />
-        <Setter Property="Padding" Value="24,16,16,16" />
-        <Setter Property="Margin" Value="0" />
-    </Style>
 
     <Style TargetType="NavigationPage">
         <Setter Property="BarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource WebsiteDark}}" />
