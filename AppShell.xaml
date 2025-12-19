@@ -87,11 +87,7 @@
                   ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
                   Route="ForgotPassword"
                   FlyoutItemIsVisible="True" />
-    <!-- MenuItems - only app pages, not website-only features -->
-    <!-- Note: Home, Profile, and Request Day Off are added/removed dynamically based on login status -->
-    <MenuItem x:Name="LoginMenuItem" Text="{Binding LoginMenuTitle, Mode=TwoWay, FallbackValue=Login}"
-              Command="{Binding LoginMenuCommand}"
-              Clicked="OnLoginClicked" />
+    <!-- MenuItems - all menu items are created programmatically and managed dynamically based on login status -->
     <!-- Footer with Copyright -->
     <Shell.FlyoutFooter>
         <Grid BackgroundColor="{StaticResource WebsiteDark}"

@@ -11,6 +11,7 @@ public partial class AppShell : Shell
     private MenuItem? _profileMenuItem;
     private MenuItem? _requestDayOffMenuItem;
     private MenuItem? _logoutMenuItem;
+    private MenuItem? _loginMenuItem;
 
     public AppShell()
     {
@@ -35,6 +36,9 @@ public partial class AppShell : Shell
         
         _requestDayOffMenuItem = new MenuItem { Text = "Request Day Off" };
         _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
+        
+        _loginMenuItem = new MenuItem { Text = "Login" };
+        _loginMenuItem.Clicked += OnLoginClicked;
         
         _logoutMenuItem = new MenuItem { Text = "Logout" };
         _logoutMenuItem.Clicked += OnLoginClicked; // Reuse the same handler
@@ -233,17 +237,17 @@ public partial class AppShell : Shell
         // Order: Home (top), Profile, Request Day Off, then Logout (bottom) when logged in
         // Only Login when logged out
         
-        // Hide LoginMenuItem when logged in
-        if (LoginMenuItem != null)
+        // Show/Hide Login (at bottom when logged out)
+        if (_loginMenuItem != null)
         {
-            if (isLoggedIn && Items.Contains(LoginMenuItem))
-            {
-                Items.Remove(LoginMenuItem);
-            }
-            else if (!isLoggedIn && !Items.Contains(LoginMenuItem))
+            if (!isLoggedIn && !Items.Contains(_loginMenuItem))
             {
                 // Add Login at the bottom when logged out
-                Items.Add(LoginMenuItem);
+                Items.Add(_loginMenuItem);
+            }
+            else if (isLoggedIn && Items.Contains(_loginMenuItem))
+            {
+                Items.Remove(_loginMenuItem);
             }
         }
         

@@ -70,15 +70,7 @@ public partial class AppShellViewModel : ObservableObject
         OnPropertyChanged(nameof(UserName));
         OnPropertyChanged(nameof(ProfilePicture));
         Console.WriteLine($"UpdateMenuItems: IsLoggedIn={isLoggedIn}, LoginMenuTitle={LoginMenuTitle}, HomeMenuRoute={HomeMenuRoute}, UserEmail={UserEmail}");
-        // Force UI refresh
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            if (Shell.Current is AppShell shell && shell.FindByName("LoginMenuItem") is MenuItem loginMenuItem)
-            {
-                loginMenuItem.Text = LoginMenuTitle;
-                Console.WriteLine($"UpdateMenuItems: Forced LoginMenuItem.Text={LoginMenuTitle}");
-            }
-        });
+        // Menu items are now managed programmatically in AppShell, so no need to update text here
     }
 
     [RelayCommand]
