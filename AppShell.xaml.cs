@@ -10,6 +10,7 @@ public partial class AppShell : Shell
     private MenuItem? _homeMenuItem;
     private MenuItem? _profileMenuItem;
     private MenuItem? _requestDayOffMenuItem;
+    private MenuItem? _logoutMenuItem;
 
     public AppShell()
     {
@@ -34,6 +35,9 @@ public partial class AppShell : Shell
         
         _requestDayOffMenuItem = new MenuItem { Text = "Request Day Off" };
         _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
+        
+        _logoutMenuItem = new MenuItem { Text = "Logout" };
+        _logoutMenuItem.Clicked += OnLoginClicked; // Reuse the same handler
         
         Loaded += async (s, e) =>
         {
@@ -97,7 +101,7 @@ public partial class AppShell : Shell
         this.FlyoutBackgroundColor = Color.FromArgb("#333333");
     }
 
-    private async void OnLoginClicked(object sender, EventArgs e)
+    private async void OnLoginClicked(object? sender, EventArgs e)
     {
         Console.WriteLine("AppShell: OnLoginClicked triggered");
         try
@@ -226,13 +230,30 @@ public partial class AppShell : Shell
         
         // Show/hide menu items based on login status
         // MenuItem doesn't have IsVisible, so we need to add/remove from the Items collection
+        // Order: Home (top), Profile, Request Day Off, then Logout (bottom) when logged in
+        // Only Login when logged out
+        
+        // Hide LoginMenuItem when logged in
+        if (LoginMenuItem != null)
+        {
+            if (isLoggedIn && Items.Contains(LoginMenuItem))
+            {
+                Items.Remove(LoginMenuItem);
+            }
+            else if (!isLoggedIn && !Items.Contains(LoginMenuItem))
+            {
+                // Add Login at the bottom when logged out
+                Items.Add(LoginMenuItem);
+            }
+        }
+        
+        // Show/Hide Home (at top when logged in)
         if (_homeMenuItem != null)
         {
             if (isLoggedIn && !Items.Contains(_homeMenuItem))
             {
-                // Insert Home before Login (which should be last)
-                int loginIndex = Items.IndexOf(LoginMenuItem);
-                Items.Insert(loginIndex >= 0 ? loginIndex : Items.Count, _homeMenuItem);
+                // Insert Home at the beginning (index 0)
+                Items.Insert(0, _homeMenuItem);
             }
             else if (!isLoggedIn && Items.Contains(_homeMenuItem))
             {
@@ -240,12 +261,14 @@ public partial class AppShell : Shell
             }
         }
         
+        // Show/Hide Profile (after Home when logged in)
         if (_profileMenuItem != null)
         {
             if (isLoggedIn && !Items.Contains(_profileMenuItem))
             {
-                int loginIndex = Items.IndexOf(LoginMenuItem);
-                Items.Insert(loginIndex >= 0 ? loginIndex : Items.Count, _profileMenuItem);
+                // Insert Profile after Home
+                int homeIndex = Items.IndexOf(_homeMenuItem);
+                Items.Insert(homeIndex >= 0 ? homeIndex + 1 : Items.Count, _profileMenuItem);
             }
             else if (!isLoggedIn && Items.Contains(_profileMenuItem))
             {
@@ -253,12 +276,14 @@ public partial class AppShell : Shell
             }
         }
         
+        // Show/Hide Request Day Off (after Profile when logged in)
         if (_requestDayOffMenuItem != null)
         {
             if (isLoggedIn && !Items.Contains(_requestDayOffMenuItem))
             {
-                int loginIndex = Items.IndexOf(LoginMenuItem);
-                Items.Insert(loginIndex >= 0 ? loginIndex : Items.Count, _requestDayOffMenuItem);
+                // Insert Request Day Off after Profile
+                int profileIndex = Items.IndexOf(_profileMenuItem);
+                Items.Insert(profileIndex >= 0 ? profileIndex + 1 : Items.Count, _requestDayOffMenuItem);
             }
             else if (!isLoggedIn && Items.Contains(_requestDayOffMenuItem))
             {
@@ -266,7 +291,20 @@ public partial class AppShell : Shell
             }
         }
         
-        // Login/Logout menu item is always visible
+        // Show/Hide Logout (at bottom when logged in)
+        if (_logoutMenuItem != null)
+        {
+            if (isLoggedIn && !Items.Contains(_logoutMenuItem))
+            {
+                // Add Logout at the end
+                Items.Add(_logoutMenuItem);
+            }
+            else if (!isLoggedIn && Items.Contains(_logoutMenuItem))
+            {
+                Items.Remove(_logoutMenuItem);
+            }
+        }
+        
         Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, MenuItemsCount={Items.Count}");
     }
 
