@@ -1,5 +1,6 @@
 using Android.Widget;
 using Android.Views;
+using Android.Util;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Platform;
 using System.Linq;
@@ -105,13 +106,16 @@ public static class MenuStyler
     private static void AddSelectionIndicator(AViewGroup parent)
     {
         // Create blue rectangle indicator
-        var indicatorView = new View(Platform.CurrentActivity);
+        var indicatorView = new AView(Platform.CurrentActivity);
         indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
         indicatorView.Tag = "selection_indicator";
         
         // Add as first child (left side) with proper layout params
+        // Convert 14dp to pixels
+        var displayMetrics = Platform.CurrentActivity.Resources?.DisplayMetrics;
+        int widthPx = displayMetrics != null ? (int)(14 * displayMetrics.Density) : (int)(14 * 2); // Default to 2x density if null
         var layoutParams = new ViewGroup.MarginLayoutParams(
-            Android.Util.ComplexUnitType.Dip, 14, // 14dp width (matching header)
+            widthPx, // 14dp width (matching header) in pixels
             ViewGroup.LayoutParams.MatchParent // Full height
         );
         parent.AddView(indicatorView, 0, layoutParams);
