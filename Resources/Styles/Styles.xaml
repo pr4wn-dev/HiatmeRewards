@@ -428,10 +428,4 @@
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
-    <Style TargetType="FlyoutItem">
-        <Setter Property="TextColor" Value="White" />
-        <Setter Property="FontSize" Value="18" />
-        <Setter Property="FontFamily" Value="OpenSansRegular" />
-    </Style>
-
 </ResourceDictionary>
