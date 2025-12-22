@@ -144,9 +144,9 @@ public partial class AppShell : Shell
         
         // Style menu items when flyout is opened (Android only)
 #if ANDROID
-        this.FlyoutIsPresentedChanged += (s, e) =>
+        this.PropertyChanged += (s, e) =>
         {
-            if (this.FlyoutIsPresented)
+            if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
             {
                 // Style menu items when flyout opens
                 MainThread.BeginInvokeOnMainThread(() =>
