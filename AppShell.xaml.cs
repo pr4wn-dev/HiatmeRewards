@@ -267,17 +267,30 @@ public partial class AppShell : Shell
             {
                 if (string.IsNullOrEmpty(profilePicture))
                 {
-                    // avatar.png is excluded from build due to corruption - use a placeholder or leave empty
-                    // You can replace this with a valid PNG file in Resources/Images/avatar.png
+                    // Use a default user icon for guests/not logged in
+                    // Try to use avatar.png first, if it exists
                     try
                     {
                         image.Source = ImageSource.FromFile("avatar.png");
                     }
                     catch
                     {
-                        // If avatar.png doesn't exist or is invalid, leave image source as default
-                        // or set to null to use a placeholder
-                        image.Source = null;
+                        // If avatar.png doesn't exist, try to use the website's default avatar
+                        try
+                        {
+                            image.Source = ImageSource.FromUri(new Uri("https://hiatme.com/images/avatar.png"));
+                        }
+                        catch
+                        {
+                            // If that fails, use a FontImageSource with a user icon as fallback
+                            image.Source = new FontImageSource
+                            {
+                                FontFamily = "MaterialIcons",
+                                Glyph = "\ue853", // Material Icons user icon
+                                Size = 40,
+                                Color = Color.FromArgb("#0078D4") // Blue color matching WebsiteAccent
+                            };
+                        }
                     }
                 }
                 else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
