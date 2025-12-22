@@ -30,9 +30,9 @@ public static class MenuStyler
             var text = textView.Text;
             if (!string.IsNullOrEmpty(text) && IsMenuItemText(text))
             {
-                textView.SetTextColor(Android.Graphics.Color.White);
+                textView.SetTextColor(global::Android.Graphics.Color.White);
                 textView.TextSize = 18; // 18sp
-                textView.Typeface = Android.Graphics.Typeface.Default;
+                textView.Typeface = global::Android.Graphics.Typeface.Default;
             }
         }
 
