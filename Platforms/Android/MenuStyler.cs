@@ -13,19 +13,63 @@ namespace HiatMeApp.Platforms.Android;
 
 public static class MenuStyler
 {
+    private static AViewGroup? _lastFlyoutContentView = null;
+    
     public static void StyleMenuItems(Shell shell)
     {
         if (shell?.Handler?.PlatformView is AView platformView)
         {
-            // First, remove all existing indicators
-            RemoveAllIndicators(platformView);
-            
-            // Use a delayed action to allow the menu to render first
-            platformView.Post(() =>
+            // Find the flyout content view instead of traversing entire shell
+            AViewGroup? flyoutContentView = FindFlyoutContentView(platformView);
+            if (flyoutContentView == null)
             {
-                StyleMenuItemsRecursive(platformView, shell);
-            });
+                // Fallback to full traversal if flyout not found
+                flyoutContentView = platformView as AViewGroup;
+            }
+            
+            if (flyoutContentView != null)
+            {
+                _lastFlyoutContentView = flyoutContentView;
+                
+                // Use a delayed action to allow the menu to render first
+                platformView.Post(() =>
+                {
+                    // Remove all indicators first
+                    RemoveAllIndicators(flyoutContentView);
+                    
+                    // Then style and add indicators
+                    StyleMenuItemsRecursive(flyoutContentView, shell);
+                });
+            }
         }
+    }
+    
+    private static AViewGroup? FindFlyoutContentView(AView view)
+    {
+        // Try to find the flyout content view by traversing the hierarchy
+        if (view is AViewGroup viewGroup)
+        {
+            // Look for common flyout container class names or IDs
+            for (int i = 0; i < viewGroup.ChildCount; i++)
+            {
+                var child = viewGroup.GetChildAt(i);
+                if (child is AViewGroup childGroup)
+                {
+                    // Check if this looks like a flyout content view
+                    var className = childGroup.Class.SimpleName;
+                    if (className != null && (className.Contains("Flyout") || className.Contains("Drawer")))
+                    {
+                        return childGroup;
+                    }
+                    
+                    // Recursively search
+                    var found = FindFlyoutContentView(childGroup);
+                    if (found != null)
+                        return found;
+                }
+            }
+        }
+        return null;
     }
 
     private static void RemoveAllIndicators(AView view)
@@ -60,21 +104,23 @@ public static class MenuStyler
                 textView.TextSize = 20; // 20sp - larger font size
                 textView.Typeface = global::Android.Graphics.Typeface.Default;
                 
-                // Get the parent to manage indicators
+                // Get the parent container (usually a LinearLayout or similar)
                 var parent = textView.Parent as AViewGroup;
                 if (parent != null)
                 {
-                    // Remove any existing indicators first
-                    RemoveSelectionIndicators(parent);
-                    
-                    // Check if this menu item corresponds to the current route
-                    string? currentRoute = GetCurrentRoute(shell);
-                    bool isSelected = IsMenuItemSelected(text, currentRoute);
-                    
-                    // Add blue rectangle indicator if selected
-                    if (isSelected)
+                    // Find the root container for this menu item (usually 2-3 levels up)
+                    var rootContainer = FindMenuItemRootContainer(parent);
+                    if (rootContainer != null)
                     {
-                        AddSelectionIndicator(parent);
+                        // Check if this menu item corresponds to the current route
+                        string? currentRoute = GetCurrentRoute(shell);
+                        bool isSelected = IsMenuItemSelected(text, currentRoute);
+                        
+                        // Only add indicator if selected (removal already done at top level)
+                        if (isSelected)
+                        {
+                            AddSelectionIndicator(rootContainer);
+                        }
                     }
                 }
             }
@@ -88,6 +134,38 @@ public static class MenuStyler
                 StyleMenuItemsRecursive(child, shell);
             }
         }
+    }
+    
+    private static AViewGroup? FindMenuItemRootContainer(AViewGroup parent)
+    {
+        // The menu item container is usually a LinearLayout or FrameLayout
+        // that contains the text view. We need to find the right level.
+        var current = parent;
+        int depth = 0;
+        const int maxDepth = 5; // Prevent infinite loops
+        
+        while (current != null && depth < maxDepth)
+        {
+            var className = current.Class.SimpleName;
+            // Look for common container types that would hold a menu item
+            if (className != null && 
+                (className.Contains("LinearLayout") || 
+                 className.Contains("FrameLayout") ||
+                 className.Contains("RelativeLayout")))
+            {
+                // Check if this container has the right structure (text view + possibly icon)
+                if (current.ChildCount >= 1 && current.ChildCount <= 3)
+                {
+                    return current;
+                }
+            }
+            
+            current = current.Parent as AViewGroup;
+            depth++;
+        }
+        
+        // Fallback: return the immediate parent if we can't find a better container
+        return parent;
     }
 
     private static void RemoveSelectionIndicators(AViewGroup parent)
@@ -125,17 +203,45 @@ public static class MenuStyler
     {
         try
         {
+            // Try multiple methods to get the current route
             var currentState = shell.CurrentState;
             if (currentState != null)
             {
                 var location = currentState.Location;
-                if (location != null && location.Segments != null)
+                if (location != null)
                 {
-                    var segments = location.Segments.ToList();
-                    if (segments.Count > 0)
+                    // Get the full path and extract the route
+                    var fullPath = location.ToString();
+                    if (!string.IsNullOrEmpty(fullPath))
                     {
-                        return segments[segments.Count - 1];
+                        // Remove leading slashes and get the last segment
+                        var segments = fullPath.TrimStart('/').Split('/');
+                        if (segments.Length > 0 && !string.IsNullOrEmpty(segments[segments.Length - 1]))
+                        {
+                            return segments[segments.Length - 1];
+                        }
                     }
+                    
+                    // Fallback: try Segments property
+                    if (location.Segments != null)
+                    {
+                        var segments = location.Segments.ToList();
+                        if (segments.Count > 0)
+                        {
+                            return segments[segments.Count - 1];
+                        }
+                    }
+                }
+            }
+            
+            // Additional fallback: check current item
+            var currentItem = shell.CurrentItem;
+            if (currentItem != null)
+            {
+                var route = currentItem.Route;
+                if (!string.IsNullOrEmpty(route))
+                {
+                    return route;
                 }
             }
         }
