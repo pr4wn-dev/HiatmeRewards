@@ -10,8 +10,8 @@ public partial class AppShell : Shell
     private MenuItem? _homeMenuItem;
     private MenuItem? _profileMenuItem;
     private MenuItem? _requestDayOffMenuItem;
-    private MenuItem? _logoutMenuItem;
-    private MenuItem? _loginMenuItem;
+    private MenuItem? _loginLogoutMenuItem; // Single item that changes text
+    private MenuItem? _registerMenuItem;
 
     public AppShell()
     {
@@ -37,11 +37,12 @@ public partial class AppShell : Shell
         _requestDayOffMenuItem = new MenuItem { Text = "Request Day Off" };
         _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
         
-        _loginMenuItem = new MenuItem { Text = "Login" };
-        _loginMenuItem.Clicked += OnLoginClicked;
+        // Single Login/Logout menu item that changes text
+        _loginLogoutMenuItem = new MenuItem { Text = "Login" };
+        _loginLogoutMenuItem.Clicked += OnLoginClicked;
         
-        _logoutMenuItem = new MenuItem { Text = "Logout" };
-        _logoutMenuItem.Clicked += OnLoginClicked; // Reuse the same handler
+        _registerMenuItem = new MenuItem { Text = "Register" };
+        _registerMenuItem.Clicked += OnRegisterClicked;
         
         Loaded += async (s, e) =>
         {
@@ -112,13 +113,18 @@ public partial class AppShell : Shell
         {
             if (Preferences.Get("IsLoggedIn", false))
             {
+                // Logout
                 Preferences.Clear();
                 Console.WriteLine("AppShell: Preferences cleared on logout");
                 if (BindingContext is AppShellViewModel vm)
                 {
                     vm.UpdateMenuItems();
                 }
-                UpdateMenuVisibility();
+                UpdateMenuVisibility(); // This will update the text to "Login"
+            }
+            else
+            {
+                // Login - just navigate
             }
             Shell.Current.FlyoutIsPresented = false;
             await Shell.Current.GoToAsync("//Login");
@@ -239,13 +245,9 @@ public partial class AppShell : Shell
         
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
         
-        // Show/hide menu items based on login status
-        // MenuItem doesn't have IsVisible, so we need to add/remove from the Items collection
-        // Order: Home (top), Profile, Request Day Off, then Logout (bottom) when logged in
-        // Only Login when logged out
-        
-        // First, remove all our dynamic menu items to avoid duplicates
-        // Use try-catch in case items aren't in the collection
+        // First, remove ALL our dynamic menu items to avoid duplicates
+        // This ensures a clean slate before rebuilding the menu
+        // Use Contains check and remove directly
         try
         {
             if (_homeMenuItem != null && Items.Contains(_homeMenuItem))
@@ -254,14 +256,20 @@ public partial class AppShell : Shell
                 Items.Remove(_profileMenuItem);
             if (_requestDayOffMenuItem != null && Items.Contains(_requestDayOffMenuItem))
                 Items.Remove(_requestDayOffMenuItem);
-            if (_loginMenuItem != null && Items.Contains(_loginMenuItem))
-                Items.Remove(_loginMenuItem);
-            if (_logoutMenuItem != null && Items.Contains(_logoutMenuItem))
-                Items.Remove(_logoutMenuItem);
+            if (_loginLogoutMenuItem != null && Items.Contains(_loginLogoutMenuItem))
+                Items.Remove(_loginLogoutMenuItem);
+            if (_registerMenuItem != null && Items.Contains(_registerMenuItem))
+                Items.Remove(_registerMenuItem);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"UpdateMenuVisibility: Error removing items: {ex.Message}");
+        }
+        
+        // Update Login/Logout text
+        if (_loginLogoutMenuItem != null)
+        {
+            _loginLogoutMenuItem.Text = isLoggedIn ? "Logout" : "Login";
         }
         
         // Now add items in the correct order based on login status
@@ -270,26 +278,28 @@ public partial class AppShell : Shell
             if (isLoggedIn)
             {
                 // When logged in: Home, Profile, Request Day Off, Logout
-                if (_homeMenuItem != null && !Items.Contains(_homeMenuItem))
+                if (_homeMenuItem != null)
                     Items.Insert(0, _homeMenuItem);
-                if (_profileMenuItem != null && !Items.Contains(_profileMenuItem))
+                if (_profileMenuItem != null)
                 {
                     int insertIndex = Items.IndexOf(_homeMenuItem) >= 0 ? Items.IndexOf(_homeMenuItem) + 1 : Items.Count;
                     Items.Insert(insertIndex, _profileMenuItem);
                 }
-                if (_requestDayOffMenuItem != null && !Items.Contains(_requestDayOffMenuItem))
+                if (_requestDayOffMenuItem != null)
                 {
                     int insertIndex = Items.IndexOf(_profileMenuItem) >= 0 ? Items.IndexOf(_profileMenuItem) + 1 : Items.Count;
                     Items.Insert(insertIndex, _requestDayOffMenuItem);
                 }
-                if (_logoutMenuItem != null && !Items.Contains(_logoutMenuItem))
-                    Items.Add(_logoutMenuItem);
+                if (_loginLogoutMenuItem != null)
+                    Items.Add(_loginLogoutMenuItem); // Logout at bottom
             }
             else
             {
-                // When logged out: only Login
-                if (_loginMenuItem != null && !Items.Contains(_loginMenuItem))
-                    Items.Add(_loginMenuItem);
+                // When logged out: Login and Register only
+                if (_loginLogoutMenuItem != null)
+                    Items.Add(_loginLogoutMenuItem); // Login
+                if (_registerMenuItem != null)
+                    Items.Add(_registerMenuItem); // Register
             }
         }
         catch (Exception ex)
@@ -298,6 +308,19 @@ public partial class AppShell : Shell
         }
         
         Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, MenuItemsCount={Items.Count}");
+    }
+    
+    private async void OnRegisterClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            Shell.Current.FlyoutIsPresented = false;
+            await Shell.Current.GoToAsync("//Register");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"OnRegisterClicked: Error navigating: {ex.Message}");
+        }
     }
 
     private async void OnProfileClicked(object? sender, EventArgs e)

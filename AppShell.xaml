@@ -79,14 +79,12 @@
     <ShellContent ContentTemplate="{DataTemplate local:RequestDayOffPage}"
                   Route="RequestDayOff"
                   FlyoutItemIsVisible="False" />
-    <ShellContent Title="Register"
-                  ContentTemplate="{DataTemplate local:RegisterPage}"
+    <ShellContent ContentTemplate="{DataTemplate local:RegisterPage}"
                   Route="Register"
-                  FlyoutItemIsVisible="True" />
-    <ShellContent Title="Forgot Password"
-                  ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
+                  FlyoutItemIsVisible="False" />
+    <ShellContent ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
                   Route="ForgotPassword"
-                  FlyoutItemIsVisible="True" />
+                  FlyoutItemIsVisible="False" />
     <!-- MenuItems - all menu items are created programmatically and managed dynamically based on login status -->
     <!-- Footer with Copyright -->
     <Shell.FlyoutFooter>
