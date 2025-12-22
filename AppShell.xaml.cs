@@ -5,6 +5,9 @@ using HiatMeApp.ViewModels;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+#if ANDROID
+using HiatMeApp.Platforms.Android;
+#endif
 
 namespace HiatMeApp;
 
@@ -541,6 +544,11 @@ public partial class AppShell : Shell
             }
             
             Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, TotalItemsCount={Items.Count}");
+            
+            // Style menu items on Android
+#if ANDROID
+            MenuStyler.StyleMenuItems(this);
+#endif
         }
         finally
         {
