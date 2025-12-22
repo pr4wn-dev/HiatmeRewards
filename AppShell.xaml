@@ -46,11 +46,11 @@
                                      VerticalOptions="Center">
                     <Label Text="{Binding UserName, TargetNullValue='Guest'}"
                            FontSize="20"
-                           TextColor="{StaticResource WebsiteAccent}"
+                           TextColor="#87CEEB"
                            HorizontalOptions="Start" />
                     <Label Text="{Binding UserEmail, TargetNullValue='Guest@localhost'}"
                            FontSize="18"
-                           TextColor="{StaticResource WebsiteAccent}"
+                           TextColor="#87CEEB"
                            HorizontalOptions="Start" />
                 </VerticalStackLayout>
             </Grid>
