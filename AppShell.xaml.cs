@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.IO;
 #if ANDROID
 using HiatMeApp.Platforms.Android;
 #endif
@@ -256,7 +258,7 @@ public partial class AppShell : Shell
         }
     }
 
-    private void UpdateFlyoutAvatar(string? profilePicture)
+    private async void UpdateFlyoutAvatar(string? profilePicture)
     {
         // Find the image in the flyout header
         var flyoutHeader = this.FlyoutHeader as Grid;
@@ -267,10 +269,26 @@ public partial class AppShell : Shell
             {
                 if (string.IsNullOrEmpty(profilePicture))
                 {
-                    // Use the website's default avatar for guests/not logged in
-                    // Note: The file on the website is actually a RIFF/WAV file misnamed as PNG,
-                    // so we load it directly from the URL which the browser/MAUI can handle
-                    image.Source = ImageSource.FromUri(new Uri("https://hiatme.com/images/avatar.png"));
+                    // Load default avatar from website using HttpClient to avoid PNG validation issues
+                    try
+                    {
+                        using (var httpClient = new HttpClient())
+                        {
+                            var imageBytes = await httpClient.GetByteArrayAsync("https://hiatme.com/images/avatar.png");
+                            image.Source = ImageSource.FromStream(() => new MemoryStream(imageBytes));
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback to icon if download fails
+                        image.Source = new FontImageSource
+                        {
+                            FontFamily = "MaterialIcons",
+                            Glyph = "\ue853",
+                            Size = 40,
+                            Color = Color.FromArgb("#0078D4")
+                        };
+                    }
                 }
                 else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
                 {
