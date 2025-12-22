@@ -118,12 +118,23 @@ public partial class AppShell : Shell
                 }
             });
             
+            // Navigate to appropriate route based on login status
+            // Use a small delay to ensure Shell is fully ready
+            await Task.Delay(100);
             try
             {
-                // Check if user is already logged in
                 string initialRoute = isLoggedIn ? "//Home" : "//Login";
-                await Shell.Current.GoToAsync(initialRoute);
-                Console.WriteLine($"AppShell: Initial navigation to {initialRoute} succeeded (IsLoggedIn={isLoggedIn})");
+                // Check current route to avoid unnecessary navigation
+                var currentRoute = Shell.Current.CurrentState?.Location?.ToString();
+                if (currentRoute != initialRoute)
+                {
+                    await Shell.Current.GoToAsync(initialRoute);
+                    Console.WriteLine($"AppShell: Initial navigation to {initialRoute} succeeded (IsLoggedIn={isLoggedIn}, CurrentRoute={currentRoute})");
+                }
+                else
+                {
+                    Console.WriteLine($"AppShell: Already on correct route {initialRoute}, skipping navigation");
+                }
             }
             catch (Exception ex)
             {
@@ -248,7 +259,15 @@ public partial class AppShell : Shell
         {
             if (Preferences.Get("IsLoggedIn", false))
             {
-                // Logout - clear all preferences and secure storage
+                // Logout - save email before clearing preferences
+                string savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
+                if (string.IsNullOrEmpty(savedEmail))
+                {
+                    // Fallback to current user email if SavedLoginEmail is not set
+                    savedEmail = Preferences.Get("UserEmail", string.Empty);
+                }
+                
+                // Clear all preferences and secure storage
                 Preferences.Clear();
                 
                 // Also clear saved password from SecureStorage
@@ -261,7 +280,14 @@ public partial class AppShell : Shell
                     // SecureStorage might not be available, ignore
                 }
                 
-                Console.WriteLine("AppShell: Preferences and SecureStorage cleared on logout");
+                // Restore saved email after clearing (so it's remembered for next login)
+                if (!string.IsNullOrEmpty(savedEmail))
+                {
+                    Preferences.Set("SavedLoginEmail", savedEmail);
+                    Console.WriteLine($"AppShell: Preserved email '{savedEmail}' after logout");
+                }
+                
+                Console.WriteLine("AppShell: Preferences and SecureStorage cleared on logout (email preserved)");
                 if (BindingContext is AppShellViewModel vm)
                 {
                     vm.UpdateMenuItems();

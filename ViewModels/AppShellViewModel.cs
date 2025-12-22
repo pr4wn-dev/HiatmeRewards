@@ -82,6 +82,14 @@ public partial class AppShellViewModel : ObservableObject
             Console.WriteLine("LoginMenuCommand: Executing");
             if (Preferences.Get("IsLoggedIn", false))
             {
+                // Logout - save email before clearing preferences
+                string savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
+                if (string.IsNullOrEmpty(savedEmail))
+                {
+                    // Fallback to current user email if SavedLoginEmail is not set
+                    savedEmail = Preferences.Get("UserEmail", string.Empty);
+                }
+                
                 Preferences.Clear();
                 
                 // Also clear saved password from SecureStorage
@@ -94,7 +102,14 @@ public partial class AppShellViewModel : ObservableObject
                     // SecureStorage might not be available, ignore
                 }
                 
-                Console.WriteLine("Logout: Preferences and SecureStorage cleared");
+                // Restore saved email after clearing (so it's remembered for next login)
+                if (!string.IsNullOrEmpty(savedEmail))
+                {
+                    Preferences.Set("SavedLoginEmail", savedEmail);
+                    Console.WriteLine($"Logout: Preserved email '{savedEmail}' after logout");
+                }
+                
+                Console.WriteLine("Logout: Preferences and SecureStorage cleared (email preserved)");
                 LoginMenuTitle = "Login";
                 UserEmail = "Not logged in";
                 OnPropertyChanged(nameof(LoginMenuTitle));
