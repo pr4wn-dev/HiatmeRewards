@@ -1,6 +1,7 @@
 ﻿using Microsoft.Maui.Controls;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Storage;
 using HiatMeApp.ViewModels;
 using System.Collections.Generic;
 using System.Reflection;
@@ -225,9 +226,20 @@ public partial class AppShell : Shell
         {
             if (Preferences.Get("IsLoggedIn", false))
             {
-                // Logout
+                // Logout - clear all preferences and secure storage
                 Preferences.Clear();
-                Console.WriteLine("AppShell: Preferences cleared on logout");
+                
+                // Also clear saved password from SecureStorage
+                try
+                {
+                    SecureStorage.Remove("SavedLoginPassword");
+                }
+                catch
+                {
+                    // SecureStorage might not be available, ignore
+                }
+                
+                Console.WriteLine("AppShell: Preferences and SecureStorage cleared on logout");
                 if (BindingContext is AppShellViewModel vm)
                 {
                     vm.UpdateMenuItems();

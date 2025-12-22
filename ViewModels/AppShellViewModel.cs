@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
 
 namespace HiatMeApp.ViewModels;
 
@@ -82,7 +83,18 @@ public partial class AppShellViewModel : ObservableObject
             if (Preferences.Get("IsLoggedIn", false))
             {
                 Preferences.Clear();
-                Console.WriteLine("Logout: Preferences cleared");
+                
+                // Also clear saved password from SecureStorage
+                try
+                {
+                    SecureStorage.Remove("SavedLoginPassword");
+                }
+                catch
+                {
+                    // SecureStorage might not be available, ignore
+                }
+                
+                Console.WriteLine("Logout: Preferences and SecureStorage cleared");
                 LoginMenuTitle = "Login";
                 UserEmail = "Not logged in";
                 OnPropertyChanged(nameof(LoginMenuTitle));
