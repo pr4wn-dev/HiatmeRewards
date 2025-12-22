@@ -100,30 +100,33 @@ public static class MenuStyler
                     var parent = textView.Parent as AViewGroup;
                     if (parent != null)
                     {
-                        // Find the root container for this menu item (usually 2-3 levels up)
+                        // Find the root container for this menu item - prefer LayoutViewGroup with reasonable height
                         var rootContainer = FindMenuItemRootContainer(parent);
                         if (rootContainer != null)
                         {
+                            // Only proceed if this looks like a menu item row (not a parent container)
+                            var containerHeight = rootContainer.Height;
+                            var containerClass = rootContainer.Class?.SimpleName ?? "";
+                            
+                            // Skip containers that are too tall (likely parent containers, not menu item rows)
+                            if (containerHeight > 0 && containerHeight > 300)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Skipping container '{containerClass}' with height={containerHeight} (too tall for menu item)");
+                                return; // Continue to next view
+                            }
+                            
                             // Check if this menu item corresponds to the current route
                             string? currentRoute = GetCurrentRoute(shell);
                             bool isSelected = IsMenuItemSelected(text, currentRoute);
                             
                             // Debug logging
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: MenuItem='{text}', CurrentRoute='{currentRoute}', IsSelected={isSelected}, Container='{rootContainer.Class?.SimpleName}', ContainerWidth={rootContainer.Width}, ContainerHeight={rootContainer.Height}");
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: MenuItem='{text}', CurrentRoute='{currentRoute}', IsSelected={isSelected}, Container='{containerClass}', ContainerWidth={rootContainer.Width}, ContainerHeight={containerHeight}");
                             
                             // Only add indicator if selected (removal already done at top level)
                             if (isSelected)
                             {
-                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Adding indicator for '{text}' to container '{rootContainer.Class?.SimpleName}'");
+                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Adding indicator for '{text}' to container '{containerClass}' (height={containerHeight})");
                                 AddSelectionIndicator(rootContainer);
-                                
-                                // Also try setting background color on the container itself as a fallback
-                                try
-                                {
-                                    // Set a left padding or background to make indicator visible
-                                    rootContainer.SetPadding(0, 0, 0, 0); // Reset padding
-                                }
-                                catch { }
                             }
                         }
                         else
@@ -279,61 +282,56 @@ public static class MenuStyler
             parent.SetClipChildren(false);
             parent.SetClipToPadding(false);
             
-            // Try approach 1: Create a drawable background with left border
-            try
-            {
-                var color = global::Android.Graphics.Color.ParseColor("#007bff");
-                var drawable = new global::Android.Graphics.Drawables.GradientDrawable();
-                drawable.SetColor(global::Android.Graphics.Color.Transparent);
-                
-                // Create a shape drawable for the left border
-                var shape = new global::Android.Graphics.Drawables.ShapeDrawable(new global::Android.Graphics.Drawables.Shapes.RectShape());
-                var paint = shape.Paint;
-                paint.Color = color;
-                paint.StrokeWidth = widthPx;
-                paint.SetStyle(global::Android.Graphics.Paint.Style.Fill);
-                
-                // Use a layer list to combine transparent background with left border
-                var layerList = new global::Android.Graphics.Drawables.LayerDrawable(new global::Android.Graphics.Drawables.Drawable[] { drawable });
-                // Create a left border by adding padding/drawable
-                
-                // Simpler: Just set left padding and use a colored view
-                parent.SetPadding(widthPx, 0, 0, 0);
-            }
-            catch { }
-            
-            // Approach 2: Add a child view as indicator
             // Create blue rectangle indicator
             var indicatorView = new AView(Platform.CurrentActivity);
-            indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
+            var color = global::Android.Graphics.Color.ParseColor("#007bff");
+            indicatorView.SetBackgroundColor(color);
             indicatorView.Tag = "selection_indicator";
-            indicatorView.SetPadding(0, 0, 0, 0);
             
-            // Use explicit dimensions
+            // Use explicit dimensions - use parent height if available, otherwise MatchParent
             int height = parentHeight > 0 ? parentHeight : ViewGroup.LayoutParams.MatchParent;
             
-            // Create layout params - use absolute positioning
+            // Create layout params with explicit positioning
             var layoutParams = new ViewGroup.MarginLayoutParams(widthPx, height);
             layoutParams.LeftMargin = 0;
             layoutParams.TopMargin = 0;
+            layoutParams.RightMargin = 0;
+            layoutParams.BottomMargin = 0;
             
-            // Ensure the view is visible
+            // Ensure the view is visible and has proper dimensions
             indicatorView.Visibility = ViewStates.Visible;
             indicatorView.SetMinimumWidth(widthPx);
-            indicatorView.SetMinimumHeight(height > 0 ? height : (int)(56 * density));
+            if (height > 0 && height != ViewGroup.LayoutParams.MatchParent)
+            {
+                indicatorView.SetMinimumHeight(height);
+            }
+            else
+            {
+                indicatorView.SetMinimumHeight((int)(56 * density)); // Default 56dp
+            }
             
-            // Add as first child (left side)
+            // Set explicit width and height if parent has been measured
+            if (parentWidth > 0 && parentHeight > 0)
+            {
+                layoutParams.Width = widthPx;
+                layoutParams.Height = parentHeight;
+            }
+            
+            // Add as first child (index 0) so it appears on the left side
+            // Note: In Android, first child is drawn first (behind), but we want it visible
+            // So we'll add it first but ensure it's positioned correctly
             parent.AddView(indicatorView, 0, layoutParams);
             
-            // Force layout immediately
+            // Set elevation to ensure it's above other views
+            indicatorView.Elevation = 1f;
+            
+            // Force layout and invalidate
             indicatorView.RequestLayout();
             parent.RequestLayout();
-            
-            // Also invalidate to force redraw
             indicatorView.Invalidate();
             parent.Invalidate();
             
-            // Verify after layout
+            // Post a delayed check to verify and fix if needed
             indicatorView.Post(() =>
             {
                 try
@@ -342,9 +340,30 @@ public static class MenuStyler
                     var actualHeight = indicatorView.Height;
                     var bounds = new global::Android.Graphics.Rect();
                     indicatorView.GetDrawingRect(bounds);
-                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator verification - width={actualWidth}, height={actualHeight}, bounds=({bounds.Left},{bounds.Top})-({bounds.Right},{bounds.Bottom}), visible={indicatorView.Visibility == ViewStates.Visible}");
+                    
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator after layout - width={actualWidth}, height={actualHeight}, bounds=({bounds.Left},{bounds.Top})-({bounds.Right},{bounds.Bottom}), parentWidth={parent.Width}, parentHeight={parent.Height}");
+                    
+                    // If dimensions are still zero, try to fix it
+                    if (actualWidth == 0 || actualHeight == 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler: WARNING - Indicator has zero dimensions! Attempting fix...");
+                        
+                        // Try setting explicit dimensions
+                        var newParams = indicatorView.LayoutParameters as ViewGroup.MarginLayoutParams;
+                        if (newParams != null)
+                        {
+                            newParams.Width = widthPx;
+                            newParams.Height = parent.Height > 0 ? parent.Height : (int)(56 * density);
+                            indicatorView.LayoutParameters = newParams;
+                            indicatorView.RequestLayout();
+                            indicatorView.Invalidate();
+                        }
+                    }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Error in Post callback: {ex.Message}");
+                }
             });
             
             System.Diagnostics.Debug.WriteLine($"MenuStyler: Added indicator view (width={widthPx}px, height={height}, density={density}) to parent '{parent.Class?.SimpleName}'");
