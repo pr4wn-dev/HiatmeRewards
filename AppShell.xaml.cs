@@ -145,7 +145,8 @@ public partial class AppShell : Shell
         this.FlyoutBackgroundColor = Color.FromArgb("#333333");
         
         // Style menu items when flyout is opened and when navigation changes (Android only)
-#if ANDROID
+        // TEMPORARILY DISABLED - Enable when menu styling is stable
+#if ANDROID && false
         // Use Loaded event to style menu initially
         this.Loaded += (s, e) =>
         {

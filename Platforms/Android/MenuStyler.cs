@@ -6,6 +6,8 @@ using Microsoft.Maui.Platform;
 using System.Linq;
 using System.Collections.Generic;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using AView = Android.Views.View;
 using AViewGroup = Android.Views.ViewGroup;
 
@@ -13,29 +15,45 @@ namespace HiatMeApp.Platforms.Android;
 
 public static class MenuStyler
 {
+    private static int _maxRecursionDepth = 20; // Prevent infinite recursion
+    
     public static void StyleMenuItems(Shell shell)
     {
         try
         {
             if (shell?.Handler?.PlatformView is AView platformView)
             {
-                // Use a delayed action to allow the menu to render first
-                platformView.Post(() =>
+                // Run on background thread first, then post to UI thread
+                Task.Run(() =>
                 {
                     try
                     {
-                        // Remove all indicators first
-                        if (platformView is AViewGroup viewGroup)
-                        {
-                            RemoveAllIndicators(viewGroup);
-                        }
+                        // Small delay to ensure UI is ready
+                        Thread.Sleep(50);
                         
-                        // Then style and add indicators
-                        StyleMenuItemsRecursive(platformView, shell);
+                        // Post to UI thread for view operations
+                        platformView.Post(() =>
+                        {
+                            try
+                            {
+                                // Remove all indicators first (with depth limit)
+                                if (platformView is AViewGroup viewGroup)
+                                {
+                                    RemoveAllIndicators(viewGroup, 0);
+                                }
+                                
+                                // Then style and add indicators (with depth limit)
+                                StyleMenuItemsRecursive(platformView, shell, 0);
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"MenuStyler error in Post: {ex.Message}");
+                            }
+                        });
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"MenuStyler error in Post: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler error in Task: {ex.Message}");
                     }
                 });
             }
@@ -46,67 +64,97 @@ public static class MenuStyler
         }
     }
 
-    private static void RemoveAllIndicators(AView view)
+    private static void RemoveAllIndicators(AView view, int depth)
     {
+        if (depth > _maxRecursionDepth) return; // Prevent infinite recursion
+        
         if (view is AViewGroup viewGroup)
         {
             // Remove all indicators from this view group
-            for (int i = viewGroup.ChildCount - 1; i >= 0; i--)
+            int childCount = viewGroup.ChildCount;
+            for (int i = childCount - 1; i >= 0; i--)
             {
-                var child = viewGroup.GetChildAt(i);
-                if (child.Tag?.ToString() == "selection_indicator")
+                try
                 {
-                    viewGroup.RemoveViewAt(i);
+                    var child = viewGroup.GetChildAt(i);
+                    if (child?.Tag?.ToString() == "selection_indicator")
+                    {
+                        viewGroup.RemoveViewAt(i);
+                    }
+                    else if (child is AViewGroup childGroup)
+                    {
+                        RemoveAllIndicators(childGroup, depth + 1);
+                    }
                 }
-                else if (child is AViewGroup childGroup)
+                catch
                 {
-                    RemoveAllIndicators(childGroup);
+                    // Ignore errors on individual children
                 }
             }
         }
     }
 
-    private static void StyleMenuItemsRecursive(AView view, Shell shell)
+    private static void StyleMenuItemsRecursive(AView view, Shell shell, int depth)
     {
-        if (view is TextView textView)
+        if (depth > _maxRecursionDepth) return; // Prevent infinite recursion
+        
+        try
         {
-            // Check if this is a menu item text view
-            var text = textView.Text;
-            if (!string.IsNullOrEmpty(text) && IsMenuItemText(text))
+            if (view is TextView textView)
             {
-                textView.SetTextColor(global::Android.Graphics.Color.White);
-                textView.TextSize = 20; // 20sp - larger font size
-                textView.Typeface = global::Android.Graphics.Typeface.Default;
-                
-                // Get the parent container (usually a LinearLayout or similar)
-                var parent = textView.Parent as AViewGroup;
-                if (parent != null)
+                // Check if this is a menu item text view
+                var text = textView.Text;
+                if (!string.IsNullOrEmpty(text) && IsMenuItemText(text))
                 {
-                    // Find the root container for this menu item (usually 2-3 levels up)
-                    var rootContainer = FindMenuItemRootContainer(parent);
-                    if (rootContainer != null)
+                    textView.SetTextColor(global::Android.Graphics.Color.White);
+                    textView.TextSize = 20; // 20sp - larger font size
+                    textView.Typeface = global::Android.Graphics.Typeface.Default;
+                    
+                    // Get the parent container (usually a LinearLayout or similar)
+                    var parent = textView.Parent as AViewGroup;
+                    if (parent != null)
                     {
-                        // Check if this menu item corresponds to the current route
-                        string? currentRoute = GetCurrentRoute(shell);
-                        bool isSelected = IsMenuItemSelected(text, currentRoute);
-                        
-                        // Only add indicator if selected (removal already done at top level)
-                        if (isSelected)
+                        // Find the root container for this menu item (usually 2-3 levels up)
+                        var rootContainer = FindMenuItemRootContainer(parent);
+                        if (rootContainer != null)
                         {
-                            AddSelectionIndicator(rootContainer);
+                            // Check if this menu item corresponds to the current route
+                            string? currentRoute = GetCurrentRoute(shell);
+                            bool isSelected = IsMenuItemSelected(text, currentRoute);
+                            
+                            // Only add indicator if selected (removal already done at top level)
+                            if (isSelected)
+                            {
+                                AddSelectionIndicator(rootContainer);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (view is AViewGroup viewGroup)
-        {
-            for (int i = 0; i < viewGroup.ChildCount; i++)
+            if (view is AViewGroup viewGroup)
             {
-                var child = viewGroup.GetChildAt(i);
-                StyleMenuItemsRecursive(child, shell);
+                int childCount = viewGroup.ChildCount;
+                for (int i = 0; i < childCount; i++)
+                {
+                    try
+                    {
+                        var child = viewGroup.GetChildAt(i);
+                        if (child != null)
+                        {
+                            StyleMenuItemsRecursive(child, shell, depth + 1);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors on individual children
+                    }
+                }
             }
+        }
+        catch
+        {
+            // Ignore errors to prevent blocking
         }
     }
     
