@@ -3,6 +3,8 @@ using Android.Views;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Platform;
 using System.Linq;
+using System.Collections.Generic;
+using System;
 using AView = Android.Views.View;
 using AViewGroup = Android.Views.ViewGroup;
 
@@ -14,15 +16,38 @@ public static class MenuStyler
     {
         if (shell?.Handler?.PlatformView is AView platformView)
         {
+            // First, remove all existing indicators
+            RemoveAllIndicators(platformView);
+            
             // Use a delayed action to allow the menu to render first
             platformView.Post(() =>
             {
-                StyleMenuItemsRecursive(platformView);
+                StyleMenuItemsRecursive(platformView, shell);
             });
         }
     }
 
-    private static void StyleMenuItemsRecursive(AView view)
+    private static void RemoveAllIndicators(AView view)
+    {
+        if (view is AViewGroup viewGroup)
+        {
+            // Remove all indicators from this view group
+            for (int i = viewGroup.ChildCount - 1; i >= 0; i--)
+            {
+                var child = viewGroup.GetChildAt(i);
+                if (child.Tag?.ToString() == "selection_indicator")
+                {
+                    viewGroup.RemoveViewAt(i);
+                }
+                else if (child is AViewGroup childGroup)
+                {
+                    RemoveAllIndicators(childGroup);
+                }
+            }
+        }
+    }
+
+    private static void StyleMenuItemsRecursive(AView view, Shell shell)
     {
         if (view is TextView textView)
         {
@@ -33,6 +58,24 @@ public static class MenuStyler
                 textView.SetTextColor(global::Android.Graphics.Color.White);
                 textView.TextSize = 20; // 20sp - larger font size
                 textView.Typeface = global::Android.Graphics.Typeface.Default;
+                
+                // Get the parent to manage indicators
+                var parent = textView.Parent as AViewGroup;
+                if (parent != null)
+                {
+                    // Remove any existing indicators first
+                    RemoveSelectionIndicators(parent);
+                    
+                    // Check if this menu item corresponds to the current route
+                    string? currentRoute = GetCurrentRoute(shell);
+                    bool isSelected = IsMenuItemSelected(text, currentRoute);
+                    
+                    // Add blue rectangle indicator if selected
+                    if (isSelected)
+                    {
+                        AddSelectionIndicator(parent);
+                    }
+                }
             }
         }
 
@@ -41,9 +84,82 @@ public static class MenuStyler
             for (int i = 0; i < viewGroup.ChildCount; i++)
             {
                 var child = viewGroup.GetChildAt(i);
-                StyleMenuItemsRecursive(child);
+                StyleMenuItemsRecursive(child, shell);
             }
         }
+    }
+
+    private static void RemoveSelectionIndicators(AViewGroup parent)
+    {
+        // Remove all existing selection indicators
+        for (int i = parent.ChildCount - 1; i >= 0; i--)
+        {
+            var child = parent.GetChildAt(i);
+            if (child.Tag?.ToString() == "selection_indicator")
+            {
+                parent.RemoveViewAt(i);
+            }
+        }
+    }
+
+    private static void AddSelectionIndicator(AViewGroup parent)
+    {
+        // Create blue rectangle indicator
+        var indicatorView = new View(Platform.CurrentActivity);
+        indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
+        indicatorView.Tag = "selection_indicator";
+        
+        // Add as first child (left side) with proper layout params
+        var layoutParams = new ViewGroup.MarginLayoutParams(
+            Android.Util.ComplexUnitType.Dip, 14, // 14dp width (matching header)
+            ViewGroup.LayoutParams.MatchParent // Full height
+        );
+        parent.AddView(indicatorView, 0, layoutParams);
+    }
+
+    private static string? GetCurrentRoute(Shell shell)
+    {
+        try
+        {
+            var currentState = shell.CurrentState;
+            if (currentState != null)
+            {
+                var location = currentState.Location;
+                if (location != null && location.Segments.Count > 0)
+                {
+                    return location.Segments[location.Segments.Count - 1];
+                }
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private static bool IsMenuItemSelected(string menuText, string? currentRoute)
+    {
+        if (string.IsNullOrEmpty(currentRoute))
+            return false;
+            
+        // Map menu text to routes
+        var routeMap = new Dictionary<string, string>
+        {
+            { "Home", "Home" },
+            { "Profile", "Profile" },
+            { "Request Day Off", "RequestDayOff" },
+            { "Vehicle", "Vehicle" },
+            { "Vehicle Issues", "VehicleIssues" },
+            { "Finish Day", "FinishDay" },
+            { "Login", "Login" },
+            { "Logout", "Home" }, // Logout shows Home after logout
+            { "Register", "Register" }
+        };
+        
+        if (routeMap.TryGetValue(menuText, out var route))
+        {
+            return route.Equals(currentRoute, StringComparison.OrdinalIgnoreCase);
+        }
+        
+        return false;
     }
 
     private static bool IsMenuItemText(string text)

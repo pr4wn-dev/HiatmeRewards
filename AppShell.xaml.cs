@@ -144,13 +144,31 @@ public partial class AppShell : Shell
         // Note: This is also set in Styles.xaml, but explicitly setting here to ensure it's applied
         this.FlyoutBackgroundColor = Color.FromArgb("#333333");
         
-        // Style menu items when flyout is opened (Android only)
+        // Style menu items when flyout is opened and when navigation changes (Android only)
 #if ANDROID
         this.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
             {
                 // Style menu items when flyout opens
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Task.Delay(100).ContinueWith(_ =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            MenuStyler.StyleMenuItems(this);
+                        });
+                    });
+                });
+            }
+        };
+        
+        // Update menu styling when navigation changes
+        this.Navigated += (s, e) =>
+        {
+            if (this.FlyoutIsPresented)
+            {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     Task.Delay(100).ContinueWith(_ =>
