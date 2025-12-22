@@ -100,24 +100,36 @@ public static class MenuStyler
                     var parent = textView.Parent as AViewGroup;
                     if (parent != null)
                     {
-                    // Find the root container for this menu item (usually 2-3 levels up)
-                    var rootContainer = FindMenuItemRootContainer(parent);
-                    if (rootContainer != null)
-                    {
-                        // Check if this menu item corresponds to the current route
-                        string? currentRoute = GetCurrentRoute(shell);
-                        bool isSelected = IsMenuItemSelected(text, currentRoute);
-                        
-                        // Debug logging
-                        System.Diagnostics.Debug.WriteLine($"MenuStyler: MenuItem='{text}', CurrentRoute='{currentRoute}', IsSelected={isSelected}");
-                        
-                        // Only add indicator if selected (removal already done at top level)
-                        if (isSelected)
+                        // Find the root container for this menu item (usually 2-3 levels up)
+                        var rootContainer = FindMenuItemRootContainer(parent);
+                        if (rootContainer != null)
                         {
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Adding indicator for '{text}'");
-                            AddSelectionIndicator(rootContainer);
+                            // Check if this menu item corresponds to the current route
+                            string? currentRoute = GetCurrentRoute(shell);
+                            bool isSelected = IsMenuItemSelected(text, currentRoute);
+                            
+                            // Debug logging
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: MenuItem='{text}', CurrentRoute='{currentRoute}', IsSelected={isSelected}, Container='{rootContainer.Class?.SimpleName}', ContainerWidth={rootContainer.Width}, ContainerHeight={rootContainer.Height}");
+                            
+                            // Only add indicator if selected (removal already done at top level)
+                            if (isSelected)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Adding indicator for '{text}' to container '{rootContainer.Class?.SimpleName}'");
+                                AddSelectionIndicator(rootContainer);
+                                
+                                // Also try setting background color on the container itself as a fallback
+                                try
+                                {
+                                    // Set a left padding or background to make indicator visible
+                                    rootContainer.SetPadding(0, 0, 0, 0); // Reset padding
+                                }
+                                catch { }
+                            }
                         }
-                    }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Could not find root container for '{text}'");
+                        }
                     }
                 }
             }
@@ -224,87 +236,95 @@ public static class MenuStyler
     {
         try
         {
-            // Check if indicator already exists
-            for (int i = 0; i < parent.ChildCount; i++)
+            // Check if indicator already exists (by checking tag on parent)
+            if (parent.Tag?.ToString() == "has_indicator")
             {
-                var child = parent.GetChildAt(i);
-                if (child?.Tag?.ToString() == "selection_indicator")
-                {
-                    System.Diagnostics.Debug.WriteLine("MenuStyler: Indicator already exists, skipping");
-                    return; // Already has an indicator
-                }
+                System.Diagnostics.Debug.WriteLine("MenuStyler: Container already marked as having indicator");
+                return;
             }
-            
-            // Create blue rectangle indicator
-            var indicatorView = new AView(Platform.CurrentActivity);
-            indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
-            indicatorView.Tag = "selection_indicator";
             
             // Convert 14dp to pixels
             var displayMetrics = Platform.CurrentActivity.Resources?.DisplayMetrics;
             float density = displayMetrics != null ? displayMetrics.Density : 2.0f;
             int widthPx = (int)(14 * density);
             
-            // Use MatchParent for height to fill the container
-            int height = ViewGroup.LayoutParams.MatchParent;
+            // Get parent dimensions for debugging
+            int parentWidth = parent.Width;
+            int parentHeight = parent.Height;
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Parent dimensions: width={parentWidth}, height={parentHeight}, class={parent.Class?.SimpleName}");
             
-            // Create layout params based on parent type
-            ViewGroup.LayoutParams layoutParams;
+            // Disable clipping on parent to ensure indicator is visible
+            parent.SetClipChildren(false);
+            parent.SetClipToPadding(false);
             
-            // Check parent type and create appropriate layout params
-            if (parent is global::Android.Widget.LinearLayout)
+            // Try approach 1: Create a drawable background with left border
+            try
             {
-                var linearParams = new global::Android.Widget.LinearLayout.LayoutParams(widthPx, height);
-                linearParams.Gravity = global::Android.Views.GravityFlags.FillVertical | global::Android.Views.GravityFlags.Left;
-                layoutParams = linearParams;
+                var color = global::Android.Graphics.Color.ParseColor("#007bff");
+                var drawable = new global::Android.Graphics.Drawables.GradientDrawable();
+                drawable.SetColor(global::Android.Graphics.Color.Transparent);
+                
+                // Create a shape drawable for the left border
+                var shape = new global::Android.Graphics.Drawables.ShapeDrawable(new global::Android.Graphics.Drawables.Shapes.RectShape());
+                var paint = shape.Paint;
+                paint.Color = color;
+                paint.StrokeWidth = widthPx;
+                paint.SetStyle(global::Android.Graphics.Paint.Style.Fill);
+                
+                // Use a layer list to combine transparent background with left border
+                var layerList = new global::Android.Graphics.Drawables.LayerDrawable(new global::Android.Graphics.Drawables.Drawable[] { drawable });
+                // Create a left border by adding padding/drawable
+                
+                // Simpler: Just set left padding and use a colored view
+                parent.SetPadding(widthPx, 0, 0, 0);
             }
-            else if (parent is global::Android.Widget.RelativeLayout)
-            {
-                var relativeParams = new global::Android.Widget.RelativeLayout.LayoutParams(widthPx, height);
-                relativeParams.AddRule(global::Android.Widget.LayoutRules.AlignParentLeft);
-                relativeParams.AddRule(global::Android.Widget.LayoutRules.AlignParentTop);
-                relativeParams.AddRule(global::Android.Widget.LayoutRules.AlignParentBottom);
-                layoutParams = relativeParams;
-            }
-            else if (parent is global::Android.Widget.FrameLayout)
-            {
-                var frameParams = new global::Android.Widget.FrameLayout.LayoutParams(widthPx, height);
-                frameParams.Gravity = global::Android.Views.GravityFlags.Left | global::Android.Views.GravityFlags.FillVertical;
-                layoutParams = frameParams;
-            }
-            else
-            {
-                // Default to MarginLayoutParams for other container types (like LayoutViewGroup/RecyclerView)
-                layoutParams = new ViewGroup.MarginLayoutParams(widthPx, height);
-            }
+            catch { }
             
-            // Ensure the view is visible and has proper dimensions
+            // Approach 2: Add a child view as indicator
+            // Create blue rectangle indicator
+            var indicatorView = new AView(Platform.CurrentActivity);
+            indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
+            indicatorView.Tag = "selection_indicator";
+            indicatorView.SetPadding(0, 0, 0, 0);
+            
+            // Use explicit dimensions
+            int height = parentHeight > 0 ? parentHeight : ViewGroup.LayoutParams.MatchParent;
+            
+            // Create layout params - use absolute positioning
+            var layoutParams = new ViewGroup.MarginLayoutParams(widthPx, height);
+            layoutParams.LeftMargin = 0;
+            layoutParams.TopMargin = 0;
+            
+            // Ensure the view is visible
             indicatorView.Visibility = ViewStates.Visible;
             indicatorView.SetMinimumWidth(widthPx);
-            indicatorView.SetMinimumHeight((int)(48 * density)); // Minimum 48dp height in pixels
+            indicatorView.SetMinimumHeight(height > 0 ? height : (int)(56 * density));
             
             // Add as first child (left side)
             parent.AddView(indicatorView, 0, layoutParams);
             
-            // Force layout to ensure it's visible
+            // Mark parent as having indicator
+            parent.Tag = "has_indicator";
+            
+            // Force layout
             indicatorView.RequestLayout();
             parent.RequestLayout();
             
-            // Post another layout pass after a short delay to ensure visibility
+            // Verify after layout
             indicatorView.Post(() =>
             {
                 try
                 {
-                    indicatorView.RequestLayout();
-                    indicatorView.Invalidate();
+                    var actualWidth = indicatorView.Width;
+                    var actualHeight = indicatorView.Height;
                     var bounds = new global::Android.Graphics.Rect();
                     indicatorView.GetDrawingRect(bounds);
-                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator bounds: left={bounds.Left}, top={bounds.Top}, right={bounds.Right}, bottom={bounds.Bottom}, width={bounds.Width()}, height={bounds.Height()}");
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator verification - width={actualWidth}, height={actualHeight}, bounds=({bounds.Left},{bounds.Top})-({bounds.Right},{bounds.Bottom}), visible={indicatorView.Visibility == ViewStates.Visible}");
                 }
                 catch { }
             });
             
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Added indicator view (width={widthPx}px, height={height}, density={density}) to parent '{parent.Class?.SimpleName}' with {parent.ChildCount} children, parent width={parent.Width}, parent height={parent.Height}");
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Added indicator view (width={widthPx}px, height={height}, density={density}) to parent '{parent.Class?.SimpleName}'");
         }
         catch (Exception ex)
         {
