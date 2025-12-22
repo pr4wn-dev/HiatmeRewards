@@ -1,6 +1,6 @@
 using Android.Graphics;
 using Android.Widget;
-using AndroidX.AppCompat.Widget;
+using Android.Views;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Platform;
 
@@ -10,7 +10,7 @@ public static class MenuStyler
 {
     public static void StyleMenuItems(Shell shell)
     {
-        if (shell?.Handler?.PlatformView is Android.Views.View platformView)
+        if (shell?.Handler?.PlatformView is View platformView)
         {
             // Use a delayed action to allow the menu to render first
             platformView.Post(() =>
@@ -20,7 +20,7 @@ public static class MenuStyler
         }
     }
 
-    private static void StyleMenuItemsRecursive(Android.Views.View view)
+    private static void StyleMenuItemsRecursive(View view)
     {
         if (view is TextView textView)
         {
@@ -28,13 +28,13 @@ public static class MenuStyler
             var text = textView.Text;
             if (!string.IsNullOrEmpty(text) && IsMenuItemText(text))
             {
-                textView.SetTextColor(Android.Graphics.Color.White);
+                textView.SetTextColor(Color.White);
                 textView.TextSize = 18; // 18sp
                 textView.Typeface = Typeface.Default;
             }
         }
 
-        if (view is Android.Views.ViewGroup viewGroup)
+        if (view is ViewGroup viewGroup)
         {
             for (int i = 0; i < viewGroup.ChildCount; i++)
             {
