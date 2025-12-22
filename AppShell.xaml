@@ -46,11 +46,11 @@
                                      Spacing="4"
                                      VerticalOptions="Center">
                     <Label Text="{Binding UserName, TargetNullValue='Guest'}"
-                           FontSize="16"
+                           FontSize="18"
                            TextColor="{StaticResource WebsiteAccent}"
                            HorizontalOptions="Start" />
                     <Label Text="{Binding UserEmail, TargetNullValue='Guest@localhost'}"
-                           FontSize="14"
+                           FontSize="16"
                            TextColor="{StaticResource WebsiteAccent}"
                            HorizontalOptions="Start" />
                 </VerticalStackLayout>
@@ -93,9 +93,9 @@
             <BoxView HeightRequest="1"
                      BackgroundColor="#666666"
                      VerticalOptions="Start"
-                     Margin="0,0,0,12" />
+                     Margin="0,0,0,20" />
             <Label Text="© 2025 Hiatme. All rights reserved."
-                   FontSize="12"
+                   FontSize="14"
                    TextColor="White"
                    HorizontalOptions="Center"
                    VerticalOptions="End" />
