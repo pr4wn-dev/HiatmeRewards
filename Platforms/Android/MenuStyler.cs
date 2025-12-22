@@ -252,24 +252,24 @@ public static class MenuStyler
             ViewGroup.LayoutParams layoutParams;
             
             // Check parent type and create appropriate layout params
-            if (parent is Android.Widget.LinearLayout)
+            if (parent is global::Android.Widget.LinearLayout)
             {
-                var linearParams = new Android.Widget.LinearLayout.LayoutParams(widthPx, height);
-                linearParams.Gravity = Android.Views.GravityFlags.FillVertical | Android.Views.GravityFlags.Left;
+                var linearParams = new global::Android.Widget.LinearLayout.LayoutParams(widthPx, height);
+                linearParams.Gravity = global::Android.Views.GravityFlags.FillVertical | global::Android.Views.GravityFlags.Left;
                 layoutParams = linearParams;
             }
-            else if (parent is Android.Widget.RelativeLayout)
+            else if (parent is global::Android.Widget.RelativeLayout)
             {
-                var relativeParams = new Android.Widget.RelativeLayout.LayoutParams(widthPx, height);
-                relativeParams.AddRule(Android.Widget.RelativeLayout.AlignParentLeft);
-                relativeParams.AddRule(Android.Widget.RelativeLayout.AlignParentTop);
-                relativeParams.AddRule(Android.Widget.RelativeLayout.AlignParentBottom);
+                var relativeParams = new global::Android.Widget.RelativeLayout.LayoutParams(widthPx, height);
+                relativeParams.AddRule(global::Android.Widget.RelativeLayout.AlignParentLeft);
+                relativeParams.AddRule(global::Android.Widget.RelativeLayout.AlignParentTop);
+                relativeParams.AddRule(global::Android.Widget.RelativeLayout.AlignParentBottom);
                 layoutParams = relativeParams;
             }
-            else if (parent is Android.Widget.FrameLayout)
+            else if (parent is global::Android.Widget.FrameLayout)
             {
-                var frameParams = new Android.Widget.FrameLayout.LayoutParams(widthPx, height);
-                frameParams.Gravity = Android.Views.GravityFlags.Left | Android.Views.GravityFlags.FillVertical;
+                var frameParams = new global::Android.Widget.FrameLayout.LayoutParams(widthPx, height);
+                frameParams.Gravity = global::Android.Views.GravityFlags.Left | global::Android.Views.GravityFlags.FillVertical;
                 layoutParams = frameParams;
             }
             else
@@ -297,7 +297,8 @@ public static class MenuStyler
                 {
                     indicatorView.RequestLayout();
                     indicatorView.Invalidate();
-                    var bounds = indicatorView.GetDrawingRect();
+                    var bounds = new Android.Graphics.Rect();
+                    indicatorView.GetDrawingRect(bounds);
                     System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator bounds: left={bounds.Left}, top={bounds.Top}, right={bounds.Right}, bottom={bounds.Bottom}, width={bounds.Width()}, height={bounds.Height()}");
                 }
                 catch { }
