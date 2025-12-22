@@ -267,30 +267,21 @@ public partial class AppShell : Shell
             {
                 if (string.IsNullOrEmpty(profilePicture))
                 {
-                    // Use a default user icon for guests/not logged in
-                    // Try to use avatar.png first, if it exists
+                    // Use the website's default avatar for guests/not logged in
                     try
                     {
-                        image.Source = ImageSource.FromFile("avatar.png");
+                        image.Source = ImageSource.FromUri(new Uri("https://hiatme.com/images/avatar.png"));
                     }
                     catch
                     {
-                        // If avatar.png doesn't exist, try to use the website's default avatar
-                        try
+                        // If that fails, use a FontImageSource with a user icon as fallback
+                        image.Source = new FontImageSource
                         {
-                            image.Source = ImageSource.FromUri(new Uri("https://hiatme.com/images/avatar.png"));
-                        }
-                        catch
-                        {
-                            // If that fails, use a FontImageSource with a user icon as fallback
-                            image.Source = new FontImageSource
-                            {
-                                FontFamily = "MaterialIcons",
-                                Glyph = "\ue853", // Material Icons user icon
-                                Size = 40,
-                                Color = Color.FromArgb("#0078D4") // Blue color matching WebsiteAccent
-                            };
-                        }
+                            FontFamily = "MaterialIcons",
+                            Glyph = "\ue853", // Material Icons user icon
+                            Size = 40,
+                            Color = Color.FromArgb("#0078D4") // Blue color matching WebsiteAccent
+                        };
                     }
                 }
                 else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
