@@ -118,27 +118,18 @@ public static class MenuStyler
                             // Skip containers that are too tall (likely parent containers, not menu item rows)
                             if (containerHeight > 0 && containerHeight > 300)
                             {
-                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Skipping container '{containerClass}' with height={containerHeight} (too tall for menu item)");
-                                return; // Continue to next view
+                                return; // Continue to next view - removed debug logging for performance
                             }
                             
                             // Check if this menu item corresponds to the current route
                             string? currentRoute = GetCurrentRoute(shell);
                             bool isSelected = IsMenuItemSelected(text, currentRoute);
                             
-                            // Debug logging
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: MenuItem='{text}', CurrentRoute='{currentRoute}', IsSelected={isSelected}, Container='{containerClass}', ContainerWidth={rootContainer.Width}, ContainerHeight={containerHeight}");
-                            
                             // Only add indicator if selected (removal already done at top level)
                             if (isSelected)
                             {
-                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Adding indicator for '{text}' to container '{containerClass}' (height={containerHeight})");
                                 AddSelectionIndicator(rootContainer);
                             }
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Could not find root container for '{text}'");
                         }
                     }
                 }
@@ -307,7 +298,7 @@ public static class MenuStyler
     {
         try
         {
-            // Try multiple methods to get the current route
+            // Try to get the current route efficiently
             var currentState = shell.CurrentState;
             if (currentState != null)
             {
@@ -316,7 +307,6 @@ public static class MenuStyler
                 {
                     // First try: Get the full path and extract the route
                     var fullPath = location.ToString();
-                    System.Diagnostics.Debug.WriteLine($"MenuStyler: FullPath='{fullPath}'");
                     
                     if (!string.IsNullOrEmpty(fullPath))
                     {
@@ -324,9 +314,7 @@ public static class MenuStyler
                         var segments = fullPath.TrimStart('/').Split('/');
                         if (segments.Length > 0 && !string.IsNullOrEmpty(segments[segments.Length - 1]))
                         {
-                            var route = segments[segments.Length - 1];
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Extracted route from path: '{route}'");
-                            return route;
+                            return segments[segments.Length - 1];
                         }
                     }
                     
@@ -336,9 +324,7 @@ public static class MenuStyler
                         var segments = location.Segments.ToList();
                         if (segments.Count > 0)
                         {
-                            var route = segments[segments.Count - 1];
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Extracted route from Segments: '{route}'");
-                            return route;
+                            return segments[segments.Count - 1];
                         }
                     }
                 }
@@ -351,16 +337,14 @@ public static class MenuStyler
                 var route = currentItem.Route;
                 if (!string.IsNullOrEmpty(route))
                 {
-                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Route from CurrentItem: '{route}'");
                     return route;
                 }
             }
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error getting route: {ex.Message}");
+            // Ignore errors - removed debug logging for performance
         }
-        System.Diagnostics.Debug.WriteLine("MenuStyler: No route found");
         return null;
     }
 
@@ -370,6 +354,7 @@ public static class MenuStyler
             return false;
             
         // Map menu text to routes
+        // Note: Logout should never be selected - it's an action, not a page
         var routeMap = new Dictionary<string, string>
         {
             { "Home", "Home" },
@@ -379,8 +364,8 @@ public static class MenuStyler
             { "Vehicle Issues", "VehicleIssues" },
             { "Finish Day", "FinishDay" },
             { "Login", "Login" },
-            { "Logout", "Home" }, // Logout shows Home after logout
             { "Register", "Register" }
+            // Logout is intentionally not in the map - it should never show as selected
         };
         
         if (routeMap.TryGetValue(menuText, out var route))
@@ -388,7 +373,7 @@ public static class MenuStyler
             return route.Equals(currentRoute, StringComparison.OrdinalIgnoreCase);
         }
         
-        return false;
+        return false; // Logout and other unmapped items will return false
     }
 
     private static bool IsMenuItemText(string text)
