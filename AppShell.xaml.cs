@@ -4,6 +4,7 @@ using Microsoft.Maui.Graphics;
 using HiatMeApp.ViewModels;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
 namespace HiatMeApp;
 
@@ -16,6 +17,7 @@ public partial class AppShell : Shell
     private MenuItem? _registerMenuItem;
     private readonly object _menuUpdateLock = new object();
     private bool _isUpdatingMenu = false;
+    private readonly HashSet<ShellItem> _addedMenuItems = new HashSet<ShellItem>(); // Track what we've added
 
     public AppShell()
     {
@@ -269,63 +271,58 @@ public partial class AppShell : Shell
             
             bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
             
-            // Remove ALL our menu items by trying multiple strategies
-            try
+            // Remove ALL tracked menu items first
+            Console.WriteLine($"UpdateMenuVisibility: Removing {_addedMenuItems.Count} tracked menu items");
+            foreach (var trackedItem in _addedMenuItems.ToList())
             {
-                Console.WriteLine($"UpdateMenuVisibility: Starting removal. Items.Count={Items.Count}");
-                
-                // Strategy 1: Try direct reference comparison (most reliable if it works)
-                var itemsToRemoveByRef = new List<ShellItem>();
-                for (int i = 0; i < Items.Count; i++)
+                try
                 {
-                    var item = Items[i];
-                    // Try comparing as object references
-                    if (object.ReferenceEquals(item, _homeMenuItem) ||
-                        object.ReferenceEquals(item, _profileMenuItem) ||
-                        object.ReferenceEquals(item, _requestDayOffMenuItem) ||
-                        object.ReferenceEquals(item, _loginLogoutMenuItem) ||
-                        object.ReferenceEquals(item, _registerMenuItem))
+                    if (Items.Contains(trackedItem))
                     {
-                        itemsToRemoveByRef.Add(item);
-                        Console.WriteLine($"UpdateMenuVisibility: Found menu item by reference at index {i}");
+                        Items.Remove(trackedItem);
+                        Console.WriteLine($"UpdateMenuVisibility: Removed tracked item");
                     }
                 }
-                
-                // Remove items found by reference
-                foreach (var item in itemsToRemoveByRef)
+                catch (Exception ex)
                 {
-                    Items.Remove(item);
+                    Console.WriteLine($"UpdateMenuVisibility: Error removing tracked item: {ex.Message}");
                 }
-                
-                // Strategy 2: Remove by text matching (fallback for cases where reference doesn't work)
-                var ourMenuTexts = new HashSet<string> { "Home", "Profile", "Request Day Off", "Login", "Logout", "Register" };
-                for (int i = Items.Count - 1; i >= 0; i--)
+            }
+            _addedMenuItems.Clear();
+            
+            // Also remove by text matching as backup (brute force)
+            var ourMenuTexts = new HashSet<string> { "Home", "Profile", "Request Day Off", "Login", "Logout", "Register" };
+            for (int i = Items.Count - 1; i >= 0; i--)
+            {
+                try
                 {
                     var item = Items[i];
                     var itemType = item.GetType();
                     
-                    // Check if this looks like a MenuItem
-                    if (itemType.Name == "MenuItem")
+                    // Try to get Text property
+                    var textProperty = itemType.GetProperty("Text", BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+                    if (textProperty == null && itemType.BaseType != null)
                     {
-                        var textProperty = itemType.GetProperty("Text");
-                        if (textProperty != null)
+                        textProperty = itemType.BaseType.GetProperty("Text", BindingFlags.Public | BindingFlags.Instance);
+                    }
+                    
+                    if (textProperty != null)
+                    {
+                        var text = textProperty.GetValue(item) as string;
+                        if (!string.IsNullOrEmpty(text) && ourMenuTexts.Contains(text))
                         {
-                            var text = textProperty.GetValue(item) as string;
-                            if (!string.IsNullOrEmpty(text) && ourMenuTexts.Contains(text))
-                            {
-                                Console.WriteLine($"UpdateMenuVisibility: Removing menu item '{text}' by text match");
-                                Items.RemoveAt(i);
-                            }
+                            Console.WriteLine($"UpdateMenuVisibility: REMOVING by text: '{text}'");
+                            Items.RemoveAt(i);
                         }
                     }
                 }
-                
-                Console.WriteLine($"UpdateMenuVisibility: After removal. Items.Count={Items.Count}");
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"UpdateMenuVisibility: Error checking item: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"UpdateMenuVisibility: Error removing items: {ex.Message}, StackTrace: {ex.StackTrace}");
-            }
+            
+            Console.WriteLine($"UpdateMenuVisibility: After removal. Items.Count={Items.Count}");
             
             // Update Login/Logout text
             if (_loginLogoutMenuItem != null)
@@ -342,21 +339,25 @@ public partial class AppShell : Shell
                     if (_homeMenuItem != null)
                     {
                         Items.Add(_homeMenuItem);
+                        _addedMenuItems.Add(_homeMenuItem);
                         Console.WriteLine("UpdateMenuVisibility: Added Home");
                     }
                     if (_profileMenuItem != null)
                     {
                         Items.Add(_profileMenuItem);
+                        _addedMenuItems.Add(_profileMenuItem);
                         Console.WriteLine("UpdateMenuVisibility: Added Profile");
                     }
                     if (_requestDayOffMenuItem != null)
                     {
                         Items.Add(_requestDayOffMenuItem);
+                        _addedMenuItems.Add(_requestDayOffMenuItem);
                         Console.WriteLine("UpdateMenuVisibility: Added Request Day Off");
                     }
                     if (_loginLogoutMenuItem != null)
                     {
                         Items.Add(_loginLogoutMenuItem);
+                        _addedMenuItems.Add(_loginLogoutMenuItem);
                         Console.WriteLine("UpdateMenuVisibility: Added Logout");
                     }
                 }
@@ -366,11 +367,13 @@ public partial class AppShell : Shell
                     if (_loginLogoutMenuItem != null)
                     {
                         Items.Add(_loginLogoutMenuItem);
+                        _addedMenuItems.Add(_loginLogoutMenuItem);
                         Console.WriteLine("UpdateMenuVisibility: Added Login");
                     }
                     if (_registerMenuItem != null)
                     {
                         Items.Add(_registerMenuItem);
+                        _addedMenuItems.Add(_registerMenuItem);
                         Console.WriteLine("UpdateMenuVisibility: Added Register");
                     }
                 }
