@@ -150,25 +150,34 @@ public partial class AppShell : Shell
         {
             if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
             {
-                // Style menu items when flyout opens (single delay, no nested calls)
-                MainThread.BeginInvokeOnMainThread(async () =>
+                // Style menu items when flyout opens
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    await Task.Delay(150); // Slightly longer delay for menu to fully render
-                    MenuStyler.StyleMenuItems(this);
+                    Task.Delay(100).ContinueWith(_ =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            MenuStyler.StyleMenuItems(this);
+                        });
+                    });
                 });
             }
         };
         
-        // Update menu styling when navigation changes (only if flyout is open)
+        // Update menu styling when navigation changes
         this.Navigated += (s, e) =>
         {
             if (this.FlyoutIsPresented)
             {
-                // Use a single delayed call instead of nested invocations
-                MainThread.BeginInvokeOnMainThread(async () =>
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    await Task.Delay(150);
-                    MenuStyler.StyleMenuItems(this);
+                    Task.Delay(100).ContinueWith(_ =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            MenuStyler.StyleMenuItems(this);
+                        });
+                    });
                 });
             }
         };

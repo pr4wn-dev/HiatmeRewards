@@ -13,63 +13,23 @@ namespace HiatMeApp.Platforms.Android;
 
 public static class MenuStyler
 {
-    private static AViewGroup? _lastFlyoutContentView = null;
-    
     public static void StyleMenuItems(Shell shell)
     {
         if (shell?.Handler?.PlatformView is AView platformView)
         {
-            // Find the flyout content view instead of traversing entire shell
-            AViewGroup? flyoutContentView = FindFlyoutContentView(platformView);
-            if (flyoutContentView == null)
+            // Use a delayed action to allow the menu to render first
+            platformView.Post(() =>
             {
-                // Fallback to full traversal if flyout not found
-                flyoutContentView = platformView as AViewGroup;
-            }
-            
-            if (flyoutContentView != null)
-            {
-                _lastFlyoutContentView = flyoutContentView;
-                
-                // Use a delayed action to allow the menu to render first
-                platformView.Post(() =>
+                // Remove all indicators first
+                if (platformView is AViewGroup viewGroup)
                 {
-                    // Remove all indicators first
-                    RemoveAllIndicators(flyoutContentView);
-                    
-                    // Then style and add indicators
-                    StyleMenuItemsRecursive(flyoutContentView, shell);
-                });
-            }
-        }
-    }
-    
-    private static AViewGroup? FindFlyoutContentView(AView view)
-    {
-        // Try to find the flyout content view by traversing the hierarchy
-        if (view is AViewGroup viewGroup)
-        {
-            // Look for common flyout container class names or IDs
-            for (int i = 0; i < viewGroup.ChildCount; i++)
-            {
-                var child = viewGroup.GetChildAt(i);
-                if (child is AViewGroup childGroup)
-                {
-                    // Check if this looks like a flyout content view
-                    var className = childGroup.Class.SimpleName;
-                    if (className != null && (className.Contains("Flyout") || className.Contains("Drawer")))
-                    {
-                        return childGroup;
-                    }
-                    
-                    // Recursively search
-                    var found = FindFlyoutContentView(childGroup);
-                    if (found != null)
-                        return found;
+                    RemoveAllIndicators(viewGroup);
                 }
-            }
+                
+                // Then style and add indicators
+                StyleMenuItemsRecursive(platformView, shell);
+            });
         }
-        return null;
     }
 
     private static void RemoveAllIndicators(AView view)
