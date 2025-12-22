@@ -164,40 +164,47 @@ public static class MenuStyler
     {
         // The menu item container is usually a LinearLayout or FrameLayout
         // that contains the text view. We need to find the right level.
-        // Try to find a container that's wide enough to hold the indicator on the left
+        // Prefer containers with reasonable height (menu item rows are typically 48-72dp)
         var current = parent;
         int depth = 0;
-        const int maxDepth = 6; // Increased to find the right container
+        const int maxDepth = 6;
         AViewGroup? bestContainer = null;
-        int bestWidth = 0;
+        int bestScore = 0;
         
         while (current != null && depth < maxDepth)
         {
             var className = current.Class?.SimpleName;
-            // Look for common container types that would hold a menu item
+            // Look for LayoutViewGroup or similar - these are usually the menu item rows
             if (className != null && 
                 !className.Contains("RecyclerView") && // Skip RecyclerView itself
-                (className.Contains("LinearLayout") || 
+                (className.Contains("LayoutViewGroup") || // This is usually the menu item row
+                 className.Contains("LinearLayout") || 
                  className.Contains("FrameLayout") ||
-                 className.Contains("RelativeLayout") ||
-                 className.Contains("ViewGroup")))
+                 className.Contains("RelativeLayout")))
             {
                 // Check if this container has a reasonable structure
-                // Menu items typically have 1-5 children (icon, text, maybe other elements)
                 if (current.ChildCount >= 1 && current.ChildCount <= 5)
                 {
-                    // Check if this container has a reasonable width (not too small)
                     try
                     {
                         var width = current.Width;
-                        if (width > 200) // Has been measured and is wide enough (menu items should be at least 200px)
+                        var height = current.Height;
+                        
+                        // Score containers: prefer LayoutViewGroup with reasonable height (48-200dp)
+                        int score = 0;
+                        if (width > 200) score += 10; // Wide enough
+                        if (height > 0 && height < 600) // Reasonable height (not too tall)
                         {
-                            if (width > bestWidth)
-                            {
-                                bestWidth = width;
-                                bestContainer = current;
-                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Found better container '{className}' with {current.ChildCount} children, width={width}");
-                            }
+                            score += 20;
+                            if (height >= 100 && height <= 200) score += 10; // Ideal height range
+                        }
+                        if (className.Contains("LayoutViewGroup")) score += 30; // Prefer LayoutViewGroup
+                        
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestContainer = current;
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Found better container '{className}' with {current.ChildCount} children, width={width}, height={height}, score={score}");
                         }
                     }
                     catch { }
@@ -211,7 +218,7 @@ public static class MenuStyler
         // Return the best container we found, or fall back to immediate parent
         if (bestContainer != null)
         {
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Using best container '{bestContainer.Class?.SimpleName}' with width={bestWidth}");
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Using best container '{bestContainer.Class?.SimpleName}' with score={bestScore}");
             return bestContainer;
         }
         
@@ -236,11 +243,26 @@ public static class MenuStyler
     {
         try
         {
-            // Check if indicator already exists (by checking tag on parent)
-            if (parent.Tag?.ToString() == "has_indicator")
+            // Check if indicator already exists by looking for the view
+            for (int i = 0; i < parent.ChildCount; i++)
             {
-                System.Diagnostics.Debug.WriteLine("MenuStyler: Container already marked as having indicator");
-                return;
+                var child = parent.GetChildAt(i);
+                if (child?.Tag?.ToString() == "selection_indicator")
+                {
+                    // Check if it has valid dimensions
+                    if (child.Width > 0 && child.Height > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator already exists with valid dimensions (width={child.Width}, height={child.Height})");
+                        return;
+                    }
+                    else
+                    {
+                        // Remove invalid indicator
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler: Removing invalid indicator (width={child.Width}, height={child.Height})");
+                        parent.RemoveViewAt(i);
+                        break;
+                    }
+                }
             }
             
             // Convert 14dp to pixels
@@ -303,12 +325,13 @@ public static class MenuStyler
             // Add as first child (left side)
             parent.AddView(indicatorView, 0, layoutParams);
             
-            // Mark parent as having indicator
-            parent.Tag = "has_indicator";
-            
-            // Force layout
+            // Force layout immediately
             indicatorView.RequestLayout();
             parent.RequestLayout();
+            
+            // Also invalidate to force redraw
+            indicatorView.Invalidate();
+            parent.Invalidate();
             
             // Verify after layout
             indicatorView.Post(() =>
