@@ -18,44 +18,15 @@ public partial class LoginPage : ContentPage
     {
         base.OnAppearing();
         
-        // Ensure email and password are loaded when page appears
+        // Ensure email is loaded when page appears (password is never saved)
         if (BindingContext is LoginViewModel vm)
         {
             // Always reload email from preferences to ensure it's displayed
             var savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
             vm.Email = savedEmail; // Set it even if empty to clear any stale data
             
-            // Reload password if "Remember Me" was enabled
-            var rememberMe = Preferences.Get("RememberLoginCredentials", true);
-            if (rememberMe)
-            {
-                // Load password asynchronously
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        var savedPassword = await SecureStorage.GetAsync("SavedLoginPassword");
-                        MainThread.BeginInvokeOnMainThread(() =>
-                        {
-                            // Set password even if empty to clear any stale data
-                            vm.Password = savedPassword ?? string.Empty;
-                        });
-                    }
-                    catch
-                    {
-                        // SecureStorage might not be available, clear password
-                        MainThread.BeginInvokeOnMainThread(() =>
-                        {
-                            vm.Password = string.Empty;
-                        });
-                    }
-                });
-            }
-            else
-            {
-                // Clear password if remember me is disabled
-                vm.Password = string.Empty;
-            }
+            // Always clear password - never remember it
+            vm.Password = string.Empty;
         }
     }
 }

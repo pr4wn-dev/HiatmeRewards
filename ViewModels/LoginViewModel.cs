@@ -26,18 +26,18 @@ public partial class LoginViewModel : BaseViewModel
         _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         Title = "Login";
         
-        // Load saved email synchronously first (so it appears immediately)
+        // Always load saved email (username) - this is always remembered
         LoadSavedEmail();
         
-        // Then load password asynchronously
-        LoadSavedPassword();
+        // Never load password - it's always cleared for security
+        Password = string.Empty;
         
-        Console.WriteLine($"LoginViewModel: Initialized, Email={Email ?? "(empty)"}, HasPassword={!string.IsNullOrEmpty(Password)}");
+        Console.WriteLine($"LoginViewModel: Initialized, Email={Email ?? "(empty)"}");
     }
     
     private void LoadSavedEmail()
     {
-        // Load saved email (always load if available)
+        // Always load saved email if available
         var savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
         if (!string.IsNullOrEmpty(savedEmail))
         {
@@ -47,28 +47,6 @@ public partial class LoginViewModel : BaseViewModel
         {
             // Fallback to current logged-in email if no saved email
             Email = Preferences.Get("UserEmail", string.Empty);
-        }
-    }
-    
-    private async void LoadSavedPassword()
-    {
-        // Load saved password if "Remember Me" was enabled
-        var rememberMe = Preferences.Get("RememberLoginCredentials", true); // Default to true
-        if (rememberMe)
-        {
-            // Use SecureStorage for password
-            try
-            {
-                var savedPassword = await SecureStorage.GetAsync("SavedLoginPassword");
-                if (!string.IsNullOrEmpty(savedPassword))
-                {
-                    Password = savedPassword;
-                }
-            }
-            catch
-            {
-                // SecureStorage might not be available, ignore
-            }
         }
     }
 
@@ -96,29 +74,15 @@ public partial class LoginViewModel : BaseViewModel
                 Preferences.Set("UserData", Newtonsoft.Json.JsonConvert.SerializeObject(user)); // Ensure vehicles are stored
                 Preferences.Set("ShouldConfirmVehicle", true); // Flag to show vehicle confirmation after login
                 
-                // Save login credentials for auto-fill (always save email, password if remember me is enabled)
+                // Always save email for auto-fill (username is always remembered)
                 Preferences.Set("SavedLoginEmail", Email ?? string.Empty);
-                var rememberMe = Preferences.Get("RememberLoginCredentials", true); // Default to true
-                if (rememberMe && !string.IsNullOrEmpty(Password))
+                
+                // Never save password - always clear it for security
+                try
                 {
-                    try
-                    {
-                        await SecureStorage.SetAsync("SavedLoginPassword", Password);
-                    }
-                    catch
-                    {
-                        // SecureStorage might not be available, ignore
-                    }
+                    SecureStorage.Remove("SavedLoginPassword");
                 }
-                else
-                {
-                    // Clear saved password if remember me is disabled
-                    try
-                    {
-                        SecureStorage.Remove("SavedLoginPassword");
-                    }
-                    catch { }
-                }
+                catch { }
                 
                 Console.WriteLine($"LoginAsync: Success, Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
 

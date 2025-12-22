@@ -72,6 +72,26 @@ public partial class AppShell : Shell
         Loaded += async (s, e) =>
         {
             Console.WriteLine($"AppShell: Loaded, BindingContext={BindingContext?.GetType()?.Name ?? "null"}");
+            
+            // Restore user data if logged in
+            bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
+            if (isLoggedIn)
+            {
+                try
+                {
+                    var userJson = Preferences.Get("UserData", string.Empty);
+                    if (!string.IsNullOrEmpty(userJson))
+                    {
+                        App.CurrentUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
+                        Console.WriteLine($"AppShell: Restored user data, Email={App.CurrentUser?.Email}, Role={App.CurrentUser?.Role}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"AppShell: Error restoring user data: {ex.Message}");
+                }
+            }
+            
             if (BindingContext is AppShellViewModel vm)
             {
                 vm.UpdateMenuItems();
@@ -100,8 +120,10 @@ public partial class AppShell : Shell
             
             try
             {
-                await Shell.Current.GoToAsync("//Login");
-                Console.WriteLine("AppShell: Initial navigation to Login succeeded");
+                // Check if user is already logged in
+                string initialRoute = isLoggedIn ? "//Home" : "//Login";
+                await Shell.Current.GoToAsync(initialRoute);
+                Console.WriteLine($"AppShell: Initial navigation to {initialRoute} succeeded (IsLoggedIn={isLoggedIn})");
             }
             catch (Exception ex)
             {
