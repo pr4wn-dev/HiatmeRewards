@@ -80,20 +80,8 @@ public partial class AppShell : Shell
                 Console.WriteLine($"AppShell: Updated menu items, LoginMenuTitle={vm.LoginMenuTitle}");
             }
             
-            // Style menu items on app start (Android only)
-#if ANDROID
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                // Delay to ensure menu is rendered
-                Task.Delay(500).ContinueWith(_ =>
-                {
-                    MainThread.BeginInvokeOnMainThread(() =>
-                    {
-                        MenuStyler.StyleMenuItems(this);
-                    });
-                });
-            });
-#endif
+            // Don't style menu items on app start - only style when menu is actually opened
+            // This prevents indicators from showing when the menu isn't open
             
             // Set flyout width after loaded to ensure it fills screen on mobile
             // Use MainThread to ensure UI is ready
