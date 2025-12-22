@@ -2,6 +2,7 @@
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 using HiatMeApp.ViewModels;
+using System.Collections.Generic;
 
 namespace HiatMeApp;
 
@@ -246,20 +247,31 @@ public partial class AppShell : Shell
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
         
         // First, remove ALL our dynamic menu items to avoid duplicates
-        // This ensures a clean slate before rebuilding the menu
-        // Use Contains check and remove directly
+        // Compare by object reference to safely identify and remove our menu items
         try
         {
-            if (_homeMenuItem != null && Items.Contains(_homeMenuItem))
-                Items.Remove(_homeMenuItem);
-            if (_profileMenuItem != null && Items.Contains(_profileMenuItem))
-                Items.Remove(_profileMenuItem);
-            if (_requestDayOffMenuItem != null && Items.Contains(_requestDayOffMenuItem))
-                Items.Remove(_requestDayOffMenuItem);
-            if (_loginLogoutMenuItem != null && Items.Contains(_loginLogoutMenuItem))
-                Items.Remove(_loginLogoutMenuItem);
-            if (_registerMenuItem != null && Items.Contains(_registerMenuItem))
-                Items.Remove(_registerMenuItem);
+            var itemsToRemove = new List<ShellItem>();
+            
+            // Collect all items that match our menu item references
+            for (int i = Items.Count - 1; i >= 0; i--)
+            {
+                var item = Items[i];
+                // Check if this is one of our menu items by comparing object references
+                if (object.ReferenceEquals(item, _homeMenuItem) ||
+                    object.ReferenceEquals(item, _profileMenuItem) ||
+                    object.ReferenceEquals(item, _requestDayOffMenuItem) ||
+                    object.ReferenceEquals(item, _loginLogoutMenuItem) ||
+                    object.ReferenceEquals(item, _registerMenuItem))
+                {
+                    itemsToRemove.Add(item);
+                }
+            }
+            
+            // Remove collected items
+            foreach (var item in itemsToRemove)
+            {
+                Items.Remove(item);
+            }
         }
         catch (Exception ex)
         {
@@ -273,23 +285,18 @@ public partial class AppShell : Shell
         }
         
         // Now add items in the correct order based on login status
+        // We've already removed all our menu items above, so we can safely add without checking Contains
         try
         {
             if (isLoggedIn)
             {
                 // When logged in: Home, Profile, Request Day Off, Logout
                 if (_homeMenuItem != null)
-                    Items.Insert(0, _homeMenuItem);
+                    Items.Add(_homeMenuItem);
                 if (_profileMenuItem != null)
-                {
-                    int insertIndex = Items.IndexOf(_homeMenuItem) >= 0 ? Items.IndexOf(_homeMenuItem) + 1 : Items.Count;
-                    Items.Insert(insertIndex, _profileMenuItem);
-                }
+                    Items.Add(_profileMenuItem);
                 if (_requestDayOffMenuItem != null)
-                {
-                    int insertIndex = Items.IndexOf(_profileMenuItem) >= 0 ? Items.IndexOf(_profileMenuItem) + 1 : Items.Count;
-                    Items.Insert(insertIndex, _requestDayOffMenuItem);
-                }
+                    Items.Add(_requestDayOffMenuItem);
                 if (_loginLogoutMenuItem != null)
                     Items.Add(_loginLogoutMenuItem); // Logout at bottom
             }
