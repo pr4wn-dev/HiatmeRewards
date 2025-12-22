@@ -3,6 +3,7 @@ using Android.Widget;
 using Android.Views;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Platform;
+using System.Linq;
 using AView = Android.Views.View;
 using AViewGroup = Android.Views.ViewGroup;
 
@@ -32,7 +33,7 @@ public static class MenuStyler
             {
                 textView.SetTextColor(Android.Graphics.Color.White);
                 textView.TextSize = 18; // 18sp
-                textView.Typeface = Typeface.Default;
+                textView.Typeface = Android.Graphics.Typeface.Default;
             }
         }
 
