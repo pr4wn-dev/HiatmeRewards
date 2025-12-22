@@ -267,15 +267,10 @@ public partial class AppShell : Shell
             {
                 if (string.IsNullOrEmpty(profilePicture))
                 {
-                    // Use a FontImageSource with a user icon for guests/not logged in
-                    // This avoids PNG signature issues with corrupted files
-                    image.Source = new FontImageSource
-                    {
-                        FontFamily = "MaterialIcons",
-                        Glyph = "\ue853", // Material Icons user icon
-                        Size = 40,
-                        Color = Color.FromArgb("#0078D4") // Blue color matching WebsiteAccent
-                    };
+                    // Use the website's default avatar for guests/not logged in
+                    // Note: The file on the website is actually a RIFF/WAV file misnamed as PNG,
+                    // so we load it directly from the URL which the browser/MAUI can handle
+                    image.Source = ImageSource.FromUri(new Uri("https://hiatme.com/images/avatar.png"));
                 }
                 else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
                 {
