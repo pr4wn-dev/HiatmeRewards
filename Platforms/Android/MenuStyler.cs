@@ -261,9 +261,9 @@ public static class MenuStyler
             else if (parent is global::Android.Widget.RelativeLayout)
             {
                 var relativeParams = new global::Android.Widget.RelativeLayout.LayoutParams(widthPx, height);
-                relativeParams.AddRule(global::Android.Widget.RelativeLayout.AlignParentLeft);
-                relativeParams.AddRule(global::Android.Widget.RelativeLayout.AlignParentTop);
-                relativeParams.AddRule(global::Android.Widget.RelativeLayout.AlignParentBottom);
+                relativeParams.AddRule(global::Android.Widget.LayoutRules.AlignParentLeft);
+                relativeParams.AddRule(global::Android.Widget.LayoutRules.AlignParentTop);
+                relativeParams.AddRule(global::Android.Widget.LayoutRules.AlignParentBottom);
                 layoutParams = relativeParams;
             }
             else if (parent is global::Android.Widget.FrameLayout)
@@ -297,7 +297,7 @@ public static class MenuStyler
                 {
                     indicatorView.RequestLayout();
                     indicatorView.Invalidate();
-                    var bounds = new Android.Graphics.Rect();
+                    var bounds = new global::Android.Graphics.Rect();
                     indicatorView.GetDrawingRect(bounds);
                     System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator bounds: left={bounds.Left}, top={bounds.Top}, right={bounds.Right}, bottom={bounds.Bottom}, width={bounds.Width()}, height={bounds.Height()}");
                 }
