@@ -146,7 +146,7 @@ public partial class AppShell : Shell
         
         // Style menu items when flyout is opened and when navigation changes (Android only)
 #if ANDROID
-        // Style when flyout opens - use async task with longer delay to ensure menu is fully rendered
+        // Style when flyout opens - use async task with delay to ensure menu is fully rendered
         this.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
@@ -154,7 +154,7 @@ public partial class AppShell : Shell
                 // Delay styling until menu is fully open and rendered
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(500); // Longer delay to ensure menu is fully rendered
+                    await Task.Delay(300); // Reduced delay for better performance
                     if (this.FlyoutIsPresented) // Double-check menu is still open
                     {
                         MainThread.BeginInvokeOnMainThread(() =>
@@ -180,7 +180,7 @@ public partial class AppShell : Shell
             {
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(300);
+                    await Task.Delay(200); // Reduced delay for better performance
                     if (this.FlyoutIsPresented) // Double-check menu is still open
                     {
                         MainThread.BeginInvokeOnMainThread(() =>

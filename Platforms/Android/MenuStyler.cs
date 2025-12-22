@@ -56,7 +56,14 @@ public static class MenuStyler
         
         if (view is AViewGroup viewGroup)
         {
-            // Remove all indicators from this view group
+            // Remove background-based indicators first
+            if (viewGroup.Tag?.ToString() == "has_selection_indicator")
+            {
+                viewGroup.Background = null;
+                viewGroup.Tag = null;
+            }
+            
+            // Remove all child view indicators
             int childCount = viewGroup.ChildCount;
             for (int i = childCount - 1; i >= 0; i--)
             {
@@ -231,7 +238,14 @@ public static class MenuStyler
 
     private static void RemoveSelectionIndicators(AViewGroup parent)
     {
-        // Remove all existing selection indicators (both child views and background)
+        // Remove background-based indicators
+        if (parent.Tag?.ToString() == "has_selection_indicator")
+        {
+            parent.Background = null;
+            parent.Tag = null;
+        }
+        
+        // Remove all child view indicators
         for (int i = parent.ChildCount - 1; i >= 0; i--)
         {
             var child = parent.GetChildAt(i);
@@ -240,39 +254,17 @@ public static class MenuStyler
                 parent.RemoveViewAt(i);
             }
         }
-        
-        // Also remove background-based indicators
-        if (parent.Tag?.ToString() == "has_selection_indicator")
-        {
-            parent.Background = null;
-            parent.Tag = null;
-        }
     }
 
     private static void AddSelectionIndicator(AViewGroup parent)
     {
         try
         {
-            // Check if indicator already exists by looking for the view
-            for (int i = 0; i < parent.ChildCount; i++)
+            // Remove any existing indicator first (should already be done, but double-check)
+            if (parent.Tag?.ToString() == "has_selection_indicator")
             {
-                var child = parent.GetChildAt(i);
-                if (child?.Tag?.ToString() == "selection_indicator")
-                {
-                    // Check if it has valid dimensions
-                    if (child.Width > 0 && child.Height > 0)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator already exists with valid dimensions (width={child.Width}, height={child.Height})");
-                        return;
-                    }
-                    else
-                    {
-                        // Remove invalid indicator
-                        System.Diagnostics.Debug.WriteLine($"MenuStyler: Removing invalid indicator (width={child.Width}, height={child.Height})");
-                        parent.RemoveViewAt(i);
-                        break;
-                    }
-                }
+                parent.Background = null;
+                parent.Tag = null;
             }
             
             // Convert 14dp to pixels
@@ -280,16 +272,11 @@ public static class MenuStyler
             float density = displayMetrics != null ? displayMetrics.Density : 2.0f;
             int widthPx = (int)(14 * density);
             
-            // Get parent dimensions for debugging
+            // Get parent dimensions
             int parentWidth = parent.Width;
-            int parentHeight = parent.Height;
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Parent dimensions: width={parentWidth}, height={parentHeight}, class={parent.Class?.SimpleName}");
-            
-            // Try using a background drawable approach instead of adding child views
-            // LayoutViewGroup doesn't seem to support adding child views properly
-            var color = global::Android.Graphics.Color.ParseColor("#007bff");
             
             // Use LayerDrawable to create a transparent background with a blue left bar
+            var color = global::Android.Graphics.Color.ParseColor("#007bff");
             var transparentBg = new global::Android.Graphics.Drawables.ColorDrawable(global::Android.Graphics.Color.Transparent);
             var leftBar = new global::Android.Graphics.Drawables.ColorDrawable(color);
             
@@ -309,12 +296,10 @@ public static class MenuStyler
             
             // Mark parent so we can remove it later
             parent.Tag = "has_selection_indicator";
-            
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Set background drawable with left border (width={widthPx}px) on parent '{parent.Class?.SimpleName}'");
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error adding indicator: {ex.Message}\n{ex.StackTrace}");
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error adding indicator: {ex.Message}");
         }
     }
 
