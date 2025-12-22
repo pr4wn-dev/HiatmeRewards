@@ -49,6 +49,34 @@ public static class MenuStyler
             System.Diagnostics.Debug.WriteLine($"MenuStyler error: {ex.Message}");
         }
     }
+    
+    public static void RemoveAllIndicators(Shell shell)
+    {
+        try
+        {
+            if (shell?.Handler?.PlatformView is AView platformView)
+            {
+                platformView.Post(() =>
+                {
+                    try
+                    {
+                        if (platformView is AViewGroup viewGroup)
+                        {
+                            RemoveAllIndicators(viewGroup, 0);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler error removing indicators: {ex.Message}");
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"MenuStyler error: {ex.Message}");
+        }
+    }
 
     private static void RemoveAllIndicators(AView view, int depth)
     {

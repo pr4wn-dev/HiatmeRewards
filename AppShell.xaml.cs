@@ -146,37 +146,15 @@ public partial class AppShell : Shell
         
         // Style menu items when flyout is opened and when navigation changes (Android only)
 #if ANDROID
-        // Update menu styling immediately when navigation changes (so it's ready when menu opens)
-        this.Navigated += (s, e) =>
-        {
-            // Always update styling on navigation, not just when menu is open
-            // This ensures the indicator is correct when the menu is opened
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(100); // Very short delay to ensure navigation is complete
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    try
-                    {
-                        MenuStyler.StyleMenuItems(this);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error styling menu on navigation: {ex.Message}");
-                    }
-                });
-            });
-        };
-        
-        // Style when flyout opens - shorter delay since styling was already done on navigation
+        // Style when flyout opens - this is the main trigger
         this.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
             {
-                // Very short delay just to ensure menu is rendered
+                // Delay styling until menu is fully rendered
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(150); // Shorter delay for better performance
+                    await Task.Delay(150); // Short delay for better performance
                     if (this.FlyoutIsPresented) // Double-check menu is still open
                     {
                         MainThread.BeginInvokeOnMainThread(() =>
@@ -188,6 +166,48 @@ public partial class AppShell : Shell
                             catch (Exception ex)
                             {
                                 System.Diagnostics.Debug.WriteLine($"Error styling menu: {ex.Message}");
+                            }
+                        });
+                    }
+                });
+            }
+            else if (e.PropertyName == nameof(FlyoutIsPresented) && !this.FlyoutIsPresented)
+            {
+                // Menu closed - remove all indicators immediately to prevent them showing when menu isn't open
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    try
+                    {
+                        MenuStyler.RemoveAllIndicators(this);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error removing indicators: {ex.Message}");
+                    }
+                });
+            }
+        };
+        
+        // Update menu styling when navigation changes (only if flyout is open)
+        this.Navigated += (s, e) =>
+        {
+            // Only update if menu is currently open
+            if (this.FlyoutIsPresented)
+            {
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(100);
+                    if (this.FlyoutIsPresented) // Double-check menu is still open
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            try
+                            {
+                                MenuStyler.StyleMenuItems(this);
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error styling menu on navigation: {ex.Message}");
                             }
                         });
                     }

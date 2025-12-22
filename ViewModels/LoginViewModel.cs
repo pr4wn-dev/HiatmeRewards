@@ -4,6 +4,7 @@ using HiatMeApp.Services;
 using HiatMeApp.Models;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Maui.Storage;
 
 namespace HiatMeApp.ViewModels;
 
@@ -24,11 +25,45 @@ public partial class LoginViewModel : BaseViewModel
     {
         _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         Title = "Login";
-        if (Preferences.Get("IsLoggedIn", false))
+        
+        // Load saved email and password (if user chose to remember)
+        LoadSavedCredentials();
+        
+        Console.WriteLine($"LoginViewModel: Initialized, Email={Email ?? "(empty)"}, HasPassword={!string.IsNullOrEmpty(Password)}");
+    }
+    
+    private async void LoadSavedCredentials()
+    {
+        // Load saved email (always load if available)
+        var savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
+        if (!string.IsNullOrEmpty(savedEmail))
         {
+            Email = savedEmail;
+        }
+        else if (Preferences.Get("IsLoggedIn", false))
+        {
+            // Fallback to current logged-in email if no saved email
             Email = Preferences.Get("UserEmail", string.Empty);
         }
-        Console.WriteLine($"LoginViewModel: Initialized, IsLoggedIn={Preferences.Get("IsLoggedIn", false)}, Email={Email}");
+        
+        // Load saved password if "Remember Me" was enabled
+        var rememberMe = Preferences.Get("RememberLoginCredentials", true); // Default to true
+        if (rememberMe)
+        {
+            // Use SecureStorage for password
+            try
+            {
+                var savedPassword = await SecureStorage.GetAsync("SavedLoginPassword");
+                if (!string.IsNullOrEmpty(savedPassword))
+                {
+                    Password = savedPassword;
+                }
+            }
+            catch
+            {
+                // SecureStorage might not be available, ignore
+            }
+        }
     }
 
     [RelayCommand]
@@ -54,6 +89,31 @@ public partial class LoginViewModel : BaseViewModel
                 Preferences.Set("UserRole", user.Role ?? string.Empty);
                 Preferences.Set("UserData", Newtonsoft.Json.JsonConvert.SerializeObject(user)); // Ensure vehicles are stored
                 Preferences.Set("ShouldConfirmVehicle", true); // Flag to show vehicle confirmation after login
+                
+                // Save login credentials for auto-fill (always save email, password if remember me is enabled)
+                Preferences.Set("SavedLoginEmail", Email ?? string.Empty);
+                var rememberMe = Preferences.Get("RememberLoginCredentials", true); // Default to true
+                if (rememberMe && !string.IsNullOrEmpty(Password))
+                {
+                    try
+                    {
+                        await SecureStorage.SetAsync("SavedLoginPassword", Password);
+                    }
+                    catch
+                    {
+                        // SecureStorage might not be available, ignore
+                    }
+                }
+                else
+                {
+                    // Clear saved password if remember me is disabled
+                    try
+                    {
+                        SecureStorage.Remove("SavedLoginPassword");
+                    }
+                    catch { }
+                }
+                
                 Console.WriteLine($"LoginAsync: Success, Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
 
                 // Navigate to Home for all roles
