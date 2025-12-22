@@ -21,6 +21,12 @@ public static class MenuStyler
     {
         try
         {
+            // Only style if menu is actually open
+            if (!shell.FlyoutIsPresented)
+            {
+                return;
+            }
+            
             if (shell?.Handler?.PlatformView is AView platformView)
             {
                 // Post directly to UI thread - the call from AppShell is already delayed
@@ -28,14 +34,35 @@ public static class MenuStyler
                 {
                     try
                     {
-                        // Remove all indicators first (with depth limit)
-                        if (platformView is AViewGroup viewGroup)
+                        // Double-check menu is still open
+                        if (!shell.FlyoutIsPresented)
                         {
-                            RemoveAllIndicators(viewGroup, 0);
+                            return;
                         }
                         
-                        // Then style and add indicators (with depth limit)
-                        StyleMenuItemsRecursive(platformView, shell, 0);
+                        // Find the flyout drawer view - it's usually a DrawerLayout or similar
+                        // We need to find the actual flyout content, not the entire shell view
+                        AView? flyoutView = FindFlyoutContentView(platformView);
+                        
+                        if (flyoutView != null)
+                        {
+                            // Remove all indicators first (with depth limit)
+                            if (flyoutView is AViewGroup viewGroup)
+                            {
+                                RemoveAllIndicators(viewGroup, 0);
+                            }
+                            
+                            // Then style and add indicators (with depth limit)
+                            StyleMenuItemsRecursive(flyoutView, shell, 0);
+                        }
+                        else
+                        {
+                            // Fallback: remove indicators from entire view if we can't find flyout
+                            if (platformView is AViewGroup viewGroup)
+                            {
+                                RemoveAllIndicators(viewGroup, 0);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -48,6 +75,85 @@ public static class MenuStyler
         {
             System.Diagnostics.Debug.WriteLine($"MenuStyler error: {ex.Message}");
         }
+    }
+    
+    private static AView? FindFlyoutContentView(AView rootView)
+    {
+        // Try to find the flyout drawer content
+        // The flyout is typically in a DrawerLayout or similar container
+        if (rootView is AViewGroup viewGroup)
+        {
+            int childCount = viewGroup.ChildCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                try
+                {
+                    var child = viewGroup.GetChildAt(i);
+                    if (child != null)
+                    {
+                        var className = child.Class?.SimpleName ?? "";
+                        // Look for drawer or flyout-related views
+                        if (className.Contains("Drawer") || className.Contains("Flyout") || className.Contains("Navigation"))
+                        {
+                            // Check if this view contains menu items (has TextViews with menu text)
+                            if (ContainsMenuItems(child))
+                            {
+                                return child;
+                            }
+                        }
+                        
+                        // Recurse into child
+                        if (child is AViewGroup childGroup)
+                        {
+                            var found = FindFlyoutContentView(childGroup);
+                            if (found != null)
+                            {
+                                return found;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore errors
+                }
+            }
+        }
+        return null;
+    }
+    
+    private static bool ContainsMenuItems(AView view)
+    {
+        // Check if this view or its children contain menu item text
+        if (view is TextView textView)
+        {
+            var text = textView.Text;
+            if (!string.IsNullOrEmpty(text) && IsMenuItemText(text))
+            {
+                return true;
+            }
+        }
+        
+        if (view is AViewGroup viewGroup)
+        {
+            int childCount = viewGroup.ChildCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                try
+                {
+                    var child = viewGroup.GetChildAt(i);
+                    if (child != null && ContainsMenuItems(child))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Ignore errors
+                }
+            }
+        }
+        return false;
     }
     
     public static void RemoveAllIndicators(Shell shell)

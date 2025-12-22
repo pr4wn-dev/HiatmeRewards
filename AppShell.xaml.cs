@@ -644,10 +644,8 @@ public partial class AppShell : Shell
             
             Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, TotalItemsCount={Items.Count}");
             
-            // Style menu items on Android
-#if ANDROID
-            MenuStyler.StyleMenuItems(this);
-#endif
+            // Don't style menu items here - only style when menu is actually opened
+            // This prevents indicators from showing when menu isn't visible
         }
         finally
         {
