@@ -145,78 +145,56 @@ public partial class AppShell : Shell
         this.FlyoutBackgroundColor = Color.FromArgb("#333333");
         
         // Style menu items when flyout is opened and when navigation changes (Android only)
-        // TEMPORARILY DISABLED - Enable when menu styling is stable
-#if ANDROID && false
-        // Use Loaded event to style menu initially
-        this.Loaded += (s, e) =>
-        {
-            try
-            {
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(300);
-                    MainThread.BeginInvokeOnMainThread(() =>
-                    {
-                        try
-                        {
-                            MenuStyler.StyleMenuItems(this);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error styling menu on load: {ex.Message}");
-                        }
-                    });
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error in Loaded handler: {ex.Message}");
-            }
-        };
-        
-        // Style when flyout opens - use async task to avoid blocking
+#if ANDROID
+        // Style when flyout opens - use async task with longer delay to ensure menu is fully rendered
         this.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
             {
-                // Use async task to delay styling until after menu is fully open
+                // Delay styling until menu is fully open and rendered
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(300);
-                    MainThread.BeginInvokeOnMainThread(() =>
+                    await Task.Delay(500); // Longer delay to ensure menu is fully rendered
+                    if (this.FlyoutIsPresented) // Double-check menu is still open
                     {
-                        try
+                        MainThread.BeginInvokeOnMainThread(() =>
                         {
-                            MenuStyler.StyleMenuItems(this);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error styling menu: {ex.Message}");
-                        }
-                    });
+                            try
+                            {
+                                MenuStyler.StyleMenuItems(this);
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error styling menu: {ex.Message}");
+                            }
+                        });
+                    }
                 });
             }
         };
         
-        // Update menu styling when navigation changes
+        // Update menu styling when navigation changes (only if flyout is open)
         this.Navigated += (s, e) =>
         {
             if (this.FlyoutIsPresented)
             {
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(200);
-                    MainThread.BeginInvokeOnMainThread(() =>
+                    await Task.Delay(300);
+                    if (this.FlyoutIsPresented) // Double-check menu is still open
                     {
-                        try
+                        MainThread.BeginInvokeOnMainThread(() =>
                         {
-                            MenuStyler.StyleMenuItems(this);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error styling menu on navigation: {ex.Message}");
-                        }
-                    });
+                            try
+                            {
+                                MenuStyler.StyleMenuItems(this);
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error styling menu on navigation: {ex.Message}");
+                            }
+                        });
+                    }
                 });
             }
         };

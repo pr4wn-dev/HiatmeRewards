@@ -15,7 +15,7 @@ namespace HiatMeApp.Platforms.Android;
 
 public static class MenuStyler
 {
-    private static int _maxRecursionDepth = 20; // Prevent infinite recursion
+    private static int _maxRecursionDepth = 15; // Prevent infinite recursion - reduced for performance
     
     public static void StyleMenuItems(Shell shell)
     {
@@ -23,37 +23,23 @@ public static class MenuStyler
         {
             if (shell?.Handler?.PlatformView is AView platformView)
             {
-                // Run on background thread first, then post to UI thread
-                Task.Run(() =>
+                // Post directly to UI thread - the call from AppShell is already delayed
+                platformView.Post(() =>
                 {
                     try
                     {
-                        // Small delay to ensure UI is ready
-                        Thread.Sleep(50);
-                        
-                        // Post to UI thread for view operations
-                        platformView.Post(() =>
+                        // Remove all indicators first (with depth limit)
+                        if (platformView is AViewGroup viewGroup)
                         {
-                            try
-                            {
-                                // Remove all indicators first (with depth limit)
-                                if (platformView is AViewGroup viewGroup)
-                                {
-                                    RemoveAllIndicators(viewGroup, 0);
-                                }
-                                
-                                // Then style and add indicators (with depth limit)
-                                StyleMenuItemsRecursive(platformView, shell, 0);
-                            }
-                            catch (Exception ex)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"MenuStyler error in Post: {ex.Message}");
-                            }
-                        });
+                            RemoveAllIndicators(viewGroup, 0);
+                        }
+                        
+                        // Then style and add indicators (with depth limit)
+                        StyleMenuItemsRecursive(platformView, shell, 0);
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"MenuStyler error in Task: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler error in Post: {ex.Message}");
                     }
                 });
             }
