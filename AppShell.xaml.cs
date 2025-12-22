@@ -146,19 +146,52 @@ public partial class AppShell : Shell
         
         // Style menu items when flyout is opened and when navigation changes (Android only)
 #if ANDROID
+        // Use Loaded event to style menu initially
+        this.Loaded += (s, e) =>
+        {
+            try
+            {
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(300);
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        try
+                        {
+                            MenuStyler.StyleMenuItems(this);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error styling menu on load: {ex.Message}");
+                        }
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in Loaded handler: {ex.Message}");
+            }
+        };
+        
+        // Style when flyout opens - use async task to avoid blocking
         this.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(FlyoutIsPresented) && this.FlyoutIsPresented)
             {
-                // Style menu items when flyout opens
-                MainThread.BeginInvokeOnMainThread(() =>
+                // Use async task to delay styling until after menu is fully open
+                _ = Task.Run(async () =>
                 {
-                    Task.Delay(100).ContinueWith(_ =>
+                    await Task.Delay(300);
+                    MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        MainThread.BeginInvokeOnMainThread(() =>
+                        try
                         {
                             MenuStyler.StyleMenuItems(this);
-                        });
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error styling menu: {ex.Message}");
+                        }
                     });
                 });
             }
@@ -169,14 +202,19 @@ public partial class AppShell : Shell
         {
             if (this.FlyoutIsPresented)
             {
-                MainThread.BeginInvokeOnMainThread(() =>
+                _ = Task.Run(async () =>
                 {
-                    Task.Delay(100).ContinueWith(_ =>
+                    await Task.Delay(200);
+                    MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        MainThread.BeginInvokeOnMainThread(() =>
+                        try
                         {
                             MenuStyler.StyleMenuItems(this);
-                        });
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error styling menu on navigation: {ex.Message}");
+                        }
                     });
                 });
             }

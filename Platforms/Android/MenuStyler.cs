@@ -15,20 +15,34 @@ public static class MenuStyler
 {
     public static void StyleMenuItems(Shell shell)
     {
-        if (shell?.Handler?.PlatformView is AView platformView)
+        try
         {
-            // Use a delayed action to allow the menu to render first
-            platformView.Post(() =>
+            if (shell?.Handler?.PlatformView is AView platformView)
             {
-                // Remove all indicators first
-                if (platformView is AViewGroup viewGroup)
+                // Use a delayed action to allow the menu to render first
+                platformView.Post(() =>
                 {
-                    RemoveAllIndicators(viewGroup);
-                }
-                
-                // Then style and add indicators
-                StyleMenuItemsRecursive(platformView, shell);
-            });
+                    try
+                    {
+                        // Remove all indicators first
+                        if (platformView is AViewGroup viewGroup)
+                        {
+                            RemoveAllIndicators(viewGroup);
+                        }
+                        
+                        // Then style and add indicators
+                        StyleMenuItemsRecursive(platformView, shell);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler error in Post: {ex.Message}");
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"MenuStyler error: {ex.Message}");
         }
     }
 
