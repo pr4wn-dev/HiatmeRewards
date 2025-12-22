@@ -412,7 +412,6 @@
         <Setter Property="Shell.FlyoutBackgroundColor" Value="{StaticResource WebsiteDark}" />
         <Setter Property="Shell.FlyoutHeaderBehavior" Value="Fixed" />
         <Setter Property="Shell.FlyoutBehavior" Value="Flyout" />
-        <Setter Property="Shell.FlyoutForegroundColor" Value="White" />
     </Style>
 
 
