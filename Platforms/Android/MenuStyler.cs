@@ -289,13 +289,7 @@ public static class MenuStyler
             // LayoutViewGroup doesn't seem to support adding child views properly
             var color = global::Android.Graphics.Color.ParseColor("#007bff");
             
-            // Create a drawable with a left border
-            var borderDrawable = new global::Android.Graphics.Drawables.GradientDrawable();
-            borderDrawable.SetColor(global::Android.Graphics.Color.Transparent);
-            borderDrawable.SetStroke(widthPx, color, 0, 0, 0, 0); // Left border only
-            
-            // Actually, GradientDrawable doesn't support single-side borders easily
-            // Let's use a LayerDrawable instead
+            // Use LayerDrawable to create a transparent background with a blue left bar
             var transparentBg = new global::Android.Graphics.Drawables.ColorDrawable(global::Android.Graphics.Color.Transparent);
             var leftBar = new global::Android.Graphics.Drawables.ColorDrawable(color);
             
@@ -306,7 +300,7 @@ public static class MenuStyler
             layerList.SetLayerWidth(1, widthPx);
             layerList.SetLayerGravity(1, global::Android.Views.GravityFlags.Left | global::Android.Views.GravityFlags.FillVertical);
             layerList.SetLayerInsetLeft(1, 0);
-            layerList.SetLayerInsetRight(1, parentWidth - widthPx);
+            layerList.SetLayerInsetRight(1, parentWidth > 0 ? parentWidth - widthPx : 0);
             layerList.SetLayerInsetTop(1, 0);
             layerList.SetLayerInsetBottom(1, 0);
             
