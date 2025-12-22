@@ -13,6 +13,9 @@ public partial class AppShell : Shell
     private MenuItem? _homeMenuItem;
     private MenuItem? _profileMenuItem;
     private MenuItem? _requestDayOffMenuItem;
+    private MenuItem? _vehicleMenuItem;
+    private MenuItem? _vehicleIssuesMenuItem;
+    private MenuItem? _finishDayMenuItem;
     private MenuItem? _loginLogoutMenuItem; // Single item that changes text
     private MenuItem? _registerMenuItem;
     private readonly object _menuUpdateLock = new object();
@@ -42,6 +45,15 @@ public partial class AppShell : Shell
         
         _requestDayOffMenuItem = new MenuItem { Text = "Request Day Off" };
         _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
+        
+        _vehicleMenuItem = new MenuItem { Text = "Vehicle" };
+        _vehicleMenuItem.Clicked += OnVehicleClicked;
+        
+        _vehicleIssuesMenuItem = new MenuItem { Text = "Vehicle Issues" };
+        _vehicleIssuesMenuItem.Clicked += OnVehicleIssuesClicked;
+        
+        _finishDayMenuItem = new MenuItem { Text = "Finish Day" };
+        _finishDayMenuItem.Clicked += OnFinishDayClicked;
         
         // Single Login/Logout menu item that changes text
         _loginLogoutMenuItem = new MenuItem { Text = "Login" };
@@ -292,7 +304,7 @@ public partial class AppShell : Shell
             
             // Also remove by text matching as backup (brute force) - but be more careful
             // Only remove if we haven't already removed it via tracking
-            var ourMenuTexts = new HashSet<string> { "Home", "Profile", "Request Day Off", "Login", "Logout", "Register" };
+            var ourMenuTexts = new HashSet<string> { "Home", "Profile", "Request Day Off", "Vehicle", "Vehicle Issues", "Finish Day", "Login", "Logout", "Register" };
             int removedByText = 0;
             for (int i = Items.Count - 1; i >= 0; i--)
             {
@@ -352,11 +364,11 @@ public partial class AppShell : Shell
             try
             {
                 Console.WriteLine($"UpdateMenuVisibility: About to add items. isLoggedIn={isLoggedIn}");
-                Console.WriteLine($"UpdateMenuVisibility: Menu item null checks - Home={_homeMenuItem == null}, Profile={_profileMenuItem == null}, RequestDayOff={_requestDayOffMenuItem == null}, LoginLogout={_loginLogoutMenuItem == null}, Register={_registerMenuItem == null}");
+                Console.WriteLine($"UpdateMenuVisibility: Menu item null checks - Home={_homeMenuItem == null}, Profile={_profileMenuItem == null}, RequestDayOff={_requestDayOffMenuItem == null}, Vehicle={_vehicleMenuItem == null}, VehicleIssues={_vehicleIssuesMenuItem == null}, FinishDay={_finishDayMenuItem == null}, LoginLogout={_loginLogoutMenuItem == null}, Register={_registerMenuItem == null}");
                 
                 if (isLoggedIn)
                 {
-                    // When logged in: Home, Profile, Request Day Off, Logout
+                    // When logged in: Home, Profile, Request Day Off, Vehicle, Vehicle Issues, Finish Day, Logout
                     if (_homeMenuItem != null)
                     {
                         try
@@ -409,6 +421,60 @@ public partial class AppShell : Shell
                     else
                     {
                         Console.WriteLine("UpdateMenuVisibility: ✗ Request Day Off menu item is NULL");
+                    }
+                    
+                    if (_vehicleMenuItem != null)
+                    {
+                        try
+                        {
+                            Items.Add(_vehicleMenuItem);
+                            _addedMenuItems.Add(_vehicleMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Vehicle");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Vehicle: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Vehicle menu item is NULL");
+                    }
+                    
+                    if (_vehicleIssuesMenuItem != null)
+                    {
+                        try
+                        {
+                            Items.Add(_vehicleIssuesMenuItem);
+                            _addedMenuItems.Add(_vehicleIssuesMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Vehicle Issues");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Vehicle Issues: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Vehicle Issues menu item is NULL");
+                    }
+                    
+                    if (_finishDayMenuItem != null)
+                    {
+                        try
+                        {
+                            Items.Add(_finishDayMenuItem);
+                            _addedMenuItems.Add(_finishDayMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Finish Day");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Finish Day: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Finish Day menu item is NULL");
                     }
                     
                     if (_loginLogoutMenuItem != null)
@@ -514,6 +580,45 @@ public partial class AppShell : Shell
         catch (Exception ex)
         {
             Console.WriteLine($"OnRequestDayOffClicked: Error navigating: {ex.Message}");
+        }
+    }
+
+    private async void OnVehicleClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            Shell.Current.FlyoutIsPresented = false;
+            await Shell.Current.GoToAsync("//Vehicle");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"OnVehicleClicked: Error navigating: {ex.Message}");
+        }
+    }
+
+    private async void OnVehicleIssuesClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            Shell.Current.FlyoutIsPresented = false;
+            await Shell.Current.GoToAsync("//VehicleIssues");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"OnVehicleIssuesClicked: Error navigating: {ex.Message}");
+        }
+    }
+
+    private async void OnFinishDayClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            Shell.Current.FlyoutIsPresented = false;
+            await Shell.Current.GoToAsync("//FinishDay");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"OnFinishDayClicked: Error navigating: {ex.Message}");
         }
     }
 }
