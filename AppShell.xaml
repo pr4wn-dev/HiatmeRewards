@@ -31,8 +31,7 @@
                 </Grid.ColumnDefinitions>
                 
                 <!-- Profile Picture (Square) -->
-                <!-- Note: avatar.png is excluded from build due to corruption. 
-                     The image source will be set programmatically in UpdateFlyoutAvatar -->
+                <!-- The image source will be set programmatically in UpdateFlyoutAvatar -->
                 <Image x:Name="FlyoutAvatarImage"
                        Grid.Column="0"
                        Aspect="AspectFill"
