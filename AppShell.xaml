@@ -11,7 +11,7 @@
     <!-- Custom Flyout Header with Avatar Box (matching website design) -->
     <Shell.FlyoutHeader>
         <Grid BackgroundColor="{StaticResource WebsiteDark}" 
-              HeightRequest="140">
+              HeightRequest="160">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="14"/>
                 <ColumnDefinition Width="*"/>
@@ -35,8 +35,8 @@
                 <Image x:Name="FlyoutAvatarImage"
                        Grid.Column="0"
                        Aspect="AspectFill"
-                       HeightRequest="60"
-                       WidthRequest="60"
+                       HeightRequest="80"
+                       WidthRequest="80"
                        HorizontalOptions="Start"
                        Margin="0,0,12,0" />
                 
@@ -45,11 +45,11 @@
                                      Spacing="4"
                                      VerticalOptions="Center">
                     <Label Text="{Binding UserName, TargetNullValue='Guest'}"
-                           FontSize="18"
+                           FontSize="20"
                            TextColor="{StaticResource WebsiteAccent}"
                            HorizontalOptions="Start" />
                     <Label Text="{Binding UserEmail, TargetNullValue='Guest@localhost'}"
-                           FontSize="16"
+                           FontSize="18"
                            TextColor="{StaticResource WebsiteAccent}"
                            HorizontalOptions="Start" />
                 </VerticalStackLayout>

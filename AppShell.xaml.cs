@@ -285,7 +285,7 @@ public partial class AppShell : Shell
                         {
                             FontFamily = "MaterialIcons",
                             Glyph = "\ue853",
-                            Size = 40,
+                            Size = 50,
                             Color = Color.FromArgb("#0078D4")
                         };
                     }
