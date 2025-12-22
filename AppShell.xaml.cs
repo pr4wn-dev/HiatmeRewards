@@ -267,22 +267,15 @@ public partial class AppShell : Shell
             {
                 if (string.IsNullOrEmpty(profilePicture))
                 {
-                    // Use the website's default avatar for guests/not logged in
-                    try
+                    // Use a FontImageSource with a user icon for guests/not logged in
+                    // This avoids PNG signature issues with corrupted files
+                    image.Source = new FontImageSource
                     {
-                        image.Source = ImageSource.FromUri(new Uri("https://hiatme.com/images/avatar.png"));
-                    }
-                    catch
-                    {
-                        // If that fails, use a FontImageSource with a user icon as fallback
-                        image.Source = new FontImageSource
-                        {
-                            FontFamily = "MaterialIcons",
-                            Glyph = "\ue853", // Material Icons user icon
-                            Size = 40,
-                            Color = Color.FromArgb("#0078D4") // Blue color matching WebsiteAccent
-                        };
-                    }
+                        FontFamily = "MaterialIcons",
+                        Glyph = "\ue853", // Material Icons user icon
+                        Size = 40,
+                        Color = Color.FromArgb("#0078D4") // Blue color matching WebsiteAccent
+                    };
                 }
                 else if (profilePicture.StartsWith("http://") || profilePicture.StartsWith("https://"))
                 {
