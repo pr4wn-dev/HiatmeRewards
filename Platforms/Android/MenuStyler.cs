@@ -3,6 +3,8 @@ using Android.Widget;
 using Android.Views;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Platform;
+using AView = Android.Views.View;
+using AViewGroup = Android.Views.ViewGroup;
 
 namespace HiatMeApp.Platforms.Android;
 
@@ -10,7 +12,7 @@ public static class MenuStyler
 {
     public static void StyleMenuItems(Shell shell)
     {
-        if (shell?.Handler?.PlatformView is View platformView)
+        if (shell?.Handler?.PlatformView is AView platformView)
         {
             // Use a delayed action to allow the menu to render first
             platformView.Post(() =>
@@ -20,7 +22,7 @@ public static class MenuStyler
         }
     }
 
-    private static void StyleMenuItemsRecursive(View view)
+    private static void StyleMenuItemsRecursive(AView view)
     {
         if (view is TextView textView)
         {
@@ -34,7 +36,7 @@ public static class MenuStyler
             }
         }
 
-        if (view is ViewGroup viewGroup)
+        if (view is AViewGroup viewGroup)
         {
             for (int i = 0; i < viewGroup.ChildCount; i++)
             {
