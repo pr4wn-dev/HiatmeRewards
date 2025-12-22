@@ -290,14 +290,22 @@ public partial class AppShell : Shell
             }
             _addedMenuItems.Clear();
             
-            // Also remove by text matching as backup (brute force)
+            // Also remove by text matching as backup (brute force) - but be more careful
+            // Only remove if we haven't already removed it via tracking
             var ourMenuTexts = new HashSet<string> { "Home", "Profile", "Request Day Off", "Login", "Logout", "Register" };
+            int removedByText = 0;
             for (int i = Items.Count - 1; i >= 0; i--)
             {
                 try
                 {
                     var item = Items[i];
                     var itemType = item.GetType();
+                    
+                    // Skip if this is a ShellContent (not a MenuItem)
+                    if (itemType.Name == "ShellContent")
+                    {
+                        continue;
+                    }
                     
                     // Try to get Text property
                     var textProperty = itemType.GetProperty("Text", BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
@@ -311,8 +319,13 @@ public partial class AppShell : Shell
                         var text = textProperty.GetValue(item) as string;
                         if (!string.IsNullOrEmpty(text) && ourMenuTexts.Contains(text))
                         {
-                            Console.WriteLine($"UpdateMenuVisibility: REMOVING by text: '{text}'");
-                            Items.RemoveAt(i);
+                            // Only remove if we haven't already tracked and removed this item
+                            if (!_addedMenuItems.Contains(item))
+                            {
+                                Console.WriteLine($"UpdateMenuVisibility: REMOVING by text (backup): '{text}'");
+                                Items.RemoveAt(i);
+                                removedByText++;
+                            }
                         }
                     }
                 }
@@ -320,6 +333,11 @@ public partial class AppShell : Shell
                 {
                     Console.WriteLine($"UpdateMenuVisibility: Error checking item: {ex.Message}");
                 }
+            }
+            
+            if (removedByText > 0)
+            {
+                Console.WriteLine($"UpdateMenuVisibility: Removed {removedByText} items by text matching (backup method)");
             }
             
             Console.WriteLine($"UpdateMenuVisibility: After removal. Items.Count={Items.Count}");
@@ -333,32 +351,82 @@ public partial class AppShell : Shell
             // Now add items in the correct order based on login status
             try
             {
+                Console.WriteLine($"UpdateMenuVisibility: About to add items. isLoggedIn={isLoggedIn}");
+                Console.WriteLine($"UpdateMenuVisibility: Menu item null checks - Home={_homeMenuItem == null}, Profile={_profileMenuItem == null}, RequestDayOff={_requestDayOffMenuItem == null}, LoginLogout={_loginLogoutMenuItem == null}, Register={_registerMenuItem == null}");
+                
                 if (isLoggedIn)
                 {
                     // When logged in: Home, Profile, Request Day Off, Logout
                     if (_homeMenuItem != null)
                     {
-                        Items.Add(_homeMenuItem);
-                        _addedMenuItems.Add(_homeMenuItem);
-                        Console.WriteLine("UpdateMenuVisibility: Added Home");
+                        try
+                        {
+                            Items.Add(_homeMenuItem);
+                            _addedMenuItems.Add(_homeMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Home");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Home: {ex.Message}");
+                        }
                     }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Home menu item is NULL");
+                    }
+                    
                     if (_profileMenuItem != null)
                     {
-                        Items.Add(_profileMenuItem);
-                        _addedMenuItems.Add(_profileMenuItem);
-                        Console.WriteLine("UpdateMenuVisibility: Added Profile");
+                        try
+                        {
+                            Items.Add(_profileMenuItem);
+                            _addedMenuItems.Add(_profileMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Profile");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Profile: {ex.Message}");
+                        }
                     }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Profile menu item is NULL");
+                    }
+                    
                     if (_requestDayOffMenuItem != null)
                     {
-                        Items.Add(_requestDayOffMenuItem);
-                        _addedMenuItems.Add(_requestDayOffMenuItem);
-                        Console.WriteLine("UpdateMenuVisibility: Added Request Day Off");
+                        try
+                        {
+                            Items.Add(_requestDayOffMenuItem);
+                            _addedMenuItems.Add(_requestDayOffMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Request Day Off");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Request Day Off: {ex.Message}");
+                        }
                     }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Request Day Off menu item is NULL");
+                    }
+                    
                     if (_loginLogoutMenuItem != null)
                     {
-                        Items.Add(_loginLogoutMenuItem);
-                        _addedMenuItems.Add(_loginLogoutMenuItem);
-                        Console.WriteLine("UpdateMenuVisibility: Added Logout");
+                        try
+                        {
+                            Items.Add(_loginLogoutMenuItem);
+                            _addedMenuItems.Add(_loginLogoutMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Logout");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Logout: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Login/Logout menu item is NULL");
                     }
                 }
                 else
@@ -366,21 +434,44 @@ public partial class AppShell : Shell
                     // When logged out: Login and Register only
                     if (_loginLogoutMenuItem != null)
                     {
-                        Items.Add(_loginLogoutMenuItem);
-                        _addedMenuItems.Add(_loginLogoutMenuItem);
-                        Console.WriteLine("UpdateMenuVisibility: Added Login");
+                        try
+                        {
+                            Items.Add(_loginLogoutMenuItem);
+                            _addedMenuItems.Add(_loginLogoutMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Login");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Login: {ex.Message}");
+                        }
                     }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Login menu item is NULL");
+                    }
+                    
                     if (_registerMenuItem != null)
                     {
-                        Items.Add(_registerMenuItem);
-                        _addedMenuItems.Add(_registerMenuItem);
-                        Console.WriteLine("UpdateMenuVisibility: Added Register");
+                        try
+                        {
+                            Items.Add(_registerMenuItem);
+                            _addedMenuItems.Add(_registerMenuItem);
+                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Register");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Register: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("UpdateMenuVisibility: ✗ Register menu item is NULL");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateMenuVisibility: Error adding items: {ex.Message}");
+                Console.WriteLine($"UpdateMenuVisibility: Error adding items: {ex.Message}, StackTrace: {ex.StackTrace}");
             }
             
             Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, TotalItemsCount={Items.Count}");
