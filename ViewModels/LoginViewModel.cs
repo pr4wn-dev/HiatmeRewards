@@ -26,13 +26,16 @@ public partial class LoginViewModel : BaseViewModel
         _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         Title = "Login";
         
-        // Load saved email and password (if user chose to remember)
-        LoadSavedCredentials();
+        // Load saved email synchronously first (so it appears immediately)
+        LoadSavedEmail();
+        
+        // Then load password asynchronously
+        LoadSavedPassword();
         
         Console.WriteLine($"LoginViewModel: Initialized, Email={Email ?? "(empty)"}, HasPassword={!string.IsNullOrEmpty(Password)}");
     }
     
-    private async void LoadSavedCredentials()
+    private void LoadSavedEmail()
     {
         // Load saved email (always load if available)
         var savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
@@ -45,7 +48,10 @@ public partial class LoginViewModel : BaseViewModel
             // Fallback to current logged-in email if no saved email
             Email = Preferences.Get("UserEmail", string.Empty);
         }
-        
+    }
+    
+    private async void LoadSavedPassword()
+    {
         // Load saved password if "Remember Me" was enabled
         var rememberMe = Preferences.Get("RememberLoginCredentials", true); // Default to true
         if (rememberMe)

@@ -191,7 +191,20 @@ public partial class AppShell : Shell
         // Update menu styling when navigation changes (only if flyout is open)
         this.Navigated += (s, e) =>
         {
-            // Only update if menu is currently open
+            // Always remove indicators on navigation (menu might not be open, but indicators could be visible)
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    MenuStyler.RemoveAllIndicators(this);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error removing indicators on navigation: {ex.Message}");
+                }
+            });
+            
+            // Only update styling if menu is currently open
             if (this.FlyoutIsPresented)
             {
                 _ = Task.Run(async () =>
