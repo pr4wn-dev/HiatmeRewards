@@ -100,20 +100,24 @@ public static class MenuStyler
                     var parent = textView.Parent as AViewGroup;
                     if (parent != null)
                     {
-                        // Find the root container for this menu item (usually 2-3 levels up)
-                        var rootContainer = FindMenuItemRootContainer(parent);
-                        if (rootContainer != null)
+                    // Find the root container for this menu item (usually 2-3 levels up)
+                    var rootContainer = FindMenuItemRootContainer(parent);
+                    if (rootContainer != null)
+                    {
+                        // Check if this menu item corresponds to the current route
+                        string? currentRoute = GetCurrentRoute(shell);
+                        bool isSelected = IsMenuItemSelected(text, currentRoute);
+                        
+                        // Debug logging
+                        System.Diagnostics.Debug.WriteLine($"MenuStyler: MenuItem='{text}', CurrentRoute='{currentRoute}', IsSelected={isSelected}");
+                        
+                        // Only add indicator if selected (removal already done at top level)
+                        if (isSelected)
                         {
-                            // Check if this menu item corresponds to the current route
-                            string? currentRoute = GetCurrentRoute(shell);
-                            bool isSelected = IsMenuItemSelected(text, currentRoute);
-                            
-                            // Only add indicator if selected (removal already done at top level)
-                            if (isSelected)
-                            {
-                                AddSelectionIndicator(rootContainer);
-                            }
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Adding indicator for '{text}'");
+                            AddSelectionIndicator(rootContainer);
                         }
+                    }
                     }
                 }
             }
@@ -148,22 +152,40 @@ public static class MenuStyler
     {
         // The menu item container is usually a LinearLayout or FrameLayout
         // that contains the text view. We need to find the right level.
+        // Try to find a container that's wide enough to hold the indicator on the left
         var current = parent;
         int depth = 0;
-        const int maxDepth = 5; // Prevent infinite loops
+        const int maxDepth = 6; // Increased to find the right container
         
         while (current != null && depth < maxDepth)
         {
-            var className = current.Class.SimpleName;
+            var className = current.Class?.SimpleName;
             // Look for common container types that would hold a menu item
             if (className != null && 
                 (className.Contains("LinearLayout") || 
                  className.Contains("FrameLayout") ||
-                 className.Contains("RelativeLayout")))
+                 className.Contains("RelativeLayout") ||
+                 className.Contains("RecyclerView") ||
+                 className.Contains("ViewGroup")))
             {
-                // Check if this container has the right structure (text view + possibly icon)
-                if (current.ChildCount >= 1 && current.ChildCount <= 3)
+                // Check if this container has a reasonable structure
+                // Menu items typically have 1-4 children (icon, text, maybe other elements)
+                if (current.ChildCount >= 1 && current.ChildCount <= 5)
                 {
+                    // Check if this container has a reasonable width (not too small)
+                    try
+                    {
+                        var width = current.Width;
+                        if (width > 0) // Has been measured
+                        {
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Found container '{className}' with {current.ChildCount} children, width={width}");
+                            return current;
+                        }
+                    }
+                    catch { }
+                    
+                    // If not measured yet, still return it if it looks like a menu item container
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Found container '{className}' with {current.ChildCount} children (not measured yet)");
                     return current;
                 }
             }
@@ -173,6 +195,7 @@ public static class MenuStyler
         }
         
         // Fallback: return the immediate parent if we can't find a better container
+        System.Diagnostics.Debug.WriteLine($"MenuStyler: Using fallback parent container");
         return parent;
     }
 
@@ -191,20 +214,40 @@ public static class MenuStyler
 
     private static void AddSelectionIndicator(AViewGroup parent)
     {
-        // Create blue rectangle indicator
-        var indicatorView = new AView(Platform.CurrentActivity);
-        indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
-        indicatorView.Tag = "selection_indicator";
-        
-        // Add as first child (left side) with proper layout params
-        // Convert 14dp to pixels
-        var displayMetrics = Platform.CurrentActivity.Resources?.DisplayMetrics;
-        int widthPx = displayMetrics != null ? (int)(14 * displayMetrics.Density) : (int)(14 * 2); // Default to 2x density if null
-        var layoutParams = new ViewGroup.MarginLayoutParams(
-            widthPx, // 14dp width (matching header) in pixels
-            ViewGroup.LayoutParams.MatchParent // Full height
-        );
-        parent.AddView(indicatorView, 0, layoutParams);
+        try
+        {
+            // Check if indicator already exists
+            for (int i = 0; i < parent.ChildCount; i++)
+            {
+                var child = parent.GetChildAt(i);
+                if (child?.Tag?.ToString() == "selection_indicator")
+                {
+                    System.Diagnostics.Debug.WriteLine("MenuStyler: Indicator already exists, skipping");
+                    return; // Already has an indicator
+                }
+            }
+            
+            // Create blue rectangle indicator
+            var indicatorView = new AView(Platform.CurrentActivity);
+            indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
+            indicatorView.Tag = "selection_indicator";
+            
+            // Add as first child (left side) with proper layout params
+            // Convert 14dp to pixels
+            var displayMetrics = Platform.CurrentActivity.Resources?.DisplayMetrics;
+            int widthPx = displayMetrics != null ? (int)(14 * displayMetrics.Density) : (int)(14 * 2); // Default to 2x density if null
+            var layoutParams = new ViewGroup.MarginLayoutParams(
+                widthPx, // 14dp width (matching header) in pixels
+                ViewGroup.LayoutParams.MatchParent // Full height
+            );
+            
+            parent.AddView(indicatorView, 0, layoutParams);
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Added indicator view (width={widthPx}px) to parent with {parent.ChildCount} children");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error adding indicator: {ex.Message}");
+        }
     }
 
     private static string? GetCurrentRoute(Shell shell)
@@ -218,15 +261,19 @@ public static class MenuStyler
                 var location = currentState.Location;
                 if (location != null)
                 {
-                    // Get the full path and extract the route
+                    // First try: Get the full path and extract the route
                     var fullPath = location.ToString();
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: FullPath='{fullPath}'");
+                    
                     if (!string.IsNullOrEmpty(fullPath))
                     {
                         // Remove leading slashes and get the last segment
                         var segments = fullPath.TrimStart('/').Split('/');
                         if (segments.Length > 0 && !string.IsNullOrEmpty(segments[segments.Length - 1]))
                         {
-                            return segments[segments.Length - 1];
+                            var route = segments[segments.Length - 1];
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Extracted route from path: '{route}'");
+                            return route;
                         }
                     }
                     
@@ -236,7 +283,9 @@ public static class MenuStyler
                         var segments = location.Segments.ToList();
                         if (segments.Count > 0)
                         {
-                            return segments[segments.Count - 1];
+                            var route = segments[segments.Count - 1];
+                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Extracted route from Segments: '{route}'");
+                            return route;
                         }
                     }
                 }
@@ -249,11 +298,16 @@ public static class MenuStyler
                 var route = currentItem.Route;
                 if (!string.IsNullOrEmpty(route))
                 {
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Route from CurrentItem: '{route}'");
                     return route;
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error getting route: {ex.Message}");
+        }
+        System.Diagnostics.Debug.WriteLine("MenuStyler: No route found");
         return null;
     }
 
