@@ -5,6 +5,7 @@ using HiatMeApp.ViewModels;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using System.Threading.Tasks;
 #if ANDROID
 using HiatMeApp.Platforms.Android;
 #endif
@@ -77,6 +78,21 @@ public partial class AppShell : Shell
                 Console.WriteLine($"AppShell: Updated menu items, LoginMenuTitle={vm.LoginMenuTitle}");
             }
             
+            // Style menu items on app start (Android only)
+#if ANDROID
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                // Delay to ensure menu is rendered
+                Task.Delay(500).ContinueWith(_ =>
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        MenuStyler.StyleMenuItems(this);
+                    });
+                });
+            });
+#endif
+            
             // Set flyout width after loaded to ensure it fills screen on mobile
             // Use MainThread to ensure UI is ready
             MainThread.BeginInvokeOnMainThread(() =>
@@ -125,6 +141,27 @@ public partial class AppShell : Shell
         // Ensure flyout background is WebsiteDark (dark gray #333333) to match website
         // Note: This is also set in Styles.xaml, but explicitly setting here to ensure it's applied
         this.FlyoutBackgroundColor = Color.FromArgb("#333333");
+        
+        // Style menu items when flyout is opened (Android only)
+#if ANDROID
+        this.FlyoutIsPresentedChanged += (s, e) =>
+        {
+            if (this.FlyoutIsPresented)
+            {
+                // Style menu items when flyout opens
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Task.Delay(100).ContinueWith(_ =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            MenuStyler.StyleMenuItems(this);
+                        });
+                    });
+                });
+            }
+        };
+#endif
     }
 
     private async void OnLoginClicked(object? sender, EventArgs e)
