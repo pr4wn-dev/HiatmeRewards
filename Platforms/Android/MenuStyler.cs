@@ -131,11 +131,10 @@ public static class MenuStyler
                 var location = currentState.Location;
                 if (location != null && location.Segments != null)
                 {
-                    var segments = location.Segments;
-                    var segmentCount = segments.Count;
-                    if (segmentCount > 0)
+                    var segments = location.Segments.ToList();
+                    if (segments.Count > 0)
                     {
-                        return segments[segmentCount - 1];
+                        return segments[segments.Count - 1];
                     }
                 }
             }
