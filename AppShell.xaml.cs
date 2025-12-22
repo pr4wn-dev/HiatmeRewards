@@ -3,6 +3,7 @@ using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 using HiatMeApp.ViewModels;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace HiatMeApp;
 
@@ -13,6 +14,8 @@ public partial class AppShell : Shell
     private MenuItem? _requestDayOffMenuItem;
     private MenuItem? _loginLogoutMenuItem; // Single item that changes text
     private MenuItem? _registerMenuItem;
+    private readonly object _menuUpdateLock = new object();
+    private bool _isUpdatingMenu = false;
 
     public AppShell()
     {
@@ -237,84 +240,155 @@ public partial class AppShell : Shell
 
     public void UpdateMenuVisibility()
     {
-        // Ensure this runs on the main thread
-        if (!MainThread.IsMainThread)
+        // Prevent concurrent execution
+        lock (_menuUpdateLock)
         {
-            MainThread.BeginInvokeOnMainThread(UpdateMenuVisibility);
-            return;
+            if (_isUpdatingMenu)
+            {
+                Console.WriteLine("UpdateMenuVisibility: Already updating, skipping");
+                return;
+            }
+            _isUpdatingMenu = true;
         }
         
-        bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
-        
-        // First, remove ALL our dynamic menu items to avoid duplicates
-        // Compare by object reference to safely identify and remove our menu items
         try
         {
-            var itemsToRemove = new List<ShellItem>();
-            
-            // Collect all items that match our menu item references
-            for (int i = Items.Count - 1; i >= 0; i--)
+            // Ensure this runs on the main thread
+            if (!MainThread.IsMainThread)
             {
-                var item = Items[i];
-                // Check if this is one of our menu items by comparing object references
-                if (object.ReferenceEquals(item, _homeMenuItem) ||
-                    object.ReferenceEquals(item, _profileMenuItem) ||
-                    object.ReferenceEquals(item, _requestDayOffMenuItem) ||
-                    object.ReferenceEquals(item, _loginLogoutMenuItem) ||
-                    object.ReferenceEquals(item, _registerMenuItem))
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    itemsToRemove.Add(item);
+                    lock (_menuUpdateLock)
+                    {
+                        _isUpdatingMenu = false;
+                    }
+                    UpdateMenuVisibility();
+                });
+                return;
+            }
+            
+            bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
+            
+            // Remove ALL our menu items by trying multiple strategies
+            try
+            {
+                Console.WriteLine($"UpdateMenuVisibility: Starting removal. Items.Count={Items.Count}");
+                
+                // Strategy 1: Try direct reference comparison (most reliable if it works)
+                var itemsToRemoveByRef = new List<ShellItem>();
+                for (int i = 0; i < Items.Count; i++)
+                {
+                    var item = Items[i];
+                    // Try comparing as object references
+                    if (object.ReferenceEquals(item, _homeMenuItem) ||
+                        object.ReferenceEquals(item, _profileMenuItem) ||
+                        object.ReferenceEquals(item, _requestDayOffMenuItem) ||
+                        object.ReferenceEquals(item, _loginLogoutMenuItem) ||
+                        object.ReferenceEquals(item, _registerMenuItem))
+                    {
+                        itemsToRemoveByRef.Add(item);
+                        Console.WriteLine($"UpdateMenuVisibility: Found menu item by reference at index {i}");
+                    }
+                }
+                
+                // Remove items found by reference
+                foreach (var item in itemsToRemoveByRef)
+                {
+                    Items.Remove(item);
+                }
+                
+                // Strategy 2: Remove by text matching (fallback for cases where reference doesn't work)
+                var ourMenuTexts = new HashSet<string> { "Home", "Profile", "Request Day Off", "Login", "Logout", "Register" };
+                for (int i = Items.Count - 1; i >= 0; i--)
+                {
+                    var item = Items[i];
+                    var itemType = item.GetType();
+                    
+                    // Check if this looks like a MenuItem
+                    if (itemType.Name == "MenuItem")
+                    {
+                        var textProperty = itemType.GetProperty("Text");
+                        if (textProperty != null)
+                        {
+                            var text = textProperty.GetValue(item) as string;
+                            if (!string.IsNullOrEmpty(text) && ourMenuTexts.Contains(text))
+                            {
+                                Console.WriteLine($"UpdateMenuVisibility: Removing menu item '{text}' by text match");
+                                Items.RemoveAt(i);
+                            }
+                        }
+                    }
+                }
+                
+                Console.WriteLine($"UpdateMenuVisibility: After removal. Items.Count={Items.Count}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateMenuVisibility: Error removing items: {ex.Message}, StackTrace: {ex.StackTrace}");
+            }
+            
+            // Update Login/Logout text
+            if (_loginLogoutMenuItem != null)
+            {
+                _loginLogoutMenuItem.Text = isLoggedIn ? "Logout" : "Login";
+            }
+            
+            // Now add items in the correct order based on login status
+            try
+            {
+                if (isLoggedIn)
+                {
+                    // When logged in: Home, Profile, Request Day Off, Logout
+                    if (_homeMenuItem != null)
+                    {
+                        Items.Add(_homeMenuItem);
+                        Console.WriteLine("UpdateMenuVisibility: Added Home");
+                    }
+                    if (_profileMenuItem != null)
+                    {
+                        Items.Add(_profileMenuItem);
+                        Console.WriteLine("UpdateMenuVisibility: Added Profile");
+                    }
+                    if (_requestDayOffMenuItem != null)
+                    {
+                        Items.Add(_requestDayOffMenuItem);
+                        Console.WriteLine("UpdateMenuVisibility: Added Request Day Off");
+                    }
+                    if (_loginLogoutMenuItem != null)
+                    {
+                        Items.Add(_loginLogoutMenuItem);
+                        Console.WriteLine("UpdateMenuVisibility: Added Logout");
+                    }
+                }
+                else
+                {
+                    // When logged out: Login and Register only
+                    if (_loginLogoutMenuItem != null)
+                    {
+                        Items.Add(_loginLogoutMenuItem);
+                        Console.WriteLine("UpdateMenuVisibility: Added Login");
+                    }
+                    if (_registerMenuItem != null)
+                    {
+                        Items.Add(_registerMenuItem);
+                        Console.WriteLine("UpdateMenuVisibility: Added Register");
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateMenuVisibility: Error adding items: {ex.Message}");
+            }
             
-            // Remove collected items
-            foreach (var item in itemsToRemove)
+            Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, TotalItemsCount={Items.Count}");
+        }
+        finally
+        {
+            lock (_menuUpdateLock)
             {
-                Items.Remove(item);
+                _isUpdatingMenu = false;
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"UpdateMenuVisibility: Error removing items: {ex.Message}");
-        }
-        
-        // Update Login/Logout text
-        if (_loginLogoutMenuItem != null)
-        {
-            _loginLogoutMenuItem.Text = isLoggedIn ? "Logout" : "Login";
-        }
-        
-        // Now add items in the correct order based on login status
-        // We've already removed all our menu items above, so we can safely add without checking Contains
-        try
-        {
-            if (isLoggedIn)
-            {
-                // When logged in: Home, Profile, Request Day Off, Logout
-                if (_homeMenuItem != null)
-                    Items.Add(_homeMenuItem);
-                if (_profileMenuItem != null)
-                    Items.Add(_profileMenuItem);
-                if (_requestDayOffMenuItem != null)
-                    Items.Add(_requestDayOffMenuItem);
-                if (_loginLogoutMenuItem != null)
-                    Items.Add(_loginLogoutMenuItem); // Logout at bottom
-            }
-            else
-            {
-                // When logged out: Login and Register only
-                if (_loginLogoutMenuItem != null)
-                    Items.Add(_loginLogoutMenuItem); // Login
-                if (_registerMenuItem != null)
-                    Items.Add(_registerMenuItem); // Register
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"UpdateMenuVisibility: Error adding items: {ex.Message}");
-        }
-        
-        Console.WriteLine($"UpdateMenuVisibility: IsLoggedIn={isLoggedIn}, MenuItemsCount={Items.Count}");
     }
     
     private async void OnRegisterClicked(object? sender, EventArgs e)
