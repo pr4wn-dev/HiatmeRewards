@@ -156,37 +156,39 @@ public static class MenuStyler
         var current = parent;
         int depth = 0;
         const int maxDepth = 6; // Increased to find the right container
+        AViewGroup? bestContainer = null;
+        int bestWidth = 0;
         
         while (current != null && depth < maxDepth)
         {
             var className = current.Class?.SimpleName;
             // Look for common container types that would hold a menu item
             if (className != null && 
+                !className.Contains("RecyclerView") && // Skip RecyclerView itself
                 (className.Contains("LinearLayout") || 
                  className.Contains("FrameLayout") ||
                  className.Contains("RelativeLayout") ||
-                 className.Contains("RecyclerView") ||
                  className.Contains("ViewGroup")))
             {
                 // Check if this container has a reasonable structure
-                // Menu items typically have 1-4 children (icon, text, maybe other elements)
+                // Menu items typically have 1-5 children (icon, text, maybe other elements)
                 if (current.ChildCount >= 1 && current.ChildCount <= 5)
                 {
                     // Check if this container has a reasonable width (not too small)
                     try
                     {
                         var width = current.Width;
-                        if (width > 0) // Has been measured
+                        if (width > 200) // Has been measured and is wide enough (menu items should be at least 200px)
                         {
-                            System.Diagnostics.Debug.WriteLine($"MenuStyler: Found container '{className}' with {current.ChildCount} children, width={width}");
-                            return current;
+                            if (width > bestWidth)
+                            {
+                                bestWidth = width;
+                                bestContainer = current;
+                                System.Diagnostics.Debug.WriteLine($"MenuStyler: Found better container '{className}' with {current.ChildCount} children, width={width}");
+                            }
                         }
                     }
                     catch { }
-                    
-                    // If not measured yet, still return it if it looks like a menu item container
-                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Found container '{className}' with {current.ChildCount} children (not measured yet)");
-                    return current;
                 }
             }
             
@@ -194,8 +196,14 @@ public static class MenuStyler
             depth++;
         }
         
-        // Fallback: return the immediate parent if we can't find a better container
-        System.Diagnostics.Debug.WriteLine($"MenuStyler: Using fallback parent container");
+        // Return the best container we found, or fall back to immediate parent
+        if (bestContainer != null)
+        {
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Using best container '{bestContainer.Class?.SimpleName}' with width={bestWidth}");
+            return bestContainer;
+        }
+        
+        System.Diagnostics.Debug.WriteLine($"MenuStyler: Using fallback parent container '{parent.Class?.SimpleName}'");
         return parent;
     }
 
@@ -232,21 +240,74 @@ public static class MenuStyler
             indicatorView.SetBackgroundColor(global::Android.Graphics.Color.ParseColor("#007bff")); // WebsiteAccent blue
             indicatorView.Tag = "selection_indicator";
             
-            // Add as first child (left side) with proper layout params
             // Convert 14dp to pixels
             var displayMetrics = Platform.CurrentActivity.Resources?.DisplayMetrics;
-            int widthPx = displayMetrics != null ? (int)(14 * displayMetrics.Density) : (int)(14 * 2); // Default to 2x density if null
-            var layoutParams = new ViewGroup.MarginLayoutParams(
-                widthPx, // 14dp width (matching header) in pixels
-                ViewGroup.LayoutParams.MatchParent // Full height
-            );
+            float density = displayMetrics != null ? displayMetrics.Density : 2.0f;
+            int widthPx = (int)(14 * density);
             
+            // Use MatchParent for height to fill the container
+            int height = ViewGroup.LayoutParams.MatchParent;
+            
+            // Create layout params based on parent type
+            ViewGroup.LayoutParams layoutParams;
+            
+            // Check parent type and create appropriate layout params
+            if (parent is Android.Widget.LinearLayout)
+            {
+                var linearParams = new Android.Widget.LinearLayout.LayoutParams(widthPx, height);
+                linearParams.Gravity = Android.Views.GravityFlags.FillVertical | Android.Views.GravityFlags.Left;
+                layoutParams = linearParams;
+            }
+            else if (parent is Android.Widget.RelativeLayout)
+            {
+                var relativeParams = new Android.Widget.RelativeLayout.LayoutParams(widthPx, height);
+                relativeParams.AddRule(Android.Widget.RelativeLayout.AlignParentLeft);
+                relativeParams.AddRule(Android.Widget.RelativeLayout.AlignParentTop);
+                relativeParams.AddRule(Android.Widget.RelativeLayout.AlignParentBottom);
+                layoutParams = relativeParams;
+            }
+            else if (parent is Android.Widget.FrameLayout)
+            {
+                var frameParams = new Android.Widget.FrameLayout.LayoutParams(widthPx, height);
+                frameParams.Gravity = Android.Views.GravityFlags.Left | Android.Views.GravityFlags.FillVertical;
+                layoutParams = frameParams;
+            }
+            else
+            {
+                // Default to MarginLayoutParams for other container types (like LayoutViewGroup/RecyclerView)
+                layoutParams = new ViewGroup.MarginLayoutParams(widthPx, height);
+            }
+            
+            // Ensure the view is visible and has proper dimensions
+            indicatorView.Visibility = ViewStates.Visible;
+            indicatorView.SetMinimumWidth(widthPx);
+            indicatorView.SetMinimumHeight((int)(48 * density)); // Minimum 48dp height in pixels
+            
+            // Add as first child (left side)
             parent.AddView(indicatorView, 0, layoutParams);
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Added indicator view (width={widthPx}px) to parent with {parent.ChildCount} children");
+            
+            // Force layout to ensure it's visible
+            indicatorView.RequestLayout();
+            parent.RequestLayout();
+            
+            // Post another layout pass after a short delay to ensure visibility
+            indicatorView.Post(() =>
+            {
+                try
+                {
+                    indicatorView.RequestLayout();
+                    indicatorView.Invalidate();
+                    var bounds = indicatorView.GetDrawingRect();
+                    System.Diagnostics.Debug.WriteLine($"MenuStyler: Indicator bounds: left={bounds.Left}, top={bounds.Top}, right={bounds.Right}, bottom={bounds.Bottom}, width={bounds.Width()}, height={bounds.Height()}");
+                }
+                catch { }
+            });
+            
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Added indicator view (width={widthPx}px, height={height}, density={density}) to parent '{parent.Class?.SimpleName}' with {parent.ChildCount} children, parent width={parent.Width}, parent height={parent.Height}");
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error adding indicator: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"MenuStyler: Error adding indicator: {ex.Message}\n{ex.StackTrace}");
         }
     }
 
