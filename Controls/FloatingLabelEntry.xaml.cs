@@ -51,6 +51,8 @@ public partial class FloatingLabelEntry : Grid
         
         // Bind Label text
         FloatingLabel.SetBinding(Label.TextProperty, new Binding(nameof(LabelText), source: this));
+        
+        // Inherit IsVisible from Grid (already available on Grid base class)
     }
 }
 

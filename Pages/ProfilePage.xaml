@@ -66,20 +66,9 @@
                                    FontSize="18"
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Border Stroke="#666666"
-                                    StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 4,4,4,4"
-                                    BackgroundColor="#555555"
-                                    Padding="12,0"
-                                    IsVisible="{Binding IsEditing}">
-                                <Entry Text="{Binding Name}" 
-                                       FontSize="18"
-                                       BackgroundColor="Transparent"
-                                       TextColor="White"
-                                       Placeholder="Enter your name"
-                                       PlaceholderColor="#999"
-                                       HeightRequest="50" />
-                            </Border>
+                            <local:FloatingLabelEntry LabelText="Full Name"
+                                                       Text="{Binding Name}"
+                                                       IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
@@ -91,21 +80,10 @@
                                    FontSize="18"
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Border Stroke="#666666"
-                                    StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 4,4,4,4"
-                                    BackgroundColor="#555555"
-                                    Padding="12,0"
-                                    IsVisible="{Binding IsEditing}">
-                                <Entry Text="{Binding Email}" 
-                                       FontSize="18"
-                                       BackgroundColor="Transparent"
-                                       TextColor="White"
-                                       Keyboard="Email"
-                                       Placeholder="Enter your email"
-                                       PlaceholderColor="#999"
-                                       HeightRequest="50" />
-                            </Border>
+                            <local:FloatingLabelEntry LabelText="Email"
+                                                       Text="{Binding Email}"
+                                                       Keyboard="Email"
+                                                       IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
@@ -117,21 +95,10 @@
                                    FontSize="18"
                                    TextColor="White"
                                    IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Border Stroke="#666666"
-                                    StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 4,4,4,4"
-                                    BackgroundColor="#555555"
-                                    Padding="12,0"
-                                    IsVisible="{Binding IsEditing}">
-                                <Entry Text="{Binding Phone}" 
-                                       FontSize="18"
-                                       BackgroundColor="Transparent"
-                                       TextColor="White"
-                                       Keyboard="Telephone"
-                                       Placeholder="Enter your phone number"
-                                       PlaceholderColor="#999"
-                                       HeightRequest="50" />
-                            </Border>
+                            <local:FloatingLabelEntry LabelText="Phone Number"
+                                                       Text="{Binding Phone}"
+                                                       Keyboard="Telephone"
+                                                       IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
