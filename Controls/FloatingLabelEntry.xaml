@@ -19,8 +19,7 @@
                FontSize="18"
                FontFamily="Arial"
                HeightRequest="50"
-               Margin="0,8"
-               Padding="0,20,0,0"
+               Margin="0,20,0,8"
                VerticalOptions="Center"
                ClearButtonVisibility="WhileEditing" />
     </Border>
