@@ -2,23 +2,22 @@
 <Grid xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
       x:Class="HiatMeApp.Controls.FloatingLabelEntry"
-      RowDefinitions="50"
-      ColumnDefinitions="*"
-      Margin="0,8">
+      Margin="0,8"
+      HeightRequest="50">
     <Border x:Name="EntryBorder"
-            Grid.Row="0"
-            Grid.Column="0"
             Stroke="#666666"
             StrokeThickness="1"
             StrokeShape="RoundRectangle 4,4,4,4"
             BackgroundColor="#444444"
-            Padding="12,0">
+            Padding="12,0"
+            HeightRequest="50">
         <Entry x:Name="EntryField"
                BackgroundColor="Transparent"
                TextColor="White"
                Placeholder=""
                FontSize="18"
                FontFamily="Arial"
+               HeightRequest="50"
                VerticalOptions="Fill"
                HorizontalOptions="Fill"
                Margin="0"
@@ -26,15 +25,12 @@
     </Border>
     
     <Label x:Name="FloatingLabel"
-           Grid.Row="0"
-           Grid.Column="0"
            InputTransparent="True"
-           TranslationX="16"
-           TranslationY="-2"
            TextColor="#AAAAAA"
            FontSize="12"
            FontFamily="Arial"
            BackgroundColor="Transparent"
+           Margin="16,2,0,0"
            VerticalOptions="Start"
            HorizontalOptions="Start">
         <Label.Triggers>
@@ -44,7 +40,7 @@
                     <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Value="" />
                     <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}" Value="False" />
                 </MultiTrigger.Conditions>
-                <Setter Property="TranslationY" Value="13" />
+                <Setter Property="Margin" Value="16,13,0,0" />
                 <Setter Property="FontSize" Value="18" />
                 <Setter Property="TextColor" Value="#AAAAAA" />
             </MultiTrigger>
