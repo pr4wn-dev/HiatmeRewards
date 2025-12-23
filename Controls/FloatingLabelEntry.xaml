@@ -32,7 +32,8 @@
            BackgroundColor="Transparent"
            Margin="16,2,0,0"
            VerticalOptions="Start"
-           HorizontalOptions="Start">
+           HorizontalOptions="Start"
+           LineBreakMode="NoWrap">
         <Label.Triggers>
             <!-- Show as placeholder (centered) when empty and not focused -->
             <MultiTrigger TargetType="Label">
