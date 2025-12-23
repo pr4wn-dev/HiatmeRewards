@@ -35,31 +35,7 @@
            HorizontalOptions="Start"
            LineBreakMode="NoWrap">
         <Label.Triggers>
-            <!-- Show as floating label (small, top) when has text -->
-            <DataTrigger TargetType="Label"
-                         Binding="{Binding Source={x:Reference EntryField}, Path=Text}"
-                         Value="{x:Null}">
-                <Setter Property="Margin" Value="16,2,0,0" />
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="TextColor" Value="#AAAAAA" />
-            </DataTrigger>
-            <!-- Show as floating label when text is not empty -->
-            <MultiTrigger TargetType="Label">
-                <MultiTrigger.Conditions>
-                    <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Operator="NotEqual" Value="" />
-                </MultiTrigger.Conditions>
-                <Setter Property="Margin" Value="16,2,0,0" />
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="TextColor" Value="#AAAAAA" />
-            </MultiTrigger>
-            <!-- Show as floating label when focused (even if empty) -->
-            <DataTrigger TargetType="Label"
-                         Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}"
-                         Value="True">
-                <Setter Property="Margin" Value="16,2,0,0" />
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="TextColor" Value="#AAAAAA" />
-            </DataTrigger>
+            <!-- Triggers are handled in code-behind for better reliability -->
         </Label.Triggers>
     </Label>
 </Grid>
