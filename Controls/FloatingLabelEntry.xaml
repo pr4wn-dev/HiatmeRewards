@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Grid xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+      xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+      x:Class="HiatMeApp.Controls.FloatingLabelEntry">
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    
+    <Border x:Name="EntryBorder"
+            Stroke="#666666"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 4,4,4,4"
+            BackgroundColor="#444444"
+            Padding="12,0">
+        <Entry x:Name="EntryField"
+               BackgroundColor="Transparent"
+               TextColor="White"
+               Placeholder=""
+               FontSize="18"
+               FontFamily="Arial"
+               HeightRequest="50"
+               Margin="0,8"
+               Padding="0,20,0,0"
+               VerticalOptions="Center"
+               ClearButtonVisibility="WhileEditing" />
+    </Border>
+    
+    <Label x:Name="FloatingLabel"
+           InputTransparent="True"
+           TranslationX="16"
+           TranslationY="-4"
+           TextColor="#AAAAAA"
+           FontSize="12"
+           FontFamily="Arial"
+           BackgroundColor="Transparent"
+           VerticalOptions="Start"
+           HorizontalOptions="Start">
+        <Label.Triggers>
+            <!-- Show as placeholder (centered) when empty and not focused -->
+            <MultiTrigger TargetType="Label">
+                <MultiTrigger.Conditions>
+                    <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Value="" />
+                    <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}" Value="False" />
+                </MultiTrigger.Conditions>
+                <Setter Property="TranslationY" Value="8" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="TextColor" Value="#AAAAAA" />
+            </MultiTrigger>
+        </Label.Triggers>
+    </Label>
+</Grid>
+

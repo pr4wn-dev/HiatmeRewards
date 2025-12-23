@@ -125,94 +125,14 @@
                          HorizontalOptions="FillAndExpand"
                          Margin="0,0,0,20" />
                 <!-- Email with floating label -->
-                <Grid>
-                    <Border Stroke="#666666"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 4,4,4,4"
-                            BackgroundColor="#444444"
-                            Padding="12,0">
-                        <Entry x:Name="EmailEntry"
-                               Text="{Binding Email}"
-                               Keyboard="Email"
-                               BackgroundColor="Transparent"
-                               TextColor="White"
-                               Placeholder=""
-                               FontSize="18"
-                               FontFamily="Arial"
-                               HeightRequest="50"
-                               Margin="0,8"
-                               VerticalOptions="Center"
-                               ClearButtonVisibility="WhileEditing" />
-                    </Border>
-                    <Label Text="Email"
-                           InputTransparent="True"
-                           TranslationX="16"
-                           TranslationY="-6"
-                           TextColor="#AAAAAA"
-                           FontSize="12"
-                           FontFamily="Arial"
-                           BackgroundColor="Transparent"
-                           VerticalOptions="Center"
-                           HorizontalOptions="Start">
-                        <Label.Triggers>
-                            <!-- Show as placeholder (centered) when empty and not focused -->
-                            <MultiTrigger TargetType="Label">
-                                <MultiTrigger.Conditions>
-                                    <BindingCondition Binding="{Binding Source={x:Reference EmailEntry}, Path=Text}" Value="" />
-                                    <BindingCondition Binding="{Binding Source={x:Reference EmailEntry}, Path=IsFocused}" Value="False" />
-                                </MultiTrigger.Conditions>
-                                <Setter Property="TranslationY" Value="0" />
-                                <Setter Property="FontSize" Value="18" />
-                                <Setter Property="TextColor" Value="#AAAAAA" />
-                            </MultiTrigger>
-                        </Label.Triggers>
-                    </Label>
-                </Grid>
+                <controls:FloatingLabelEntry LabelText="Email"
+                                              Text="{Binding Email}"
+                                              Keyboard="Email" />
 
                 <!-- Password with floating label -->
-                <Grid>
-                    <Border Stroke="#666666"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 4,4,4,4"
-                            BackgroundColor="#444444"
-                            Padding="12,0">
-                        <Entry x:Name="PasswordEntry"
-                               Text="{Binding Password}"
-                               IsPassword="True"
-                               BackgroundColor="Transparent"
-                               TextColor="White"
-                               Placeholder=""
-                               FontSize="18"
-                               FontFamily="Arial"
-                               HeightRequest="50"
-                               Margin="0,8"
-                               VerticalOptions="Center"
-                               ClearButtonVisibility="WhileEditing" />
-                    </Border>
-                    <Label Text="Password"
-                           InputTransparent="True"
-                           TranslationX="16"
-                           TranslationY="-6"
-                           TextColor="#AAAAAA"
-                           FontSize="12"
-                           FontFamily="Arial"
-                           BackgroundColor="Transparent"
-                           VerticalOptions="Center"
-                           HorizontalOptions="Start">
-                        <Label.Triggers>
-                            <!-- Show as placeholder (centered) when empty and not focused -->
-                            <MultiTrigger TargetType="Label">
-                                <MultiTrigger.Conditions>
-                                    <BindingCondition Binding="{Binding Source={x:Reference PasswordEntry}, Path=Text}" Value="" />
-                                    <BindingCondition Binding="{Binding Source={x:Reference PasswordEntry}, Path=IsFocused}" Value="False" />
-                                </MultiTrigger.Conditions>
-                                <Setter Property="TranslationY" Value="0" />
-                                <Setter Property="FontSize" Value="18" />
-                                <Setter Property="TextColor" Value="#AAAAAA" />
-                            </MultiTrigger>
-                        </Label.Triggers>
-                    </Label>
-                </Grid>
+                <controls:FloatingLabelEntry LabelText="Password"
+                                              Text="{Binding Password}"
+                                              IsPassword="True" />
                 <Button Text="Login"
                         Command="{Binding LoginCommand}"
                         Style="{StaticResource FormButtonStyle}" />
