@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Grid xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-      x:Class="HiatMeApp.Controls.FloatingLabelEntry">
-    <Grid.RowDefinitions>
-        <RowDefinition Height="Auto" />
-    </Grid.RowDefinitions>
-    
+      x:Class="HiatMeApp.Controls.FloatingLabelEntry"
+      HeightRequest="66">
     <Border x:Name="EntryBorder"
             Stroke="#666666"
             StrokeThickness="1"
@@ -19,15 +16,15 @@
                FontSize="18"
                FontFamily="Arial"
                HeightRequest="50"
-               Margin="0,20,0,8"
-               VerticalOptions="Center"
+               Margin="0,8"
+               VerticalOptions="Start"
                ClearButtonVisibility="WhileEditing" />
     </Border>
     
     <Label x:Name="FloatingLabel"
            InputTransparent="True"
            TranslationX="16"
-           TranslationY="-4"
+           TranslationY="2"
            TextColor="#AAAAAA"
            FontSize="12"
            FontFamily="Arial"
@@ -41,7 +38,7 @@
                     <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Value="" />
                     <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}" Value="False" />
                 </MultiTrigger.Conditions>
-                <Setter Property="TranslationY" Value="8" />
+                <Setter Property="TranslationY" Value="16" />
                 <Setter Property="FontSize" Value="18" />
                 <Setter Property="TextColor" Value="#AAAAAA" />
             </MultiTrigger>
