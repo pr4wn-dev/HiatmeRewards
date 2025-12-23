@@ -27,24 +27,39 @@
     <Label x:Name="FloatingLabel"
            InputTransparent="True"
            TextColor="#AAAAAA"
-           FontSize="12"
+           FontSize="18"
            FontFamily="Arial"
            BackgroundColor="Transparent"
-           Margin="16,2,0,0"
+           Margin="16,18,0,0"
            VerticalOptions="Start"
            HorizontalOptions="Start"
            LineBreakMode="NoWrap">
         <Label.Triggers>
-            <!-- Show as placeholder (centered) when empty and not focused -->
+            <!-- Show as floating label (small, top) when has text -->
+            <DataTrigger TargetType="Label"
+                         Binding="{Binding Source={x:Reference EntryField}, Path=Text}"
+                         Value="{x:Null}">
+                <Setter Property="Margin" Value="16,2,0,0" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="TextColor" Value="#AAAAAA" />
+            </DataTrigger>
+            <!-- Show as floating label when text is not empty -->
             <MultiTrigger TargetType="Label">
                 <MultiTrigger.Conditions>
-                    <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Value="" />
-                    <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}" Value="False" />
+                    <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Operator="NotEqual" Value="" />
                 </MultiTrigger.Conditions>
-                <Setter Property="Margin" Value="16,18,0,0" />
-                <Setter Property="FontSize" Value="18" />
+                <Setter Property="Margin" Value="16,2,0,0" />
+                <Setter Property="FontSize" Value="12" />
                 <Setter Property="TextColor" Value="#AAAAAA" />
             </MultiTrigger>
+            <!-- Show as floating label when focused (even if empty) -->
+            <DataTrigger TargetType="Label"
+                         Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}"
+                         Value="True">
+                <Setter Property="Margin" Value="16,2,0,0" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="TextColor" Value="#AAAAAA" />
+            </DataTrigger>
         </Label.Triggers>
     </Label>
 </Grid>

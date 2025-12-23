@@ -1,4 +1,6 @@
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.ApplicationModel;
+using System.Threading.Tasks;
 
 namespace HiatMeApp.Controls;
 
@@ -52,7 +54,47 @@ public partial class FloatingLabelEntry : Grid
         // Bind Label text
         FloatingLabel.SetBinding(Label.TextProperty, new Binding(nameof(LabelText), source: this));
         
-        // Inherit IsVisible from Grid (already available on Grid base class)
+        // Listen for property changes to update label state
+        this.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(Text))
+            {
+                UpdateLabelState();
+            }
+        };
+        
+        // Set initial state - placeholder mode (large, centered)
+        UpdateLabelState();
+        
+        // Listen for text changes to update label state
+        EntryField.TextChanged += (s, e) => UpdateLabelState();
+        EntryField.Focused += (s, e) => UpdateLabelState();
+        EntryField.Unfocused += (s, e) => UpdateLabelState();
+        
+        // Also update after a short delay to handle initial binding
+        Task.Delay(100).ContinueWith(_ =>
+        {
+            MainThread.BeginInvokeOnMainThread(() => UpdateLabelState());
+        });
+    }
+    
+    private void UpdateLabelState()
+    {
+        bool hasText = !string.IsNullOrEmpty(EntryField.Text);
+        bool isFocused = EntryField.IsFocused;
+        
+        if (hasText || isFocused)
+        {
+            // Floating state (small, top)
+            FloatingLabel.Margin = new Thickness(16, 2, 0, 0);
+            FloatingLabel.FontSize = 12;
+        }
+        else
+        {
+            // Placeholder state (large, centered)
+            FloatingLabel.Margin = new Thickness(16, 18, 0, 0);
+            FloatingLabel.FontSize = 18;
+        }
     }
 }
 
