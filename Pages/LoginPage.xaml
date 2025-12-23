@@ -160,7 +160,7 @@
                                     <BindingCondition Binding="{Binding Source={x:Reference EmailEntry}, Path=Text}" Value="" />
                                     <BindingCondition Binding="{Binding Source={x:Reference EmailEntry}, Path=IsFocused}" Value="False" />
                                 </MultiTrigger.Conditions>
-                                <Setter Property="TranslationY" Value="8" />
+                                <Setter Property="TranslationY" Value="15" />
                                 <Setter Property="FontSize" Value="18" />
                                 <Setter Property="TextColor" Value="#AAAAAA" />
                             </MultiTrigger>
@@ -204,7 +204,7 @@
                                     <BindingCondition Binding="{Binding Source={x:Reference PasswordEntry}, Path=Text}" Value="" />
                                     <BindingCondition Binding="{Binding Source={x:Reference PasswordEntry}, Path=IsFocused}" Value="False" />
                                 </MultiTrigger.Conditions>
-                                <Setter Property="TranslationY" Value="8" />
+                                <Setter Property="TranslationY" Value="15" />
                                 <Setter Property="FontSize" Value="18" />
                                 <Setter Property="TextColor" Value="#AAAAAA" />
                             </MultiTrigger>
