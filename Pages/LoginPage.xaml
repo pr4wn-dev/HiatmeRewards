@@ -125,7 +125,7 @@
                          HorizontalOptions="FillAndExpand"
                          Margin="0,0,0,20" />
                 <!-- Email with floating label -->
-                <Grid HeightRequest="66">
+                <Grid>
                     <Border Stroke="#666666"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 4,4,4,4"
@@ -141,7 +141,7 @@
                                FontFamily="Arial"
                                HeightRequest="50"
                                Margin="0,8"
-                               VerticalOptions="Start"
+                               VerticalOptions="Center"
                                ClearButtonVisibility="WhileEditing" />
                     </Border>
                     <Label Text="Email"
@@ -152,7 +152,7 @@
                            FontSize="12"
                            FontFamily="Arial"
                            BackgroundColor="Transparent"
-                           VerticalOptions="Start"
+                           VerticalOptions="Center"
                            HorizontalOptions="Start">
                         <Label.Triggers>
                             <!-- Show as placeholder (centered) when empty and not focused -->
@@ -161,7 +161,7 @@
                                     <BindingCondition Binding="{Binding Source={x:Reference EmailEntry}, Path=Text}" Value="" />
                                     <BindingCondition Binding="{Binding Source={x:Reference EmailEntry}, Path=IsFocused}" Value="False" />
                                 </MultiTrigger.Conditions>
-                                <Setter Property="TranslationY" Value="16" />
+                                <Setter Property="TranslationY" Value="0" />
                                 <Setter Property="FontSize" Value="18" />
                                 <Setter Property="TextColor" Value="#AAAAAA" />
                             </MultiTrigger>
@@ -170,7 +170,7 @@
                 </Grid>
 
                 <!-- Password with floating label -->
-                <Grid HeightRequest="66">
+                <Grid>
                     <Border Stroke="#666666"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 4,4,4,4"
@@ -186,7 +186,7 @@
                                FontFamily="Arial"
                                HeightRequest="50"
                                Margin="0,8"
-                               VerticalOptions="Start"
+                               VerticalOptions="Center"
                                ClearButtonVisibility="WhileEditing" />
                     </Border>
                     <Label Text="Password"
@@ -197,7 +197,7 @@
                            FontSize="12"
                            FontFamily="Arial"
                            BackgroundColor="Transparent"
-                           VerticalOptions="Start"
+                           VerticalOptions="Center"
                            HorizontalOptions="Start">
                         <Label.Triggers>
                             <!-- Show as placeholder (centered) when empty and not focused -->
@@ -206,7 +206,7 @@
                                     <BindingCondition Binding="{Binding Source={x:Reference PasswordEntry}, Path=Text}" Value="" />
                                     <BindingCondition Binding="{Binding Source={x:Reference PasswordEntry}, Path=IsFocused}" Value="False" />
                                 </MultiTrigger.Conditions>
-                                <Setter Property="TranslationY" Value="16" />
+                                <Setter Property="TranslationY" Value="0" />
                                 <Setter Property="FontSize" Value="18" />
                                 <Setter Property="TextColor" Value="#AAAAAA" />
                             </MultiTrigger>
