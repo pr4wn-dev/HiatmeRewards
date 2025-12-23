@@ -3,21 +3,21 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
       x:Class="HiatMeApp.Controls.FloatingLabelEntry"
       Margin="0,8"
-      HeightRequest="50">
+      HeightRequest="60">
     <Border x:Name="EntryBorder"
             Stroke="#666666"
             StrokeThickness="1"
             StrokeShape="RoundRectangle 4,4,4,4"
             BackgroundColor="#444444"
             Padding="12,0"
-            HeightRequest="50">
+            HeightRequest="60">
         <Entry x:Name="EntryField"
                BackgroundColor="Transparent"
                TextColor="White"
                Placeholder=""
                FontSize="18"
                FontFamily="Arial"
-               HeightRequest="50"
+               HeightRequest="60"
                VerticalOptions="Fill"
                HorizontalOptions="Fill"
                Margin="0"
@@ -40,7 +40,7 @@
                     <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=Text}" Value="" />
                     <BindingCondition Binding="{Binding Source={x:Reference EntryField}, Path=IsFocused}" Value="False" />
                 </MultiTrigger.Conditions>
-                <Setter Property="Margin" Value="16,13,0,0" />
+                <Setter Property="Margin" Value="16,18,0,0" />
                 <Setter Property="FontSize" Value="18" />
                 <Setter Property="TextColor" Value="#AAAAAA" />
             </MultiTrigger>
