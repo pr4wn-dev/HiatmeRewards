@@ -153,8 +153,7 @@
                 <Button Text="Forgot Password?"
                         Command="{Binding GoToForgotPasswordCommand}"
                         Style="{StaticResource LinkButtonStyle}" />
-                <Label Text="Don't have an account? Sign up"
-                       FontSize="16"
+                <Label FontSize="16"
                        TextColor="White"
                        HorizontalOptions="Center"
                        Margin="0,10">
@@ -164,6 +163,9 @@
                             <Span Text="Sign up" TextColor="#007BFF" />
                         </FormattedString>
                     </Label.FormattedText>
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToRegisterCommand}" />
+                    </Label.GestureRecognizers>
                 </Label>
             </VerticalStackLayout>
         </ScrollView>
