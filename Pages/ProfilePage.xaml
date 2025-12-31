@@ -28,78 +28,55 @@
                          Margin="0,0,0,20" />
                 
                 <!-- Profile Picture -->
-                <Frame HorizontalOptions="Center" 
-                       Padding="15" 
-                       BorderColor="#666" 
-                       BackgroundColor="#444"
-                       CornerRadius="8" 
-                       Margin="0,0,0,20">
-                    <VerticalStackLayout Spacing="12">
-                        <Image x:Name="ProfileImage"
-                               HeightRequest="120" 
-                               WidthRequest="120"
-                               Aspect="AspectFill"
-                               HorizontalOptions="Center" />
-                        <Button Text="Change Profile Picture" 
-                                FontSize="16"
-                                Command="{Binding PickImageCommand}"
-                                IsVisible="{Binding IsEditing}"
-                                BackgroundColor="Transparent"
-                                TextColor="#007BFF"
-                                HorizontalOptions="Center"
-                                Padding="15,8" />
-                    </VerticalStackLayout>
-                </Frame>
+                <VerticalStackLayout Spacing="12"
+                                     HorizontalOptions="Center"
+                                     Margin="0,0,0,20">
+                    <Image x:Name="ProfileImage"
+                           HeightRequest="120" 
+                           WidthRequest="120"
+                           Aspect="AspectFill"
+                           HorizontalOptions="Center" />
+                    <Button Text="Change Profile Picture" 
+                            FontSize="16"
+                            Command="{Binding PickImageCommand}"
+                            IsVisible="{Binding IsEditing}"
+                            BackgroundColor="Transparent"
+                            TextColor="#007BFF"
+                            HorizontalOptions="Center"
+                            Padding="15,8" />
+                </VerticalStackLayout>
                 
                 <!-- User Information -->
                 <Frame Padding="18" 
                        BorderColor="#666" 
-                       BackgroundColor="#444"
+                       BackgroundColor="#333333"
                        CornerRadius="8">
                     <VerticalStackLayout Spacing="15">
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="Full Name" 
-                                   FontSize="18" 
-                                   FontAttributes="Bold"
-                                   TextColor="#007BFF" />
-                            <Label Text="{Binding Name}" 
-                                   FontSize="18"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <local:FloatingLabelEntry LabelText="Full Name"
-                                                       Text="{Binding Name}"
-                                                       IsVisible="{Binding IsEditing}" />
-                        </VerticalStackLayout>
+                        <Label Text="{Binding Name}" 
+                               FontSize="18"
+                               TextColor="White"
+                               IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                        <local:FloatingLabelEntry LabelText="Full Name"
+                                                   Text="{Binding Name}"
+                                                   IsVisible="{Binding IsEditing}" />
                         
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="Email" 
-                                   FontSize="18" 
-                                   FontAttributes="Bold"
-                                   TextColor="#007BFF" />
-                            <Label Text="{Binding Email}" 
-                                   FontSize="18"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <local:FloatingLabelEntry LabelText="Email"
-                                                       Text="{Binding Email}"
-                                                       Keyboard="Email"
-                                                       IsVisible="{Binding IsEditing}" />
-                        </VerticalStackLayout>
+                        <Label Text="{Binding Email}" 
+                               FontSize="18"
+                               TextColor="White"
+                               IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                        <local:FloatingLabelEntry LabelText="Email"
+                                                   Text="{Binding Email}"
+                                                   Keyboard="Email"
+                                                   IsVisible="{Binding IsEditing}" />
                         
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="Phone Number" 
-                                   FontSize="18" 
-                                   FontAttributes="Bold"
-                                   TextColor="#007BFF" />
-                            <Label Text="{Binding Phone, TargetNullValue='Not provided'}" 
-                                   FontSize="18"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <local:FloatingLabelEntry LabelText="Phone Number"
-                                                       Text="{Binding Phone}"
-                                                       Keyboard="Telephone"
-                                                       IsVisible="{Binding IsEditing}" />
-                        </VerticalStackLayout>
+                        <Label Text="{Binding Phone, TargetNullValue='Not provided'}" 
+                               FontSize="18"
+                               TextColor="White"
+                               IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                        <local:FloatingLabelEntry LabelText="Phone Number"
+                                                   Text="{Binding Phone}"
+                                                   Keyboard="Telephone"
+                                                   IsVisible="{Binding IsEditing}" />
                         
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Role" 
