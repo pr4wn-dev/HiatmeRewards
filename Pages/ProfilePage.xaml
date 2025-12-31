@@ -52,31 +52,52 @@
                        BackgroundColor="#333333"
                        CornerRadius="8">
                     <VerticalStackLayout Spacing="15">
-                        <Label Text="{Binding Name}" 
-                               FontSize="18"
-                               TextColor="White"
-                               IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                        <local:FloatingLabelEntry LabelText="Full Name"
-                                                   Text="{Binding Name}"
-                                                   IsVisible="{Binding IsEditing}" />
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Full Name" 
+                                   FontSize="18" 
+                                   FontAttributes="Bold"
+                                   TextColor="#007BFF"
+                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <Label Text="{Binding Name}" 
+                                   FontSize="18"
+                                   TextColor="White"
+                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <local:FloatingLabelEntry LabelText="Full Name"
+                                                       Text="{Binding Name}"
+                                                       IsVisible="{Binding IsEditing}" />
+                        </VerticalStackLayout>
                         
-                        <Label Text="{Binding Email}" 
-                               FontSize="18"
-                               TextColor="White"
-                               IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                        <local:FloatingLabelEntry LabelText="Email"
-                                                   Text="{Binding Email}"
-                                                   Keyboard="Email"
-                                                   IsVisible="{Binding IsEditing}" />
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Email" 
+                                   FontSize="18" 
+                                   FontAttributes="Bold"
+                                   TextColor="#007BFF"
+                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <Label Text="{Binding Email}" 
+                                   FontSize="18"
+                                   TextColor="White"
+                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <local:FloatingLabelEntry LabelText="Email"
+                                                       Text="{Binding Email}"
+                                                       Keyboard="Email"
+                                                       IsVisible="{Binding IsEditing}" />
+                        </VerticalStackLayout>
                         
-                        <Label Text="{Binding Phone, TargetNullValue='Not provided'}" 
-                               FontSize="18"
-                               TextColor="White"
-                               IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                        <local:FloatingLabelEntry LabelText="Phone Number"
-                                                   Text="{Binding Phone}"
-                                                   Keyboard="Telephone"
-                                                   IsVisible="{Binding IsEditing}" />
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Phone Number" 
+                                   FontSize="18" 
+                                   FontAttributes="Bold"
+                                   TextColor="#007BFF"
+                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <Label Text="{Binding Phone, TargetNullValue='Not provided'}" 
+                                   FontSize="18"
+                                   TextColor="White"
+                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <local:FloatingLabelEntry LabelText="Phone Number"
+                                                       Text="{Binding Phone}"
+                                                       Keyboard="Telephone"
+                                                       IsVisible="{Binding IsEditing}" />
+                        </VerticalStackLayout>
                         
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Role" 
