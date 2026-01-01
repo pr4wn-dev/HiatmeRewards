@@ -57,6 +57,9 @@
         </Grid>
     </Shell.FlyoutHeader>
     <!-- ShellContent for navigation routes -->
+    <ShellContent ContentTemplate="{DataTemplate local:SplashPage}"
+                  Route="Splash"
+                  FlyoutItemIsVisible="False" />
     <ShellContent ContentTemplate="{DataTemplate local:LoginPage}"
                   Route="Login"
                   FlyoutItemIsVisible="False" />

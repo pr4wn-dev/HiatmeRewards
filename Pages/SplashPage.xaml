@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HiatMeApp.SplashPage"
+             BackgroundColor="#333333"
+             Shell.NavBarIsVisible="False">
+    <Grid>
+        <VerticalStackLayout HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Spacing="20">
+            <ActivityIndicator IsRunning="True"
+                              Color="#007BFF"
+                              WidthRequest="50"
+                              HeightRequest="50" />
+            <Label Text="Loading..."
+                   FontSize="18"
+                   TextColor="White"
+                   HorizontalOptions="Center" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
+
