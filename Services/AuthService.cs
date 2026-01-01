@@ -167,14 +167,10 @@ namespace HiatMeApp.Services
 
             try
             {
-                // Validate session by attempting to get user profile/vehicles
-                // We'll use a simple endpoint that requires auth - if it works, session is valid
-                // Try to get vehicle issues for a dummy vehicle_id - if auth fails, we'll get 401
-                // Actually, better approach: try to login with the stored token to validate it
-                // But that's not ideal. Let's use a lightweight check - try to get user data
+                // Validate session using the validate_session endpoint
                 var data = new Dictionary<string, string>
                 {
-                    { "action", "get_user_profile" }
+                    { "action", "validate_session" }
                 };
                 var content = new FormUrlEncodedContent(data);
 
@@ -196,52 +192,36 @@ namespace HiatMeApp.Services
                     return (false, null, "Session expired. Please log in again.");
                 }
 
-                // Try to parse as a generic response to check for success
-                GenericResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(json));
-                if (result != null && result.Success)
+                // Parse as LoginResponse since validate_session returns user data in same format
+                LoginResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<LoginResponse>(json, new JsonSerializerSettings
                 {
-                    // Session is valid, restore user data
-                    var userJson = Preferences.Get("UserData", string.Empty);
-                    if (!string.IsNullOrEmpty(userJson))
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    NullValueHandling = NullValueHandling.Ignore
+                }));
+                
+                if (result?.Success == true && result.UserId > 0)
+                {
+                    // Session is valid, create user from server response
+                    var user = new User
                     {
-                        var user = JsonConvert.DeserializeObject<User>(userJson);
-                        App.CurrentUser = user;
-                        Console.WriteLine($"ValidateSessionAsync: Session valid, restored user Email={user?.Email}, Role={user?.Role}");
-                        return (true, user, "Session is valid");
-                    }
-                    else
-                    {
-                        Console.WriteLine("ValidateSessionAsync: Session valid but no user data found");
-                        return (false, null, "Session valid but user data missing.");
-                    }
+                        Email = result.Email,
+                        Name = result.Name,
+                        Phone = result.Phone,
+                        ProfilePicture = result.ProfilePicture,
+                        Role = result.Role,
+                        UserId = result.UserId,
+                        Vehicles = result.Vehicles
+                    };
+                    App.CurrentUser = user;
+                    // Update stored user data with fresh data from server
+                    Preferences.Set("UserData", JsonConvert.SerializeObject(user));
+                    Preferences.Set("UserEmail", user.Email ?? string.Empty);
+                    Preferences.Set("UserRole", user.Role ?? string.Empty);
+                    Console.WriteLine($"ValidateSessionAsync: Session valid, restored user from server Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
+                    return (true, user, "Session is valid");
                 }
                 else
                 {
-                    // Try to parse as LoginResponse in case the server returns user data
-                    LoginResponse? loginResult = await Task.Run(() => JsonConvert.DeserializeObject<LoginResponse>(json, new JsonSerializerSettings
-                    {
-                        MissingMemberHandling = MissingMemberHandling.Ignore,
-                        NullValueHandling = NullValueHandling.Ignore
-                    }));
-                    
-                    if (loginResult?.Success == true && loginResult.UserId > 0)
-                    {
-                        var user = new User
-                        {
-                            Email = loginResult.Email,
-                            Name = loginResult.Name,
-                            Phone = loginResult.Phone,
-                            ProfilePicture = loginResult.ProfilePicture,
-                            Role = loginResult.Role,
-                            UserId = loginResult.UserId,
-                            Vehicles = loginResult.Vehicles
-                        };
-                        App.CurrentUser = user;
-                        Preferences.Set("UserData", JsonConvert.SerializeObject(user));
-                        Console.WriteLine($"ValidateSessionAsync: Session valid, restored user from server Email={user.Email}, Role={user.Role}");
-                        return (true, user, "Session is valid");
-                    }
-                    
                     Console.WriteLine($"ValidateSessionAsync: Session validation failed: {result?.Message ?? "Unknown error"}");
                     return (false, null, result?.Message ?? "Session validation failed.");
                 }
