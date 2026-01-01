@@ -85,10 +85,19 @@ public partial class AppShell : Shell
                         App.CurrentUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
                         Console.WriteLine($"AppShell: Restored user data, Email={App.CurrentUser?.Email}, Role={App.CurrentUser?.Role}");
                     }
+                    else
+                    {
+                        // User data is missing, clear login state
+                        Console.WriteLine("AppShell: IsLoggedIn is true but UserData is missing, clearing login state");
+                        Preferences.Set("IsLoggedIn", false);
+                        isLoggedIn = false;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"AppShell: Error restoring user data: {ex.Message}");
+                    Console.WriteLine($"AppShell: Error restoring user data: {ex.Message}, clearing login state");
+                    Preferences.Set("IsLoggedIn", false);
+                    isLoggedIn = false;
                 }
             }
             
@@ -123,7 +132,11 @@ public partial class AppShell : Shell
             await Task.Delay(100);
             try
             {
-                string initialRoute = isLoggedIn ? "//Home" : "//Login";
+                // Always start at Login page for now - user must explicitly log in
+                // If you want to restore sessions, uncomment the line below and comment out the Login route
+                // string initialRoute = isLoggedIn ? "//Home" : "//Login";
+                string initialRoute = "//Login";
+                
                 // Check current route to avoid unnecessary navigation
                 var currentRoute = Shell.Current.CurrentState?.Location?.ToString();
                 if (currentRoute != initialRoute)
