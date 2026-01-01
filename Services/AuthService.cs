@@ -149,6 +149,119 @@ namespace HiatMeApp.Services
             }
         }
 
+        public async Task<(bool Success, User? User, string Message)> ValidateSessionAsync()
+        {
+            Console.WriteLine("ValidateSessionAsync: Starting session validation");
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("ValidateSessionAsync: No auth token found");
+                return (false, null, "No authentication token available.");
+            }
+
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("ValidateSessionAsync: Failed to retrieve CSRF token");
+                return (false, null, "Failed to retrieve session token.");
+            }
+
+            try
+            {
+                // Validate session by attempting to get user profile/vehicles
+                // We'll use a simple endpoint that requires auth - if it works, session is valid
+                // Try to get vehicle issues for a dummy vehicle_id - if auth fails, we'll get 401
+                // Actually, better approach: try to login with the stored token to validate it
+                // But that's not ideal. Let's use a lightweight check - try to get user data
+                var data = new Dictionary<string, string>
+                {
+                    { "action", "get_user_profile" }
+                };
+                var content = new FormUrlEncodedContent(data);
+
+                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                _httpClient.DefaultRequestHeaders.Remove("Authorization");
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+                Console.WriteLine($"ValidateSessionAsync: Sending validation request with auth_token={authToken}");
+                var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                Console.WriteLine($"ValidateSessionAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"ValidateSessionAsync response: {json}");
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    Console.WriteLine("ValidateSessionAsync: Session is invalid (401 Unauthorized)");
+                    return (false, null, "Session expired. Please log in again.");
+                }
+
+                // Try to parse as a generic response to check for success
+                GenericResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(json));
+                if (result != null && result.Success)
+                {
+                    // Session is valid, restore user data
+                    var userJson = Preferences.Get("UserData", string.Empty);
+                    if (!string.IsNullOrEmpty(userJson))
+                    {
+                        var user = JsonConvert.DeserializeObject<User>(userJson);
+                        App.CurrentUser = user;
+                        Console.WriteLine($"ValidateSessionAsync: Session valid, restored user Email={user?.Email}, Role={user?.Role}");
+                        return (true, user, "Session is valid");
+                    }
+                    else
+                    {
+                        Console.WriteLine("ValidateSessionAsync: Session valid but no user data found");
+                        return (false, null, "Session valid but user data missing.");
+                    }
+                }
+                else
+                {
+                    // Try to parse as LoginResponse in case the server returns user data
+                    LoginResponse? loginResult = await Task.Run(() => JsonConvert.DeserializeObject<LoginResponse>(json, new JsonSerializerSettings
+                    {
+                        MissingMemberHandling = MissingMemberHandling.Ignore,
+                        NullValueHandling = NullValueHandling.Ignore
+                    }));
+                    
+                    if (loginResult?.Success == true && loginResult.UserId > 0)
+                    {
+                        var user = new User
+                        {
+                            Email = loginResult.Email,
+                            Name = loginResult.Name,
+                            Phone = loginResult.Phone,
+                            ProfilePicture = loginResult.ProfilePicture,
+                            Role = loginResult.Role,
+                            UserId = loginResult.UserId,
+                            Vehicles = loginResult.Vehicles
+                        };
+                        App.CurrentUser = user;
+                        Preferences.Set("UserData", JsonConvert.SerializeObject(user));
+                        Console.WriteLine($"ValidateSessionAsync: Session valid, restored user from server Email={user.Email}, Role={user.Role}");
+                        return (true, user, "Session is valid");
+                    }
+                    
+                    Console.WriteLine($"ValidateSessionAsync: Session validation failed: {result?.Message ?? "Unknown error"}");
+                    return (false, null, result?.Message ?? "Session validation failed.");
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"ValidateSessionAsync: HTTP error: {ex.Message}");
+                if (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+                {
+                    return (false, null, "Session expired. Please log in again.");
+                }
+                return (false, null, $"Network error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ValidateSessionAsync: Unexpected error: {ex.Message}");
+                return (false, null, $"An error occurred: {ex.Message}");
+            }
+        }
+
         public async Task<(bool Success, User? User, string Message)> LoginAsync(string? email, string? password)
         {
             if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())

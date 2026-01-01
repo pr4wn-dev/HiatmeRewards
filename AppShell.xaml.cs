@@ -73,30 +73,40 @@ public partial class AppShell : Shell
         {
             Console.WriteLine($"AppShell: Loaded, BindingContext={BindingContext?.GetType()?.Name ?? "null"}");
             
-            // Restore user data if logged in
+            // Validate and restore session if logged in
             bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
             if (isLoggedIn)
             {
                 try
                 {
-                    var userJson = Preferences.Get("UserData", string.Empty);
-                    if (!string.IsNullOrEmpty(userJson))
+                    // Validate session with server
+                    var authService = App.Services.GetRequiredService<HiatMeApp.Services.AuthService>();
+                    var (sessionValid, user, message) = await authService.ValidateSessionAsync();
+                    
+                    if (sessionValid && user != null)
                     {
-                        App.CurrentUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
-                        Console.WriteLine($"AppShell: Restored user data, Email={App.CurrentUser?.Email}, Role={App.CurrentUser?.Role}");
+                        App.CurrentUser = user;
+                        Console.WriteLine($"AppShell: Session validated and restored, Email={user.Email}, Role={user.Role}");
+                        isLoggedIn = true;
                     }
                     else
                     {
-                        // User data is missing, clear login state
-                        Console.WriteLine("AppShell: IsLoggedIn is true but UserData is missing, clearing login state");
+                        // Session is invalid, clear login state
+                        Console.WriteLine($"AppShell: Session validation failed: {message}, clearing login state");
                         Preferences.Set("IsLoggedIn", false);
+                        Preferences.Remove("AuthToken");
+                        Preferences.Remove("UserData");
+                        App.CurrentUser = null;
                         isLoggedIn = false;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"AppShell: Error restoring user data: {ex.Message}, clearing login state");
+                    Console.WriteLine($"AppShell: Error validating session: {ex.Message}, clearing login state");
                     Preferences.Set("IsLoggedIn", false);
+                    Preferences.Remove("AuthToken");
+                    Preferences.Remove("UserData");
+                    App.CurrentUser = null;
                     isLoggedIn = false;
                 }
             }
@@ -132,10 +142,8 @@ public partial class AppShell : Shell
             await Task.Delay(100);
             try
             {
-                // Always start at Login page for now - user must explicitly log in
-                // If you want to restore sessions, uncomment the line below and comment out the Login route
-                // string initialRoute = isLoggedIn ? "//Home" : "//Login";
-                string initialRoute = "//Login";
+                // Navigate based on validated session status
+                string initialRoute = isLoggedIn ? "//Home" : "//Login";
                 
                 // Check current route to avoid unnecessary navigation
                 var currentRoute = Shell.Current.CurrentState?.Location?.ToString();
