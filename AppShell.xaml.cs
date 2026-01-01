@@ -75,13 +75,26 @@ public partial class AppShell : Shell
             
             // Validate and restore session if logged in
             bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
-            if (isLoggedIn)
+            var authToken = Preferences.Get("AuthToken", null);
+            var userDataJson = Preferences.Get("UserData", string.Empty);
+            Console.WriteLine($"AppShell: Loaded - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}, HasUserData={!string.IsNullOrEmpty(userDataJson)}");
+            
+            // If we have stored data but IsLoggedIn is false, try to restore anyway (might be a preference issue)
+            if (!isLoggedIn && !string.IsNullOrEmpty(authToken) && !string.IsNullOrEmpty(userDataJson))
+            {
+                Console.WriteLine("AppShell: Found stored auth token and user data but IsLoggedIn is false, attempting to validate");
+                isLoggedIn = true; // Set to true so we attempt validation
+            }
+            
+            if (isLoggedIn && !string.IsNullOrEmpty(authToken))
             {
                 try
                 {
                     // Validate session with server
                     var authService = App.Services.GetRequiredService<HiatMeApp.Services.AuthService>();
+                    Console.WriteLine("AppShell: Calling ValidateSessionAsync...");
                     var (sessionValid, user, message) = await authService.ValidateSessionAsync();
+                    Console.WriteLine($"AppShell: ValidateSessionAsync returned - Success={sessionValid}, HasUser={user != null}, Message={message}");
                     
                     if (sessionValid && user != null)
                     {
@@ -91,24 +104,82 @@ public partial class AppShell : Shell
                     }
                     else
                     {
-                        // Session is invalid, clear login state
-                        Console.WriteLine($"AppShell: Session validation failed: {message}, clearing login state");
-                        Preferences.Set("IsLoggedIn", false);
-                        Preferences.Remove("AuthToken");
-                        Preferences.Remove("UserData");
-                        App.CurrentUser = null;
-                        isLoggedIn = false;
+                        // Check if it's a network error - if so, try to restore from stored data
+                        if (message.Contains("Network error") || message.Contains("An error occurred"))
+                        {
+                            Console.WriteLine($"AppShell: Network error during validation, attempting to restore from stored data");
+                            var userJson = Preferences.Get("UserData", string.Empty);
+                            if (!string.IsNullOrEmpty(userJson))
+                            {
+                                try
+                                {
+                                    var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
+                                    if (storedUser != null)
+                                    {
+                                        App.CurrentUser = storedUser;
+                                        Console.WriteLine($"AppShell: Restored user from stored data, Email={storedUser.Email}, Role={storedUser.Role}");
+                                        isLoggedIn = true;
+                                    }
+                                }
+                                catch (Exception restoreEx)
+                                {
+                                    Console.WriteLine($"AppShell: Failed to restore from stored data: {restoreEx.Message}");
+                                }
+                            }
+                        }
+                        
+                        if (!isLoggedIn)
+                        {
+                            // Session is invalid, clear login state
+                            Console.WriteLine($"AppShell: Session validation failed: {message}, clearing login state");
+                            Preferences.Set("IsLoggedIn", false);
+                            Preferences.Remove("AuthToken");
+                            Preferences.Remove("UserData");
+                            App.CurrentUser = null;
+                            isLoggedIn = false;
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"AppShell: Error validating session: {ex.Message}, clearing login state");
-                    Preferences.Set("IsLoggedIn", false);
-                    Preferences.Remove("AuthToken");
-                    Preferences.Remove("UserData");
-                    App.CurrentUser = null;
-                    isLoggedIn = false;
+                    Console.WriteLine($"AppShell: Exception validating session: {ex.Message}, StackTrace: {ex.StackTrace}");
+                    // Try to restore from stored data on exception
+                    var userJson = Preferences.Get("UserData", string.Empty);
+                    if (!string.IsNullOrEmpty(userJson))
+                    {
+                        try
+                        {
+                            var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userJson);
+                            if (storedUser != null)
+                            {
+                                App.CurrentUser = storedUser;
+                                Console.WriteLine($"AppShell: Restored user from stored data after exception, Email={storedUser.Email}");
+                                isLoggedIn = true;
+                            }
+                        }
+                        catch
+                        {
+                            // If restore fails, clear everything
+                            Console.WriteLine($"AppShell: Failed to restore, clearing login state");
+                            Preferences.Set("IsLoggedIn", false);
+                            Preferences.Remove("AuthToken");
+                            Preferences.Remove("UserData");
+                            App.CurrentUser = null;
+                            isLoggedIn = false;
+                        }
+                    }
+                    else
+                    {
+                        Preferences.Set("IsLoggedIn", false);
+                        Preferences.Remove("AuthToken");
+                        App.CurrentUser = null;
+                        isLoggedIn = false;
+                    }
                 }
+            }
+            else
+            {
+                Console.WriteLine($"AppShell: Not logged in or no auth token - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}");
             }
             
             if (BindingContext is AppShellViewModel vm)
