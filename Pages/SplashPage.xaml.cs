@@ -1,0 +1,143 @@
+using HiatMeApp.Services;
+using Microsoft.Maui.Storage;
+
+namespace HiatMeApp;
+
+public partial class SplashPage : ContentPage
+{
+    public SplashPage()
+    {
+        InitializeComponent();
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        
+        // Small delay to show splash screen
+        await Task.Delay(300);
+        
+        // Validate and restore session if logged in
+        bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
+        var authToken = Preferences.Get("AuthToken", null);
+        var userDataJson = Preferences.Get("UserData", string.Empty);
+        Console.WriteLine($"SplashPage: OnAppearing - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}, HasUserData={!string.IsNullOrEmpty(userDataJson)}");
+        
+        // If we have stored data but IsLoggedIn is false, try to restore anyway (might be a preference issue)
+        if (!isLoggedIn && !string.IsNullOrEmpty(authToken) && !string.IsNullOrEmpty(userDataJson))
+        {
+            Console.WriteLine("SplashPage: Found stored auth token and user data but IsLoggedIn is false, attempting to validate");
+            isLoggedIn = true; // Set to true so we attempt validation
+        }
+        
+        if (isLoggedIn && !string.IsNullOrEmpty(authToken))
+        {
+            try
+            {
+                // Validate session with server
+                var authService = App.Services.GetRequiredService<AuthService>();
+                Console.WriteLine("SplashPage: Calling ValidateSessionAsync...");
+                var (sessionValid, user, message) = await authService.ValidateSessionAsync();
+                Console.WriteLine($"SplashPage: ValidateSessionAsync returned - Success={sessionValid}, HasUser={user != null}, Message={message}");
+                
+                if (sessionValid && user != null)
+                {
+                    App.CurrentUser = user;
+                    Console.WriteLine($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
+                    isLoggedIn = true;
+                }
+                else
+                {
+                    // Check if it's a network error - if so, try to restore from stored data
+                    if (message.Contains("Network error") || message.Contains("An error occurred"))
+                    {
+                        Console.WriteLine($"SplashPage: Network error during validation, attempting to restore from stored data");
+                        if (!string.IsNullOrEmpty(userDataJson))
+                        {
+                            try
+                            {
+                                var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                                if (storedUser != null)
+                                {
+                                    App.CurrentUser = storedUser;
+                                    Console.WriteLine($"SplashPage: Restored user from stored data, Email={storedUser.Email}, Role={storedUser.Role}");
+                                    isLoggedIn = true;
+                                }
+                            }
+                            catch (Exception restoreEx)
+                            {
+                                Console.WriteLine($"SplashPage: Failed to restore from stored data: {restoreEx.Message}");
+                            }
+                        }
+                    }
+                    
+                    if (!isLoggedIn)
+                    {
+                        // Session is invalid, clear login state
+                        Console.WriteLine($"SplashPage: Session validation failed: {message}, clearing login state");
+                        Preferences.Set("IsLoggedIn", false);
+                        Preferences.Remove("AuthToken");
+                        Preferences.Remove("UserData");
+                        App.CurrentUser = null;
+                        isLoggedIn = false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SplashPage: Exception validating session: {ex.Message}, StackTrace: {ex.StackTrace}");
+                // Try to restore from stored data on exception
+                if (!string.IsNullOrEmpty(userDataJson))
+                {
+                    try
+                    {
+                        var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                        if (storedUser != null)
+                        {
+                            App.CurrentUser = storedUser;
+                            Console.WriteLine($"SplashPage: Restored user from stored data after exception, Email={storedUser.Email}");
+                            isLoggedIn = true;
+                        }
+                    }
+                    catch
+                    {
+                        // If restore fails, clear everything
+                        Console.WriteLine($"SplashPage: Failed to restore, clearing login state");
+                        Preferences.Set("IsLoggedIn", false);
+                        Preferences.Remove("AuthToken");
+                        Preferences.Remove("UserData");
+                        App.CurrentUser = null;
+                        isLoggedIn = false;
+                    }
+                }
+                else
+                {
+                    Preferences.Set("IsLoggedIn", false);
+                    Preferences.Remove("AuthToken");
+                    App.CurrentUser = null;
+                    isLoggedIn = false;
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"SplashPage: Not logged in or no auth token - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}");
+        }
+        
+        // Update menu visibility if we have a shell
+        if (Shell.Current is AppShell appShell && App.CurrentUser != null)
+        {
+            if (Shell.Current.BindingContext is ViewModels.AppShellViewModel vm)
+            {
+                vm.UpdateMenuItems();
+            }
+            appShell.UpdateMenuVisibility();
+        }
+        
+        // Navigate to appropriate route based on login status
+        string targetRoute = isLoggedIn ? "//Home" : "//Login";
+        Console.WriteLine($"SplashPage: Navigating to {targetRoute}");
+        await Shell.Current.GoToAsync(targetRoute);
+    }
+}
+
