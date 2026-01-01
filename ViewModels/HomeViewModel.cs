@@ -81,18 +81,27 @@ public partial class HomeViewModel : BaseViewModel
                         "No"
                     );
 
+                    // If user clicks "No", they don't have this vehicle - clear assignment
                     if (!isStillInVehicle)
                     {
+                        Console.WriteLine("CheckVehicleAssignmentAsync: User denied vehicle confirmation");
+                        
+                        // Remove this vehicle from current user assignment (set CurrentUserId to null or remove from list)
+                        // We'll update the vehicle list to remove this assignment
+                        var updatedVehicles = App.CurrentUser.Vehicles
+                            .Where(v => !(v.VehicleId == AssignedVehicle.VehicleId && v.CurrentUserId == App.CurrentUser.UserId))
+                            .ToList();
+                        App.CurrentUser.Vehicles = updatedVehicles;
+                        
                         AssignedVehicle = null;
                         OnPropertyChanged(nameof(AssignedVehicle));
-                        App.CurrentUser.Vehicles = App.CurrentUser.Vehicles;
                         Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
-                        Console.WriteLine("CheckVehicleAssignmentAsync: User denied vehicle, navigating to Vehicle page.");
+                        Console.WriteLine("CheckVehicleAssignmentAsync: Vehicle assignment cleared, navigating to Vehicle page.");
                         Preferences.Set("ShouldConfirmVehicle", false); // Clear flag after confirmation
                         await Shell.Current.GoToAsync("Vehicle");
                         return;
                     }
-                    // Clear the flag after showing confirmation once
+                    // Clear the flag after showing confirmation once (user clicked "Yes")
                     Preferences.Set("ShouldConfirmVehicle", false);
                 }
 
