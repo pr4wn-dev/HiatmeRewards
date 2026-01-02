@@ -1,7 +1,9 @@
 ﻿using HiatMeApp.ViewModels;
+using HiatMeApp.Models;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
 using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 using System.IO;
 
 namespace HiatMeApp;
