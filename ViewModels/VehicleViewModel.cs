@@ -51,9 +51,9 @@ public partial class VehicleViewModel : BaseViewModel
         });
     }
 
-    private void LoadVehicles()
+    public void LoadVehicles()
     {
-        if (App.CurrentUser?.Vehicles != null && App.CurrentUser.UserId > 0)
+        if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
         {
             Vehicles.Clear();
             foreach (var vehicle in App.CurrentUser.Vehicles)
@@ -63,13 +63,13 @@ public partial class VehicleViewModel : BaseViewModel
             }
             // Select vehicle with matching CurrentUserId only
             var selectedVehicle = Vehicles
-                .Where(v => v.CurrentUserId == App.CurrentUser.UserId)
+                .Where(v => v.CurrentUserId == (App.CurrentUser?.UserId ?? 0))
                 .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
                 .FirstOrDefault();
 
             Vehicle = selectedVehicle;
             NoVehicleMessageVisible = Vehicle == null;
-            Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}, VehicleId={Vehicle.VehicleId}, CurrentUserId={Vehicle.CurrentUserId}, DateAssigned={Vehicle.DateAssigned}" : "none")}, CurrentUserId={App.CurrentUser.UserId}");
+            Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}, VehicleId={Vehicle.VehicleId}, CurrentUserId={Vehicle.CurrentUserId}, DateAssigned={Vehicle.DateAssigned}" : "none")}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
         }
         else
         {
@@ -101,7 +101,7 @@ public partial class VehicleViewModel : BaseViewModel
             updatedVehicles.Add(newVehicle);
             App.CurrentUser.Vehicles = updatedVehicles;
             Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
-            Console.WriteLine($"UpdateVehicle: Updated vehicle list, new vehicle VIN ending={newVehicle.LastSixVin}, VehicleId={newVehicle.VehicleId}, CurrentUserId={newVehicle.CurrentUserId}, DateAssigned={newVehicle.DateAssigned}, Total vehicles={updatedVehicles.Count}, CurrentUserId={App.CurrentUser.UserId}");
+            Console.WriteLine($"UpdateVehicle: Updated vehicle list, new vehicle VIN ending={newVehicle.LastSixVin}, VehicleId={newVehicle.VehicleId}, CurrentUserId={newVehicle.CurrentUserId}, DateAssigned={newVehicle.DateAssigned}, Total vehicles={updatedVehicles.Count}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
             LoadVehicles(); // Reload to ensure Vehicle property is updated
         }
     }
