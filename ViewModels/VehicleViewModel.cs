@@ -28,6 +28,9 @@ public partial class VehicleViewModel : BaseViewModel
     private bool _isVehicleButtonVisible;
 
     [ObservableProperty]
+    private bool _isIssuesButtonVisible;
+
+    [ObservableProperty]
     private ObservableCollection<Vehicle> _vehicles;
 
     public VehicleViewModel()
@@ -36,7 +39,8 @@ public partial class VehicleViewModel : BaseViewModel
         Vehicles = new ObservableCollection<Vehicle>();
         IsBusy = false;
         IsVehicleButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
-        Console.WriteLine($"VehicleViewModel: Initialized with Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}" : "none")}, VehiclesCount={Vehicles.Count}, IsVehicleButtonVisible={IsVehicleButtonVisible}, IsBusy={IsBusy}, CurrentUserId={App.CurrentUser?.UserId}");
+        IsIssuesButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
+        Console.WriteLine($"VehicleViewModel: Initialized with Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}" : "none")}, VehiclesCount={Vehicles.Count}, IsVehicleButtonVisible={IsVehicleButtonVisible}, IsIssuesButtonVisible={IsIssuesButtonVisible}, IsBusy={IsBusy}, CurrentUserId={App.CurrentUser?.UserId}");
         
         // Only load vehicles if user is available, otherwise defer until OnAppearing
         try
@@ -111,7 +115,10 @@ public partial class VehicleViewModel : BaseViewModel
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            Console.WriteLine($"LoadVehicles: Restored user from Preferences, Email={storedUser.Email}");
+                            // Update button visibility based on restored user role
+                            IsVehicleButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
+                            IsIssuesButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
+                            Console.WriteLine($"LoadVehicles: Restored user from Preferences, Email={storedUser.Email}, Role={storedUser.Role}");
                         }
                     }
                     catch (Exception ex)
@@ -136,9 +143,10 @@ public partial class VehicleViewModel : BaseViewModel
                     .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
                     .FirstOrDefault();
 
+                // Set properties - ObservableProperty will automatically raise PropertyChanged
                 Vehicle = selectedVehicle;
                 NoVehicleMessageVisible = Vehicle == null;
-                Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}, VehicleId={Vehicle.VehicleId}, CurrentUserId={Vehicle.CurrentUserId}, DateAssigned={Vehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
+                Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(selectedVehicle != null ? $"VIN ending {selectedVehicle.LastSixVin}, VehicleId={selectedVehicle.VehicleId}, CurrentUserId={selectedVehicle.CurrentUserId}, DateAssigned={selectedVehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
             }
             else
             {
@@ -154,12 +162,6 @@ public partial class VehicleViewModel : BaseViewModel
             Vehicles.Clear();
             Vehicle = null;
             NoVehicleMessageVisible = true;
-        }
-        finally
-        {
-            OnPropertyChanged(nameof(Vehicles));
-            OnPropertyChanged(nameof(Vehicle));
-            OnPropertyChanged(nameof(NoVehicleMessageVisible));
         }
     }
 

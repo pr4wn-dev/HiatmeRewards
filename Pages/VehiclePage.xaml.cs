@@ -62,11 +62,14 @@ public partial class VehiclePage : ContentPage
         }
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         try
         {
             base.OnAppearing();
+            
+            // Small delay to ensure page is fully loaded
+            await Task.Delay(100);
             
             // Ensure user data is restored if it's missing (might happen if app was closed and reopened)
             if (App.CurrentUser == null)
@@ -81,13 +84,7 @@ public partial class VehiclePage : ContentPage
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            Console.WriteLine($"VehiclePage: Restored user from stored data in OnAppearing, Email={storedUser.Email}, Role={storedUser.Role}");
-                            
-                            // Refresh the view model with the restored user data
-                            if (BindingContext is VehicleViewModel vm)
-                            {
-                                vm.LoadVehicles();
-                            }
+                            Console.WriteLine($"VehiclePage: Restored user from stored data in OnAppearing, Email={storedUser.Email}, Role={storedUser.Role}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
                     catch (Exception ex)
@@ -96,17 +93,31 @@ public partial class VehiclePage : ContentPage
                     }
                 }
             }
-            else if (BindingContext is VehicleViewModel vm)
+            
+            // Always try to load vehicles, regardless of whether user was just restored
+            if (BindingContext is VehicleViewModel vm)
             {
-                // User is already set, just refresh the vehicles
                 try
                 {
+                    Console.WriteLine($"VehiclePage: Calling LoadVehicles, App.CurrentUser={(App.CurrentUser != null ? $"Email={App.CurrentUser.Email}, VehiclesCount={App.CurrentUser.Vehicles?.Count ?? 0}" : "null")}");
                     vm.LoadVehicles();
+                    Console.WriteLine($"VehiclePage: LoadVehicles completed, Vehicle={(vm.Vehicle != null ? $"VIN ending {vm.Vehicle.LastSixVin}" : "null")}, NoVehicleMessageVisible={vm.NoVehicleMessageVisible}");
+                    
+                    // Ensure NavigationBar visibility properties are set
+                    if (App.CurrentUser != null)
+                    {
+                        vm.IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                        vm.IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"VehiclePage: Error calling LoadVehicles in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
                 }
+            }
+            else
+            {
+                Console.WriteLine($"VehiclePage: BindingContext is not VehicleViewModel, type={BindingContext?.GetType()?.Name ?? "null"}");
             }
         }
         catch (Exception ex)

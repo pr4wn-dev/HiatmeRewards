@@ -12,10 +12,12 @@ public partial class SplashPage : ContentPage
 
     protected override async void OnAppearing()
     {
-        base.OnAppearing();
-        
-        // Small delay to show splash screen
-        await Task.Delay(300);
+        try
+        {
+            base.OnAppearing();
+            
+            // Small delay to show splash screen
+            await Task.Delay(300);
         
         // Validate and restore session if logged in
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
@@ -150,10 +152,41 @@ public partial class SplashPage : ContentPage
             appShell.UpdateMenuVisibility();
         }
         
-        // Navigate to appropriate route based on login status
-        string targetRoute = isLoggedIn ? "//Home" : "//Login";
-        Console.WriteLine($"SplashPage: Navigating to {targetRoute}");
-        await Shell.Current.GoToAsync(targetRoute);
+            // Navigate to appropriate route based on login status
+            string targetRoute = isLoggedIn ? "//Home" : "//Login";
+            Console.WriteLine($"SplashPage: Navigating to {targetRoute}");
+            try
+            {
+                await Shell.Current.GoToAsync(targetRoute);
+                Console.WriteLine($"SplashPage: Navigation to {targetRoute} completed");
+            }
+            catch (Exception navEx)
+            {
+                Console.WriteLine($"SplashPage: Navigation error: {navEx.Message}, StackTrace: {navEx.StackTrace}");
+                // Fallback to login if navigation fails
+                try
+                {
+                    await Shell.Current.GoToAsync("//Login");
+                }
+                catch
+                {
+                    Console.WriteLine("SplashPage: Fallback navigation also failed");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SplashPage: Critical error in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
+            // Try to navigate to login as fallback
+            try
+            {
+                await Shell.Current.GoToAsync("//Login");
+            }
+            catch
+            {
+                Console.WriteLine("SplashPage: Could not navigate to Login after error");
+            }
+        }
     }
 }
 
