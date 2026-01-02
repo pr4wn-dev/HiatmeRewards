@@ -8,8 +8,25 @@ namespace HiatMeApp;
 public partial class VehiclePage : ContentPage
 {
     // Default constructor for DataTemplate (used by AppShell)
-    public VehiclePage() : this(App.Services?.GetService<VehicleViewModel>() ?? new VehicleViewModel())
+    public VehiclePage() : this(GetViewModel())
     {
+    }
+    
+    private static VehicleViewModel GetViewModel()
+    {
+        try
+        {
+            // Try to get from DI, fallback to new instance if not available
+            if (App.Services != null)
+            {
+                return App.Services.GetService<VehicleViewModel>() ?? new VehicleViewModel();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"VehiclePage: Error getting ViewModel from DI: {ex.Message}");
+        }
+        return new VehicleViewModel();
     }
 
     // Constructor with dependency injection
