@@ -170,18 +170,4 @@ public partial class VehiclePage : ContentPage
             LogError($"VehiclePage: OnAppearing CRASH: {ex.Message}\n{ex.StackTrace}");
         }
     }
-    
-    private async void OnViewLogClicked(object sender, EventArgs e)
-    {
-        try
-        {
-            var logContent = ReadLog();
-            var logPath = GetLogPath();
-            await DisplayAlert("Log File", $"Path: {logPath}\n\nContent:\n{logContent}", "OK");
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Error", $"Could not read log: {ex.Message}", "OK");
-        }
-    }
 }
