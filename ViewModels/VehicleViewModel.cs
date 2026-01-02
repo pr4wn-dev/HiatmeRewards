@@ -146,6 +146,10 @@ public partial class VehicleViewModel : BaseViewModel
                 // Set properties - ObservableProperty will automatically raise PropertyChanged
                 Vehicle = selectedVehicle;
                 NoVehicleMessageVisible = Vehicle == null;
+                // Explicitly raise PropertyChanged to ensure UI updates
+                OnPropertyChanged(nameof(Vehicle));
+                OnPropertyChanged(nameof(NoVehicleMessageVisible));
+                OnPropertyChanged(nameof(Vehicles));
                 Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(selectedVehicle != null ? $"VIN ending {selectedVehicle.LastSixVin}, VehicleId={selectedVehicle.VehicleId}, CurrentUserId={selectedVehicle.CurrentUserId}, DateAssigned={selectedVehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
             }
             else
@@ -153,6 +157,9 @@ public partial class VehicleViewModel : BaseViewModel
                 Vehicles.Clear();
                 Vehicle = null;
                 NoVehicleMessageVisible = true;
+                OnPropertyChanged(nameof(Vehicles));
+                OnPropertyChanged(nameof(Vehicle));
+                OnPropertyChanged(nameof(NoVehicleMessageVisible));
                 Console.WriteLine($"LoadVehicles: No vehicles or user data available, CurrentUserId={App.CurrentUser?.UserId ?? 0}, HasVehicles={App.CurrentUser?.Vehicles != null}");
             }
         }
@@ -162,6 +169,9 @@ public partial class VehicleViewModel : BaseViewModel
             Vehicles.Clear();
             Vehicle = null;
             NoVehicleMessageVisible = true;
+            OnPropertyChanged(nameof(Vehicles));
+            OnPropertyChanged(nameof(Vehicle));
+            OnPropertyChanged(nameof(NoVehicleMessageVisible));
         }
     }
 

@@ -109,6 +109,20 @@ public partial class VehiclePage : ContentPage
                         vm.IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                         vm.IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                     }
+                    
+                    // Set NavigationBar BindingContext explicitly (ContentView doesn't inherit automatically)
+                    if (Content is Grid grid)
+                    {
+                        foreach (var child in grid.Children)
+                        {
+                            if (child is Controls.NavigationBar navBar)
+                            {
+                                navBar.BindingContext = vm;
+                                Console.WriteLine("VehiclePage: NavigationBar BindingContext set explicitly in OnAppearing");
+                                break;
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

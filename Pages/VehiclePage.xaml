@@ -83,6 +83,6 @@
                         Margin="0,10,0,0" />
             </VerticalStackLayout>
         </ScrollView>
-        <local:NavigationBar Grid.Row="2" />
+        <local:NavigationBar Grid.Row="2" BindingContext="{Binding .}" />
     </Grid>
 </ContentPage>
