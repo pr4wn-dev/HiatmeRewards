@@ -108,119 +108,59 @@ public partial class VehicleViewModel : BaseViewModel
 
     public async Task LoadVehiclesAsync()
     {
-        // Small delay to ensure page is fully initialized
-        await Task.Delay(150);
+        await Task.Delay(100);
         
         try
         {
-            // Restore user if missing
             if (App.CurrentUser == null)
             {
-                try
+                var userDataJson = Preferences.Get("UserData", string.Empty);
+                if (!string.IsNullOrEmpty(userDataJson))
                 {
-                    var userDataJson = Preferences.Get("UserData", string.Empty);
-                    if (!string.IsNullOrEmpty(userDataJson))
+                    var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                    if (storedUser != null)
                     {
-                        var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
-                        if (storedUser != null)
-                        {
-                            App.CurrentUser = storedUser;
-                        }
+                        App.CurrentUser = storedUser;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"LoadVehiclesAsync: Failed to restore user: {ex.Message}");
                 }
             }
             
-            // Load vehicles if user and vehicles exist
-            if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
+            if (App.CurrentUser?.Vehicles != null && App.CurrentUser.UserId > 0)
             {
-                var vehiclesList = new List<Vehicle>();
-                foreach (var vehicle in App.CurrentUser.Vehicles)
-                {
-                    if (vehicle != null)
-                    {
-                        vehiclesList.Add(vehicle);
-                    }
-                }
-                
-                // Select vehicle with matching CurrentUserId
+                var vehiclesList = App.CurrentUser.Vehicles.Where(v => v != null).ToList();
                 var userId = App.CurrentUser.UserId;
                 var selectedVehicle = vehiclesList
                     .Where(v => v.CurrentUserId == userId)
                     .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
                     .FirstOrDefault();
 
-                // Update UI on main thread
-                await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
+                Vehicles.Clear();
+                foreach (var v in vehiclesList)
                 {
-                    try
-                    {
-                        Vehicles.Clear();
-                        foreach (var v in vehiclesList)
-                        {
-                            Vehicles.Add(v);
-                        }
-                        
-                        Vehicle = selectedVehicle;
-                        NoVehicleMessageVisible = Vehicle == null;
-                        
-                        if (App.CurrentUser != null)
-                        {
-                            IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
-                            IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
-                        }
-                        
-                        OnPropertyChanged(nameof(Vehicle));
-                        OnPropertyChanged(nameof(NoVehicleMessageVisible));
-                        OnPropertyChanged(nameof(Vehicles));
-                        OnPropertyChanged(nameof(IsVehicleButtonVisible));
-                        OnPropertyChanged(nameof(IsIssuesButtonVisible));
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"LoadVehiclesAsync: Error updating UI: {ex.Message}");
-                    }
-                });
+                    Vehicles.Add(v);
+                }
+                
+                Vehicle = selectedVehicle;
+                NoVehicleMessageVisible = Vehicle == null;
+                IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
             }
             else
             {
-                await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    Vehicles.Clear();
-                    Vehicle = null;
-                    NoVehicleMessageVisible = true;
-                    OnPropertyChanged(nameof(Vehicles));
-                    OnPropertyChanged(nameof(Vehicle));
-                    OnPropertyChanged(nameof(NoVehicleMessageVisible));
-                });
+                Vehicles.Clear();
+                Vehicle = null;
+                NoVehicleMessageVisible = true;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"LoadVehiclesAsync: CRITICAL EXCEPTION: {ex.Message}, StackTrace: {ex.StackTrace}");
-            await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
-            {
-                try
-                {
-                    Vehicles.Clear();
-                    Vehicle = null;
-                    NoVehicleMessageVisible = true;
-                    OnPropertyChanged(nameof(Vehicles));
-                    OnPropertyChanged(nameof(Vehicle));
-                    OnPropertyChanged(nameof(NoVehicleMessageVisible));
-                }
-                catch
-                {
-                    // If even this fails, we're in deep trouble
-                }
-            });
+            Console.WriteLine($"LoadVehiclesAsync error: {ex.Message}");
+            Vehicles.Clear();
+            Vehicle = null;
+            NoVehicleMessageVisible = true;
         }
     }
     
-    // Synchronous wrapper for backwards compatibility
     public void LoadVehicles()
     {
         Task.Run(async () => await LoadVehiclesAsync()).Wait();
