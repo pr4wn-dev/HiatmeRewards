@@ -157,24 +157,16 @@ public partial class VehiclePage : ContentPage
             {
                 try
                 {
-                    Console.WriteLine($"VehiclePage: Calling LoadVehicles");
-                    vm.LoadVehicles();
-                    Console.WriteLine($"VehiclePage: LoadVehicles completed");
+                    // Wait for vehicles to load before setting up UI
+                    await vm.LoadVehiclesAsync();
                     
-                    // Update visibility properties
-                    if (App.CurrentUser != null)
-                    {
-                        vm.IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
-                        vm.IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
-                    }
-                    
-                    // Set NavigationBar BindingContext
-                    await Task.Delay(100);
+                    // Set NavigationBar BindingContext after data is loaded
+                    await Task.Delay(150);
                     SetNavigationBarBindingContext(vm);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"VehiclePage: CRITICAL - Error in LoadVehicles: {ex.Message}, StackTrace: {ex.StackTrace}");
+                    Console.WriteLine($"VehiclePage: CRITICAL - Error in LoadVehiclesAsync: {ex.Message}, StackTrace: {ex.StackTrace}");
                 }
             }
             else

@@ -92,7 +92,7 @@ public partial class VehicleViewModel : BaseViewModel
                 try
                 {
                     Console.WriteLine($"VehicleViewModel: Received RefreshVehiclePage message, reason={message?.Value ?? "unknown"}");
-                    recipient.LoadVehicles();
+                    _ = recipient.LoadVehiclesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -106,8 +106,11 @@ public partial class VehicleViewModel : BaseViewModel
         }
     }
 
-    public void LoadVehicles()
+    public async Task LoadVehiclesAsync()
     {
+        // Small delay to ensure page is fully initialized
+        await Task.Delay(150);
+        
         try
         {
             // Restore user if missing
@@ -122,77 +125,105 @@ public partial class VehicleViewModel : BaseViewModel
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            IsVehicleButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
-                            IsIssuesButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"LoadVehicles: Failed to restore user: {ex.Message}");
+                    Console.WriteLine($"LoadVehiclesAsync: Failed to restore user: {ex.Message}");
                 }
             }
             
             // Load vehicles if user and vehicles exist
             if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
             {
-                try
+                var vehiclesList = new List<Vehicle>();
+                foreach (var vehicle in App.CurrentUser.Vehicles)
                 {
-                    Vehicles.Clear();
-                    foreach (var vehicle in App.CurrentUser.Vehicles)
+                    if (vehicle != null)
                     {
-                        Vehicles.Add(vehicle);
+                        vehiclesList.Add(vehicle);
                     }
-                    
-                    // Select vehicle with matching CurrentUserId
-                    var userId = App.CurrentUser.UserId;
-                    var selectedVehicle = Vehicles
-                        .Where(v => v != null && v.CurrentUserId == userId)
-                        .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
-                        .FirstOrDefault();
+                }
+                
+                // Select vehicle with matching CurrentUserId
+                var userId = App.CurrentUser.UserId;
+                var selectedVehicle = vehiclesList
+                    .Where(v => v.CurrentUserId == userId)
+                    .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
+                    .FirstOrDefault();
 
-                    Vehicle = selectedVehicle;
-                    NoVehicleMessageVisible = Vehicle == null;
-                    
-                    OnPropertyChanged(nameof(Vehicle));
-                    OnPropertyChanged(nameof(NoVehicleMessageVisible));
-                    OnPropertyChanged(nameof(Vehicles));
-                }
-                catch (Exception ex)
+                // Update UI on main thread
+                await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    Console.WriteLine($"LoadVehicles: Error processing vehicles: {ex.Message}");
-                    Vehicles.Clear();
-                    Vehicle = null;
-                    NoVehicleMessageVisible = true;
-                }
+                    try
+                    {
+                        Vehicles.Clear();
+                        foreach (var v in vehiclesList)
+                        {
+                            Vehicles.Add(v);
+                        }
+                        
+                        Vehicle = selectedVehicle;
+                        NoVehicleMessageVisible = Vehicle == null;
+                        
+                        if (App.CurrentUser != null)
+                        {
+                            IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                            IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                        }
+                        
+                        OnPropertyChanged(nameof(Vehicle));
+                        OnPropertyChanged(nameof(NoVehicleMessageVisible));
+                        OnPropertyChanged(nameof(Vehicles));
+                        OnPropertyChanged(nameof(IsVehicleButtonVisible));
+                        OnPropertyChanged(nameof(IsIssuesButtonVisible));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"LoadVehiclesAsync: Error updating UI: {ex.Message}");
+                    }
+                });
             }
             else
             {
-                Vehicles.Clear();
-                Vehicle = null;
-                NoVehicleMessageVisible = true;
-                OnPropertyChanged(nameof(Vehicles));
-                OnPropertyChanged(nameof(Vehicle));
-                OnPropertyChanged(nameof(NoVehicleMessageVisible));
+                await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    Vehicles.Clear();
+                    Vehicle = null;
+                    NoVehicleMessageVisible = true;
+                    OnPropertyChanged(nameof(Vehicles));
+                    OnPropertyChanged(nameof(Vehicle));
+                    OnPropertyChanged(nameof(NoVehicleMessageVisible));
+                });
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"LoadVehicles: CRITICAL EXCEPTION: {ex.Message}, StackTrace: {ex.StackTrace}");
-            try
+            Console.WriteLine($"LoadVehiclesAsync: CRITICAL EXCEPTION: {ex.Message}, StackTrace: {ex.StackTrace}");
+            await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
             {
-                Vehicles.Clear();
-                Vehicle = null;
-                NoVehicleMessageVisible = true;
-                OnPropertyChanged(nameof(Vehicles));
-                OnPropertyChanged(nameof(Vehicle));
-                OnPropertyChanged(nameof(NoVehicleMessageVisible));
-            }
-            catch
-            {
-                // If even this fails, we're in deep trouble
-            }
+                try
+                {
+                    Vehicles.Clear();
+                    Vehicle = null;
+                    NoVehicleMessageVisible = true;
+                    OnPropertyChanged(nameof(Vehicles));
+                    OnPropertyChanged(nameof(Vehicle));
+                    OnPropertyChanged(nameof(NoVehicleMessageVisible));
+                }
+                catch
+                {
+                    // If even this fails, we're in deep trouble
+                }
+            });
         }
+    }
+    
+    // Synchronous wrapper for backwards compatibility
+    public void LoadVehicles()
+    {
+        Task.Run(async () => await LoadVehiclesAsync()).Wait();
     }
 
     private void UpdateVehicle(Vehicle newVehicle)
@@ -216,7 +247,7 @@ public partial class VehicleViewModel : BaseViewModel
                 App.CurrentUser.Vehicles = updatedVehicles;
                 Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
                 Console.WriteLine($"UpdateVehicle: Updated vehicle list, new vehicle VIN ending={newVehicle.LastSixVin}, VehicleId={newVehicle.VehicleId}, CurrentUserId={newVehicle.CurrentUserId}, DateAssigned={newVehicle.DateAssigned}, Total vehicles={updatedVehicles.Count}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
-                LoadVehicles(); // Reload to ensure Vehicle property is updated
+                _ = LoadVehiclesAsync(); // Reload to ensure Vehicle property is updated
             }
             else
             {
