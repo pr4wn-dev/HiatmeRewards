@@ -81,8 +81,34 @@ public partial class VehiclePage : ContentPage
             var logPath = Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
             var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n";
             File.AppendAllText(logPath, logEntry);
+            // Also write to console for Visual Studio debugging
+            System.Diagnostics.Debug.WriteLine(message);
         }
         catch { }
+    }
+    
+    // Method to get log file path for display
+    public static string GetLogPath()
+    {
+        return Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
+    }
+    
+    // Method to read log content
+    public static string ReadLog()
+    {
+        try
+        {
+            var logPath = GetLogPath();
+            if (File.Exists(logPath))
+            {
+                return File.ReadAllText(logPath);
+            }
+            return "Log file not found.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error reading log: {ex.Message}";
+        }
     }
     
 
@@ -143,6 +169,20 @@ public partial class VehiclePage : ContentPage
         catch (Exception ex)
         {
             LogError($"VehiclePage: OnAppearing CRASH: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+    
+    private async void OnViewLogClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var logContent = ReadLog();
+            var logPath = GetLogPath();
+            await DisplayAlert("Log File", $"Path: {logPath}\n\nContent:\n{logContent}", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"Could not read log: {ex.Message}", "OK");
         }
     }
 }
