@@ -144,4 +144,3 @@ public partial class VehiclePage : ContentPage
         }
     }
 }
-}
