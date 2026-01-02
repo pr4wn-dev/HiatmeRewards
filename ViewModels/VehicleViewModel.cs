@@ -7,6 +7,7 @@ using HiatMeApp.Models;
 using HiatMeApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -55,83 +56,159 @@ public partial class VehicleViewModel : BaseViewModel
             Console.WriteLine($"VehicleViewModel: Error in constructor: {ex.Message}, StackTrace: {ex.StackTrace}");
         }
         
-        WeakReferenceMessenger.Default.Register<VehicleViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
+        // Register message handlers with error handling
+        try
         {
-            Console.WriteLine($"VehicleViewModel: Received VehicleAssigned message, VIN ending={message.Value.LastSixVin}, VehicleId={message.Value.VehicleId}, CurrentUserId={message.Value.CurrentUserId}, DateAssigned={message.Value.DateAssigned}");
-            recipient.UpdateVehicle(message.Value);
-        });
+            WeakReferenceMessenger.Default.Register<VehicleViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
+            {
+                try
+                {
+                    if (message?.Value != null)
+                    {
+                        Console.WriteLine($"VehicleViewModel: Received VehicleAssigned message, VIN ending={message.Value.LastSixVin}, VehicleId={message.Value.VehicleId}, CurrentUserId={message.Value.CurrentUserId}, DateAssigned={message.Value.DateAssigned}");
+                        recipient.UpdateVehicle(message.Value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"VehicleViewModel: Error handling VehicleAssignedMessage: {ex.Message}");
+                }
+            });
 
-        WeakReferenceMessenger.Default.Register<VehicleViewModel, RefreshVehiclePageMessage>(this, (recipient, message) =>
+            WeakReferenceMessenger.Default.Register<VehicleViewModel, RefreshVehiclePageMessage>(this, (recipient, message) =>
+            {
+                try
+                {
+                    Console.WriteLine($"VehicleViewModel: Received RefreshVehiclePage message, reason={message?.Value ?? "unknown"}");
+                    recipient.LoadVehicles();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"VehicleViewModel: Error handling RefreshVehiclePageMessage: {ex.Message}");
+                }
+            });
+        }
+        catch (Exception ex)
         {
-            Console.WriteLine($"VehicleViewModel: Received RefreshVehiclePage message, reason={message.Value}");
-            recipient.LoadVehicles();
-        });
+            Console.WriteLine($"VehicleViewModel: Error registering message handlers: {ex.Message}, StackTrace: {ex.StackTrace}");
+        }
     }
 
     public void LoadVehicles()
     {
-        if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
+        try
         {
-            Vehicles.Clear();
-            foreach (var vehicle in App.CurrentUser.Vehicles)
+            // Try to restore user if missing (defensive programming for standalone app)
+            if (App.CurrentUser == null)
             {
-                Vehicles.Add(vehicle);
-                Console.WriteLine($"LoadVehicles: Vehicle VIN ending={vehicle.LastSixVin}, VehicleId={vehicle.VehicleId}, CurrentUserId={vehicle.CurrentUserId}, DateAssigned={vehicle.DateAssigned}");
+                Console.WriteLine("LoadVehicles: App.CurrentUser is null, attempting to restore from Preferences");
+                var userDataJson = Preferences.Get("UserData", string.Empty);
+                if (!string.IsNullOrEmpty(userDataJson))
+                {
+                    try
+                    {
+                        var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                        if (storedUser != null)
+                        {
+                            App.CurrentUser = storedUser;
+                            Console.WriteLine($"LoadVehicles: Restored user from Preferences, Email={storedUser.Email}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"LoadVehicles: Failed to restore user: {ex.Message}");
+                    }
+                }
             }
-            // Select vehicle with matching CurrentUserId only
-            var selectedVehicle = Vehicles
-                .Where(v => v.CurrentUserId == (App.CurrentUser?.UserId ?? 0))
-                .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
-                .FirstOrDefault();
+            
+            if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
+            {
+                Vehicles.Clear();
+                foreach (var vehicle in App.CurrentUser.Vehicles)
+                {
+                    Vehicles.Add(vehicle);
+                    Console.WriteLine($"LoadVehicles: Vehicle VIN ending={vehicle.LastSixVin}, VehicleId={vehicle.VehicleId}, CurrentUserId={vehicle.CurrentUserId}, DateAssigned={vehicle.DateAssigned}");
+                }
+                // Select vehicle with matching CurrentUserId only
+                var userId = App.CurrentUser.UserId; // Store in local variable to avoid race condition
+                var selectedVehicle = Vehicles
+                    .Where(v => v.CurrentUserId == userId)
+                    .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
+                    .FirstOrDefault();
 
-            Vehicle = selectedVehicle;
-            NoVehicleMessageVisible = Vehicle == null;
-            Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}, VehicleId={Vehicle.VehicleId}, CurrentUserId={Vehicle.CurrentUserId}, DateAssigned={Vehicle.DateAssigned}" : "none")}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
+                Vehicle = selectedVehicle;
+                NoVehicleMessageVisible = Vehicle == null;
+                Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}, VehicleId={Vehicle.VehicleId}, CurrentUserId={Vehicle.CurrentUserId}, DateAssigned={Vehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
+            }
+            else
+            {
+                Vehicles.Clear();
+                Vehicle = null;
+                NoVehicleMessageVisible = true;
+                Console.WriteLine($"LoadVehicles: No vehicles or user data available, CurrentUserId={App.CurrentUser?.UserId ?? 0}, HasVehicles={App.CurrentUser?.Vehicles != null}");
+            }
         }
-        else
+        catch (Exception ex)
         {
+            Console.WriteLine($"LoadVehicles: Exception occurred: {ex.Message}, StackTrace: {ex.StackTrace}");
             Vehicles.Clear();
             Vehicle = null;
             NoVehicleMessageVisible = true;
-            Console.WriteLine($"LoadVehicles: No vehicles or user data available, CurrentUserId={App.CurrentUser?.UserId}");
         }
-        OnPropertyChanged(nameof(Vehicles));
-        OnPropertyChanged(nameof(Vehicle));
-        OnPropertyChanged(nameof(NoVehicleMessageVisible));
+        finally
+        {
+            OnPropertyChanged(nameof(Vehicles));
+            OnPropertyChanged(nameof(Vehicle));
+            OnPropertyChanged(nameof(NoVehicleMessageVisible));
+        }
     }
 
     private void UpdateVehicle(Vehicle newVehicle)
     {
-        if (App.CurrentUser != null && App.CurrentUser.Vehicles != null)
+        try
         {
-            // Set CurrentUserId if missing
-            if (!newVehicle.CurrentUserId.HasValue || newVehicle.CurrentUserId == 0)
+            if (App.CurrentUser != null && App.CurrentUser.Vehicles != null)
             {
-                newVehicle.CurrentUserId = App.CurrentUser.UserId;
-                Console.WriteLine($"UpdateVehicle: Set CurrentUserId={newVehicle.CurrentUserId} for VIN ending={newVehicle.LastSixVin}");
+                // Set CurrentUserId if missing
+                if (!newVehicle.CurrentUserId.HasValue || newVehicle.CurrentUserId == 0)
+                {
+                    newVehicle.CurrentUserId = App.CurrentUser.UserId;
+                    Console.WriteLine($"UpdateVehicle: Set CurrentUserId={newVehicle.CurrentUserId} for VIN ending={newVehicle.LastSixVin}");
+                }
+                // Clear CurrentUserId for other vehicles
+                var updatedVehicles = App.CurrentUser.Vehicles
+                    .Where(v => v.VehicleId != newVehicle.VehicleId)
+                    .Select(v => { v.CurrentUserId = null; return v; })
+                    .ToList();
+                updatedVehicles.Add(newVehicle);
+                App.CurrentUser.Vehicles = updatedVehicles;
+                Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
+                Console.WriteLine($"UpdateVehicle: Updated vehicle list, new vehicle VIN ending={newVehicle.LastSixVin}, VehicleId={newVehicle.VehicleId}, CurrentUserId={newVehicle.CurrentUserId}, DateAssigned={newVehicle.DateAssigned}, Total vehicles={updatedVehicles.Count}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
+                LoadVehicles(); // Reload to ensure Vehicle property is updated
             }
-            // Clear CurrentUserId for other vehicles
-            var updatedVehicles = App.CurrentUser.Vehicles
-                .Where(v => v.VehicleId != newVehicle.VehicleId)
-                .Select(v => { v.CurrentUserId = null; return v; })
-                .ToList();
-            updatedVehicles.Add(newVehicle);
-            App.CurrentUser.Vehicles = updatedVehicles;
-            Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
-            Console.WriteLine($"UpdateVehicle: Updated vehicle list, new vehicle VIN ending={newVehicle.LastSixVin}, VehicleId={newVehicle.VehicleId}, CurrentUserId={newVehicle.CurrentUserId}, DateAssigned={newVehicle.DateAssigned}, Total vehicles={updatedVehicles.Count}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
-            LoadVehicles(); // Reload to ensure Vehicle property is updated
+            else
+            {
+                Console.WriteLine($"UpdateVehicle: Cannot update - App.CurrentUser is null or has no vehicles");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"UpdateVehicle: Cannot update - App.CurrentUser is null or has no vehicles");
+            Console.WriteLine($"UpdateVehicle: Exception occurred: {ex.Message}, StackTrace: {ex.StackTrace}");
         }
     }
 
     private void CheckIncompleteMileageRecord()
     {
-        if (Vehicle?.MileageRecord != null && Vehicle.MileageRecord.StartMiles != null && Vehicle.MileageRecord.EndingMiles == null)
+        try
         {
-            Console.WriteLine($"Incomplete mileage record for vehicle ID {Vehicle.VehicleId}: StartMiles={Vehicle.MileageRecord.StartMiles}, EndingMiles=null");
+            if (Vehicle?.MileageRecord != null && Vehicle.MileageRecord.StartMiles != null && Vehicle.MileageRecord.EndingMiles == null)
+            {
+                Console.WriteLine($"Incomplete mileage record for vehicle ID {Vehicle.VehicleId}: StartMiles={Vehicle.MileageRecord.StartMiles}, EndingMiles=null");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"CheckIncompleteMileageRecord: Exception: {ex.Message}");
         }
     }
 
