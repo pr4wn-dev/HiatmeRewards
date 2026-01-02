@@ -87,6 +87,9 @@
     <ShellContent ContentTemplate="{DataTemplate local:ForgotPasswordPage}"
                   Route="ForgotPassword"
                   FlyoutItemIsVisible="False" />
+    <ShellContent ContentTemplate="{DataTemplate local:ViewLogPage}"
+                  Route="ViewLog"
+                  FlyoutItemIsVisible="False" />
     <!-- MenuItems - all menu items are created programmatically and managed dynamically based on login status -->
     <!-- Footer with Copyright -->
     <Shell.FlyoutFooter>
