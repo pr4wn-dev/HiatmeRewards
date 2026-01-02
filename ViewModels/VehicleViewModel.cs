@@ -138,30 +138,40 @@ public partial class VehicleViewModel : BaseViewModel
                     .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
                     .FirstOrDefault();
 
-                Vehicles.Clear();
-                foreach (var v in vehiclesList)
+                // Update UI on main thread
+                await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    Vehicles.Add(v);
-                }
-                
-                Vehicle = selectedVehicle;
-                NoVehicleMessageVisible = Vehicle == null;
-                IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
-                IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                    Vehicles.Clear();
+                    foreach (var v in vehiclesList)
+                    {
+                        Vehicles.Add(v);
+                    }
+                    
+                    Vehicle = selectedVehicle;
+                    NoVehicleMessageVisible = Vehicle == null;
+                    IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                    IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                });
             }
             else
             {
-                Vehicles.Clear();
-                Vehicle = null;
-                NoVehicleMessageVisible = true;
+                await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    Vehicles.Clear();
+                    Vehicle = null;
+                    NoVehicleMessageVisible = true;
+                });
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"LoadVehiclesAsync error: {ex.Message}, {ex.StackTrace}");
-            Vehicles.Clear();
-            Vehicle = null;
-            NoVehicleMessageVisible = true;
+            await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                Vehicles.Clear();
+                Vehicle = null;
+                NoVehicleMessageVisible = true;
+            });
         }
         finally
         {

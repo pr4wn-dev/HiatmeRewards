@@ -20,12 +20,9 @@ public partial class VehiclePage : ContentPage
     // Constructor with dependency injection
     public VehiclePage(VehicleViewModel? viewModel)
     {
-        LogError("VehiclePage: Constructor START");
         try
         {
-            LogError("VehiclePage: About to InitializeComponent");
             InitializeComponent();
-            LogError("VehiclePage: InitializeComponent SUCCESS");
             
             // Restore user if needed
             if (App.CurrentUser == null)
@@ -39,28 +36,23 @@ public partial class VehiclePage : ContentPage
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            LogError($"VehiclePage: Restored user, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
                 }
-                catch (Exception ex) { LogError($"VehiclePage: Restore user error: {ex.Message}"); }
+                catch { }
             }
             
-            // Create or use provided ViewModel
-            LogError("VehiclePage: Creating ViewModel");
+            // Create ViewModel
             _viewModel = viewModel ?? (App.Services?.GetService<VehicleViewModel>() ?? new VehicleViewModel());
-            LogError("VehiclePage: ViewModel created");
             
-            // Ensure all collections are initialized
+            // Ensure collections are initialized
             if (_viewModel.Vehicles == null)
             {
                 _viewModel.Vehicles = new ObservableCollection<Vehicle>();
             }
             
-            // Set BindingContext AFTER everything is initialized
-            LogError("VehiclePage: Setting BindingContext");
+            // Set BindingContext
             BindingContext = _viewModel;
-            LogError("VehiclePage: BindingContext SET - Constructor SUCCESS");
         }
         catch (Exception ex)
         {
@@ -68,9 +60,13 @@ public partial class VehiclePage : ContentPage
             try
             {
                 _viewModel = new VehicleViewModel();
+                if (_viewModel.Vehicles == null)
+                {
+                    _viewModel.Vehicles = new ObservableCollection<Vehicle>();
+                }
                 BindingContext = _viewModel;
             }
-            catch (Exception ex2) { LogError($"VehiclePage: Fallback ViewModel failed: {ex2.Message}"); }
+            catch { }
         }
     }
     
@@ -113,22 +109,20 @@ public partial class VehiclePage : ContentPage
 
     protected override async void OnAppearing()
     {
-        LogError("VehiclePage: OnAppearing START");
         try
         {
             base.OnAppearing();
-            LogError("VehiclePage: base.OnAppearing SUCCESS");
         }
         catch (Exception ex)
         {
-            LogError($"VehiclePage: base.OnAppearing ERROR: {ex.Message}");
+            LogError($"VehiclePage: base.OnAppearing error: {ex.Message}");
         }
         
         try
         {
-            await Task.Delay(200);
-            LogError("VehiclePage: Delay complete");
+            await Task.Delay(300);
             
+            // Restore user
             if (App.CurrentUser == null)
             {
                 try
@@ -140,34 +134,28 @@ public partial class VehiclePage : ContentPage
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            LogError($"VehiclePage: Restored user, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
                 }
-                catch (Exception ex) { LogError($"VehiclePage: Restore user error: {ex.Message}"); }
+                catch { }
             }
             
+            // Load vehicles
             if (BindingContext is VehicleViewModel vm)
             {
-                LogError("VehiclePage: BindingContext is VehicleViewModel, calling LoadVehiclesAsync");
                 try
                 {
                     await vm.LoadVehiclesAsync();
-                    LogError("VehiclePage: LoadVehiclesAsync SUCCESS");
                 }
                 catch (Exception ex)
                 {
-                    LogError($"VehiclePage: LoadVehiclesAsync CRASH: {ex.Message}\n{ex.StackTrace}");
+                    LogError($"VehiclePage: LoadVehiclesAsync error: {ex.Message}\n{ex.StackTrace}");
                 }
-            }
-            else
-            {
-                LogError($"VehiclePage: BindingContext is NOT VehicleViewModel: {BindingContext?.GetType()?.Name ?? "null"}");
             }
         }
         catch (Exception ex)
         {
-            LogError($"VehiclePage: OnAppearing CRASH: {ex.Message}\n{ex.StackTrace}");
+            LogError($"VehiclePage: OnAppearing error: {ex.Message}\n{ex.StackTrace}");
         }
     }
 }
