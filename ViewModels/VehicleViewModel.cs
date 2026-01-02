@@ -22,16 +22,19 @@ public partial class VehicleViewModel : BaseViewModel
     private Vehicle? _vehicle;
 
     [ObservableProperty]
-    private bool _noVehicleMessageVisible;
+    private bool _noVehicleMessageVisible = true;
 
     [ObservableProperty]
-    private bool _isVehicleButtonVisible;
+    private bool _isVehicleButtonVisible = false;
 
     [ObservableProperty]
-    private bool _isIssuesButtonVisible;
+    private bool _isIssuesButtonVisible = false;
 
     [ObservableProperty]
-    private ObservableCollection<Vehicle> _vehicles;
+    private ObservableCollection<Vehicle> _vehicles = new();
+    
+    [ObservableProperty]
+    private bool _isLoading = true;
 
     public VehicleViewModel()
     {
@@ -108,10 +111,11 @@ public partial class VehicleViewModel : BaseViewModel
 
     public async Task LoadVehiclesAsync()
     {
-        await Task.Delay(100);
-        
         try
         {
+            IsLoading = true;
+            await Task.Delay(150);
+            
             if (App.CurrentUser == null)
             {
                 var userDataJson = Preferences.Get("UserData", string.Empty);
@@ -154,10 +158,14 @@ public partial class VehicleViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"LoadVehiclesAsync error: {ex.Message}");
+            Console.WriteLine($"LoadVehiclesAsync error: {ex.Message}, {ex.StackTrace}");
             Vehicles.Clear();
             Vehicle = null;
             NoVehicleMessageVisible = true;
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
     

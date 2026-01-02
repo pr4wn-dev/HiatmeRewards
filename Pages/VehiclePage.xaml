@@ -27,26 +27,26 @@
                        CornerRadius="8"
                        Margin="0,0,0,15">
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="{Binding Vehicle.Make}" 
+                        <Label Text="{Binding Vehicle.Make, TargetNullValue=''}" 
                                FontSize="22" 
                                FontAttributes="Bold"
                                TextColor="White" />
-                        <Label Text="{Binding Vehicle.Model}" 
+                        <Label Text="{Binding Vehicle.Model, TargetNullValue=''}" 
                                FontSize="18"
                                TextColor="White" />
-                        <Label Text="{Binding Vehicle.LastSixVin, StringFormat='VIN Ending: {0}'}" 
+                        <Label Text="{Binding Vehicle.LastSixVin, StringFormat='VIN Ending: {0}', TargetNullValue='VIN Ending: '}" 
                                FontSize="16"
                                TextColor="#cccccc" />
-                        <Label Text="{Binding Vehicle.LicensePlate, StringFormat='License Plate: {0}'}" 
+                        <Label Text="{Binding Vehicle.LicensePlate, StringFormat='License Plate: {0}', TargetNullValue='License Plate: '}" 
                                FontSize="16"
                                TextColor="#cccccc" />
-                        <Label Text="{Binding Vehicle.Year, StringFormat='Year: {0}'}" 
+                        <Label Text="{Binding Vehicle.Year, StringFormat='Year: {0}', TargetNullValue='Year: '}" 
                                FontSize="16"
                                TextColor="#cccccc" />
-                        <Label Text="{Binding Vehicle.Color, StringFormat='Color: {0}'}" 
+                        <Label Text="{Binding Vehicle.Color, StringFormat='Color: {0}', TargetNullValue='Color: '}" 
                                FontSize="16"
                                TextColor="#cccccc" />
-                        <Label Text="{Binding Vehicle.Vin, StringFormat='Full VIN: {0}'}" 
+                        <Label Text="{Binding Vehicle.Vin, StringFormat='Full VIN: {0}', TargetNullValue='Full VIN: '}" 
                                FontSize="16"
                                TextColor="#cccccc" />
                         <Label Text="{Binding Vehicle.MileageRecord.StartMiles, StringFormat='Start Miles: {0:F2}'}"
@@ -83,6 +83,8 @@
                         Margin="0,10,0,0" />
             </VerticalStackLayout>
         </ScrollView>
-        <local:NavigationBar Grid.Row="2" BindingContext="{Binding .}" />
+        <!-- NavigationBar temporarily disabled to test if it's causing crashes -->
+        <!-- <local:NavigationBar Grid.Row="2" BindingContext="{Binding .}" /> -->
+        <BoxView Grid.Row="2" HeightRequest="60" BackgroundColor="#333333" />
     </Grid>
 </ContentPage>
