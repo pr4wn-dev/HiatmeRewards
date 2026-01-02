@@ -36,8 +36,25 @@ public partial class VehicleViewModel : BaseViewModel
         IsBusy = false;
         IsVehicleButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
         Console.WriteLine($"VehicleViewModel: Initialized with Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}" : "none")}, VehiclesCount={Vehicles.Count}, IsVehicleButtonVisible={IsVehicleButtonVisible}, IsBusy={IsBusy}, CurrentUserId={App.CurrentUser?.UserId}");
-        LoadVehicles();
-        CheckIncompleteMileageRecord();
+        
+        // Only load vehicles if user is available, otherwise defer until OnAppearing
+        try
+        {
+            if (App.CurrentUser != null)
+            {
+                LoadVehicles();
+                CheckIncompleteMileageRecord();
+            }
+            else
+            {
+                Console.WriteLine("VehicleViewModel: App.CurrentUser is null in constructor, deferring LoadVehicles()");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"VehicleViewModel: Error in constructor: {ex.Message}, StackTrace: {ex.StackTrace}");
+        }
+        
         WeakReferenceMessenger.Default.Register<VehicleViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
         {
             Console.WriteLine($"VehicleViewModel: Received VehicleAssigned message, VIN ending={message.Value.LastSixVin}, VehicleId={message.Value.VehicleId}, CurrentUserId={message.Value.CurrentUserId}, DateAssigned={message.Value.DateAssigned}");
