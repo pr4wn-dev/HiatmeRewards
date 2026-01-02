@@ -67,8 +67,6 @@ public partial class VehicleViewModel : BaseViewModel
         
         // Don't load vehicles in constructor - let OnAppearing handle it to avoid timing issues
         Console.WriteLine("VehicleViewModel: Constructor complete, LoadVehicles will be called from OnAppearing");
-            Console.WriteLine($"VehicleViewModel: Error in constructor: {ex.Message}, StackTrace: {ex.StackTrace}");
-        }
         
         // Register message handlers with error handling
         try
