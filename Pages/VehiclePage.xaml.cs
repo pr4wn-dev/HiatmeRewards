@@ -146,6 +146,20 @@ public partial class VehiclePage : ContentPage
                 try
                 {
                     await vm.LoadVehiclesAsync();
+                    
+                    // Set NavigationBar BindingContext after data is loaded
+                    await Task.Delay(100);
+                    if (Content is Grid grid)
+                    {
+                        foreach (var child in grid.Children)
+                        {
+                            if (child is Controls.NavigationBar navBar)
+                            {
+                                navBar.BindingContext = vm;
+                                break;
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

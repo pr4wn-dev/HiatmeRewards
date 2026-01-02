@@ -83,8 +83,6 @@
                         Margin="0,10,0,0" />
             </VerticalStackLayout>
         </ScrollView>
-        <!-- NavigationBar temporarily disabled to test if it's causing crashes -->
-        <!-- <local:NavigationBar Grid.Row="2" BindingContext="{Binding .}" /> -->
-        <BoxView Grid.Row="2" HeightRequest="60" BackgroundColor="#333333" />
+        <local:NavigationBar Grid.Row="2" BindingContext="{Binding .}" />
     </Grid>
 </ContentPage>
