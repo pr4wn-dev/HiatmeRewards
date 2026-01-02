@@ -48,10 +48,17 @@ public partial class SplashPage : ContentPage
                 }
                 else
                 {
-                    // Check if it's a network error - if so, try to restore from stored data
-                    if (message.Contains("Network error") || message.Contains("An error occurred"))
+                    // Session validation failed - check if it's a genuine network error (can't reach server)
+                    // vs. an invalid/expired session
+                    bool isNetworkError = message.Contains("Network error") || 
+                                         message.Contains("Failed to retrieve session token") ||
+                                         (message.Contains("An error occurred") && !message.Contains("Session expired") && !message.Contains("Invalid token"));
+                    
+                    if (isNetworkError)
                     {
-                        Console.WriteLine($"SplashPage: Network error during validation, attempting to restore from stored data");
+                        // Only restore from stored data if we genuinely can't reach the server
+                        // This allows offline use, but we should still validate when online
+                        Console.WriteLine($"SplashPage: Network error during validation (offline?), attempting to restore from stored data");
                         if (!string.IsNullOrEmpty(userDataJson))
                         {
                             try
@@ -60,7 +67,7 @@ public partial class SplashPage : ContentPage
                                 if (storedUser != null)
                                 {
                                     App.CurrentUser = storedUser;
-                                    Console.WriteLine($"SplashPage: Restored user from stored data, Email={storedUser.Email}, Role={storedUser.Role}");
+                                    Console.WriteLine($"SplashPage: Restored user from stored data (offline mode), Email={storedUser.Email}, Role={storedUser.Role}");
                                     isLoggedIn = true;
                                 }
                             }
@@ -73,7 +80,7 @@ public partial class SplashPage : ContentPage
                     
                     if (!isLoggedIn)
                     {
-                        // Session is invalid, clear login state
+                        // Session is invalid/expired, clear login state
                         Console.WriteLine($"SplashPage: Session validation failed: {message}, clearing login state");
                         Preferences.Set("IsLoggedIn", false);
                         Preferences.Remove("AuthToken");
@@ -86,34 +93,43 @@ public partial class SplashPage : ContentPage
             catch (Exception ex)
             {
                 Console.WriteLine($"SplashPage: Exception validating session: {ex.Message}, StackTrace: {ex.StackTrace}");
-                // Try to restore from stored data on exception
-                if (!string.IsNullOrEmpty(userDataJson))
+                // Only restore from stored data if it's a network/connection exception, not a validation failure
+                bool isNetworkException = ex is HttpRequestException || 
+                                         ex is System.Net.Sockets.SocketException ||
+                                         ex.Message.Contains("Network") ||
+                                         ex.Message.Contains("connection") ||
+                                         ex.Message.Contains("timeout");
+                
+                if (isNetworkException)
                 {
-                    try
+                    // Network issue - allow offline mode with stored data
+                    Console.WriteLine($"SplashPage: Network exception, attempting offline restore");
+                    if (!string.IsNullOrEmpty(userDataJson))
                     {
-                        var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userDataJson);
-                        if (storedUser != null)
+                        try
                         {
-                            App.CurrentUser = storedUser;
-                            Console.WriteLine($"SplashPage: Restored user from stored data after exception, Email={storedUser.Email}");
-                            isLoggedIn = true;
+                            var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                            if (storedUser != null)
+                            {
+                                App.CurrentUser = storedUser;
+                                Console.WriteLine($"SplashPage: Restored user from stored data (offline mode), Email={storedUser.Email}");
+                                isLoggedIn = true;
+                            }
+                        }
+                        catch
+                        {
+                            Console.WriteLine($"SplashPage: Failed to restore from stored data");
                         }
                     }
-                    catch
-                    {
-                        // If restore fails, clear everything
-                        Console.WriteLine($"SplashPage: Failed to restore, clearing login state");
-                        Preferences.Set("IsLoggedIn", false);
-                        Preferences.Remove("AuthToken");
-                        Preferences.Remove("UserData");
-                        App.CurrentUser = null;
-                        isLoggedIn = false;
-                    }
                 }
-                else
+                
+                // If we couldn't restore or it wasn't a network error, clear login state
+                if (!isLoggedIn)
                 {
+                    Console.WriteLine($"SplashPage: Clearing login state due to exception");
                     Preferences.Set("IsLoggedIn", false);
                     Preferences.Remove("AuthToken");
+                    Preferences.Remove("UserData");
                     App.CurrentUser = null;
                     isLoggedIn = false;
                 }

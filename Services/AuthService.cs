@@ -199,7 +199,33 @@ namespace HiatMeApp.Services
                     NullValueHandling = NullValueHandling.Ignore
                 }));
                 
-                if (result?.Success == true && result.UserId > 0)
+                // Check if response indicates failure
+                if (result == null)
+                {
+                    Console.WriteLine("ValidateSessionAsync: Null response from server");
+                    return (false, null, "Invalid response from server.");
+                }
+                
+                // Check for explicit failure messages that indicate invalid/expired session
+                if (result.Success == false)
+                {
+                    string errorMsg = result.Message ?? "Session validation failed.";
+                    Console.WriteLine($"ValidateSessionAsync: Session validation failed: {errorMsg}");
+                    
+                    // Check if it's an invalid token/expired session
+                    if (errorMsg.Contains("Invalid token") || 
+                        errorMsg.Contains("expired") || 
+                        errorMsg.Contains("No authentication token") ||
+                        errorMsg.Contains("unverified"))
+                    {
+                        return (false, null, "Session expired. Please log in again.");
+                    }
+                    
+                    return (false, null, errorMsg);
+                }
+                
+                // Success must be true AND we must have valid user data
+                if (result.Success == true && result.UserId > 0)
                 {
                     // Session is valid, create user from server response
                     var user = new User
@@ -222,8 +248,8 @@ namespace HiatMeApp.Services
                 }
                 else
                 {
-                    Console.WriteLine($"ValidateSessionAsync: Session validation failed: {result?.Message ?? "Unknown error"}");
-                    return (false, null, result?.Message ?? "Session validation failed.");
+                    Console.WriteLine($"ValidateSessionAsync: Session validation failed - Success={result.Success}, UserId={result.UserId}");
+                    return (false, null, "Session validation failed - invalid response.");
                 }
             }
             catch (HttpRequestException ex)
