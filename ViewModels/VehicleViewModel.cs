@@ -110,64 +110,64 @@ public partial class VehicleViewModel : BaseViewModel
     {
         try
         {
-            Console.WriteLine($"LoadVehicles: Starting, App.CurrentUser={(App.CurrentUser != null ? $"Email={App.CurrentUser.Email}, UserId={App.CurrentUser.UserId}, VehiclesCount={App.CurrentUser.Vehicles?.Count ?? 0}" : "null")}");
-            
-            // Try to restore user if missing (defensive programming for standalone app)
+            // Restore user if missing
             if (App.CurrentUser == null)
             {
-                Console.WriteLine("LoadVehicles: App.CurrentUser is null, attempting to restore from Preferences");
-                var userDataJson = Preferences.Get("UserData", string.Empty);
-                if (!string.IsNullOrEmpty(userDataJson))
+                try
                 {
-                    try
+                    var userDataJson = Preferences.Get("UserData", string.Empty);
+                    if (!string.IsNullOrEmpty(userDataJson))
                     {
                         var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            // Update button visibility based on restored user role
                             IsVehicleButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
                             IsIssuesButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
-                            Console.WriteLine($"LoadVehicles: Restored user from Preferences, Email={storedUser.Email}, Role={storedUser.Role}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"LoadVehicles: Failed to restore user: {ex.Message}");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"LoadVehicles: Failed to restore user: {ex.Message}");
                 }
             }
             
+            // Load vehicles if user and vehicles exist
             if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
             {
-                Console.WriteLine($"LoadVehicles: Processing {App.CurrentUser.Vehicles.Count} vehicles for UserId={App.CurrentUser.UserId}");
-                Vehicles.Clear();
-                foreach (var vehicle in App.CurrentUser.Vehicles)
+                try
                 {
-                    Vehicles.Add(vehicle);
-                    Console.WriteLine($"LoadVehicles: Added vehicle VIN ending={vehicle.LastSixVin}, VehicleId={vehicle.VehicleId}, CurrentUserId={vehicle.CurrentUserId}, DateAssigned={vehicle.DateAssigned}");
-                }
-                // Select vehicle with matching CurrentUserId only
-                var userId = App.CurrentUser.UserId; // Store in local variable to avoid race condition
-                var selectedVehicle = Vehicles
-                    .Where(v => v.CurrentUserId == userId)
-                    .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
-                    .FirstOrDefault();
+                    Vehicles.Clear();
+                    foreach (var vehicle in App.CurrentUser.Vehicles)
+                    {
+                        Vehicles.Add(vehicle);
+                    }
+                    
+                    // Select vehicle with matching CurrentUserId
+                    var userId = App.CurrentUser.UserId;
+                    var selectedVehicle = Vehicles
+                        .Where(v => v != null && v.CurrentUserId == userId)
+                        .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
+                        .FirstOrDefault();
 
-                // Set properties - ObservableProperty will automatically raise PropertyChanged
-                Vehicle = selectedVehicle;
-                NoVehicleMessageVisible = Vehicle == null;
-                // Explicitly raise PropertyChanged to ensure UI updates
-                OnPropertyChanged(nameof(Vehicle));
-                OnPropertyChanged(nameof(NoVehicleMessageVisible));
-                OnPropertyChanged(nameof(Vehicles));
-                OnPropertyChanged(nameof(IsVehicleButtonVisible));
-                OnPropertyChanged(nameof(IsIssuesButtonVisible));
-                Console.WriteLine($"LoadVehicles: SUCCESS - Loaded {Vehicles.Count} vehicles, Selected Vehicle={(selectedVehicle != null ? $"VIN ending {selectedVehicle.LastSixVin}, VehicleId={selectedVehicle.VehicleId}, CurrentUserId={selectedVehicle.CurrentUserId}, DateAssigned={selectedVehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
+                    Vehicle = selectedVehicle;
+                    NoVehicleMessageVisible = Vehicle == null;
+                    
+                    OnPropertyChanged(nameof(Vehicle));
+                    OnPropertyChanged(nameof(NoVehicleMessageVisible));
+                    OnPropertyChanged(nameof(Vehicles));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"LoadVehicles: Error processing vehicles: {ex.Message}");
+                    Vehicles.Clear();
+                    Vehicle = null;
+                    NoVehicleMessageVisible = true;
+                }
             }
             else
             {
-                Console.WriteLine($"LoadVehicles: No vehicles or user data - CurrentUser={App.CurrentUser != null}, HasVehicles={App.CurrentUser?.Vehicles != null}, UserId={App.CurrentUser?.UserId ?? 0}");
                 Vehicles.Clear();
                 Vehicle = null;
                 NoVehicleMessageVisible = true;
@@ -178,13 +178,20 @@ public partial class VehicleViewModel : BaseViewModel
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"LoadVehicles: EXCEPTION - {ex.Message}, StackTrace: {ex.StackTrace}");
-            Vehicles.Clear();
-            Vehicle = null;
-            NoVehicleMessageVisible = true;
-            OnPropertyChanged(nameof(Vehicles));
-            OnPropertyChanged(nameof(Vehicle));
-            OnPropertyChanged(nameof(NoVehicleMessageVisible));
+            Console.WriteLine($"LoadVehicles: CRITICAL EXCEPTION: {ex.Message}, StackTrace: {ex.StackTrace}");
+            try
+            {
+                Vehicles.Clear();
+                Vehicle = null;
+                NoVehicleMessageVisible = true;
+                OnPropertyChanged(nameof(Vehicles));
+                OnPropertyChanged(nameof(Vehicle));
+                OnPropertyChanged(nameof(NoVehicleMessageVisible));
+            }
+            catch
+            {
+                // If even this fails, we're in deep trouble
+            }
         }
     }
 

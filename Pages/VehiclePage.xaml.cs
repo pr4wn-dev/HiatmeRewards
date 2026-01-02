@@ -35,66 +35,58 @@ public partial class VehiclePage : ContentPage
         try
         {
             InitializeComponent();
-            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"VehiclePage: CRITICAL - InitializeComponent failed: {ex.Message}, StackTrace: {ex.StackTrace}");
+            // Continue anyway - page might still work
+        }
+        
+        try
+        {
             // Restore user data BEFORE setting binding context to prevent crashes
             if (App.CurrentUser == null)
             {
-                Console.WriteLine("VehiclePage: App.CurrentUser is null in constructor, attempting to restore from stored data");
-                var userDataJson = Preferences.Get("UserData", string.Empty);
-                if (!string.IsNullOrEmpty(userDataJson))
+                try
                 {
-                    try
+                    var userDataJson = Preferences.Get("UserData", string.Empty);
+                    if (!string.IsNullOrEmpty(userDataJson))
                     {
                         var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            Console.WriteLine($"VehiclePage: Restored user from stored data in constructor, Email={storedUser.Email}, Role={storedUser.Role}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
+                            Console.WriteLine($"VehiclePage: Restored user, Email={storedUser.Email}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"VehiclePage: Failed to restore user data in constructor: {ex.Message}, StackTrace: {ex.StackTrace}");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"VehiclePage: Failed to restore user: {ex.Message}");
                 }
             }
             
-            // Use the passed-in viewModel instead of creating a new one
-            // If viewModel is null, create a new one (defensive)
+            // Ensure viewModel is not null
             if (viewModel == null)
             {
-                Console.WriteLine("VehiclePage: viewModel parameter is null, creating new VehicleViewModel");
+                Console.WriteLine("VehiclePage: viewModel is null, creating new one");
                 viewModel = new VehicleViewModel();
             }
             
             BindingContext = viewModel;
-            Console.WriteLine($"VehiclePage: BindingContext set to VehicleViewModel, HasVehicle={viewModel.Vehicle != null}");
-            
-            // Set NavigationBar BindingContext immediately after setting page BindingContext
-            // Use a small delay to ensure Content is loaded
-            Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () =>
-            {
-                await Task.Delay(50);
-                SetNavigationBarBindingContext(viewModel);
-            });
+            Console.WriteLine($"VehiclePage: BindingContext set");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"VehiclePage: Exception in constructor: {ex.Message}, StackTrace: {ex.StackTrace}");
-            // Try to create a basic view model even if there's an error
+            Console.WriteLine($"VehiclePage: CRITICAL - Constructor error: {ex.Message}, StackTrace: {ex.StackTrace}");
+            // Create fallback ViewModel
             try
             {
-                var fallbackViewModel = new VehicleViewModel();
-                BindingContext = fallbackViewModel;
-                Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () =>
-                {
-                    await Task.Delay(50);
-                    SetNavigationBarBindingContext(fallbackViewModel);
-                });
+                BindingContext = new VehicleViewModel();
             }
             catch
             {
-                // If even that fails, we're in trouble but at least we logged it
+                Console.WriteLine("VehiclePage: CRITICAL - Could not create fallback ViewModel");
             }
         }
     }
@@ -127,68 +119,72 @@ public partial class VehiclePage : ContentPage
         try
         {
             base.OnAppearing();
-            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"VehiclePage: Error in base.OnAppearing: {ex.Message}");
+        }
+        
+        try
+        {
             // Small delay to ensure page is fully loaded
-            await Task.Delay(100);
+            await Task.Delay(200);
             
-            // Ensure user data is restored if it's missing (might happen if app was closed and reopened)
+            // Restore user if missing
             if (App.CurrentUser == null)
             {
-                Console.WriteLine("VehiclePage: App.CurrentUser is null in OnAppearing, attempting to restore from stored data");
-                var userDataJson = Preferences.Get("UserData", string.Empty);
-                if (!string.IsNullOrEmpty(userDataJson))
+                try
                 {
-                    try
+                    var userDataJson = Preferences.Get("UserData", string.Empty);
+                    if (!string.IsNullOrEmpty(userDataJson))
                     {
                         var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            Console.WriteLine($"VehiclePage: Restored user from stored data in OnAppearing, Email={storedUser.Email}, Role={storedUser.Role}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
+                            Console.WriteLine($"VehiclePage: Restored user in OnAppearing, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"VehiclePage: Failed to restore user data in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"VehiclePage: Failed to restore user in OnAppearing: {ex.Message}");
                 }
             }
             
-            // Always try to load vehicles, regardless of whether user was just restored
+            // Load vehicles if ViewModel exists
             if (BindingContext is VehicleViewModel vm)
             {
                 try
                 {
-                    Console.WriteLine($"VehiclePage: Calling LoadVehicles, App.CurrentUser={(App.CurrentUser != null ? $"Email={App.CurrentUser.Email}, VehiclesCount={App.CurrentUser.Vehicles?.Count ?? 0}" : "null")}");
+                    Console.WriteLine($"VehiclePage: Calling LoadVehicles");
                     vm.LoadVehicles();
-                    Console.WriteLine($"VehiclePage: LoadVehicles completed, Vehicle={(vm.Vehicle != null ? $"VIN ending {vm.Vehicle.LastSixVin}" : "null")}, NoVehicleMessageVisible={vm.NoVehicleMessageVisible}");
+                    Console.WriteLine($"VehiclePage: LoadVehicles completed");
                     
-                    // Ensure NavigationBar visibility properties are set
+                    // Update visibility properties
                     if (App.CurrentUser != null)
                     {
                         vm.IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                         vm.IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                     }
                     
-                    // Set NavigationBar BindingContext explicitly (ContentView doesn't inherit automatically)
+                    // Set NavigationBar BindingContext
+                    await Task.Delay(100);
                     SetNavigationBarBindingContext(vm);
-                    
-                    // Force UI update
-                    OnPropertyChanged(nameof(BindingContext));
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"VehiclePage: Error calling LoadVehicles in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
+                    Console.WriteLine($"VehiclePage: CRITICAL - Error in LoadVehicles: {ex.Message}, StackTrace: {ex.StackTrace}");
                 }
             }
             else
             {
-                Console.WriteLine($"VehiclePage: BindingContext is not VehicleViewModel, type={BindingContext?.GetType()?.Name ?? "null"}");
+                Console.WriteLine($"VehiclePage: BindingContext is not VehicleViewModel: {BindingContext?.GetType()?.Name ?? "null"}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"VehiclePage: Exception in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
+            Console.WriteLine($"VehiclePage: CRITICAL - Exception in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
         }
     }
 }
