@@ -38,25 +38,35 @@ public partial class VehicleViewModel : BaseViewModel
         Title = "Vehicle";
         Vehicles = new ObservableCollection<Vehicle>();
         IsBusy = false;
-        IsVehicleButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
-        IsIssuesButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
-        Console.WriteLine($"VehicleViewModel: Initialized with Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}" : "none")}, VehiclesCount={Vehicles.Count}, IsVehicleButtonVisible={IsVehicleButtonVisible}, IsIssuesButtonVisible={IsIssuesButtonVisible}, IsBusy={IsBusy}, CurrentUserId={App.CurrentUser?.UserId}");
         
-        // Only load vehicles if user is available, otherwise defer until OnAppearing
-        try
+        // Restore user if null (defensive for standalone app)
+        if (App.CurrentUser == null)
         {
-            if (App.CurrentUser != null)
+            try
             {
-                LoadVehicles();
-                CheckIncompleteMileageRecord();
+                var userDataJson = Preferences.Get("UserData", string.Empty);
+                if (!string.IsNullOrEmpty(userDataJson))
+                {
+                    var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                    if (storedUser != null)
+                    {
+                        App.CurrentUser = storedUser;
+                        Console.WriteLine($"VehicleViewModel: Restored user in constructor, Email={storedUser.Email}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("VehicleViewModel: App.CurrentUser is null in constructor, deferring LoadVehicles()");
+                Console.WriteLine($"VehicleViewModel: Failed to restore user in constructor: {ex.Message}");
             }
         }
-        catch (Exception ex)
-        {
+        
+        IsVehicleButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
+        IsIssuesButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
+        Console.WriteLine($"VehicleViewModel: Initialized with Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}" : "none")}, VehiclesCount={Vehicles.Count}, IsVehicleButtonVisible={IsVehicleButtonVisible}, IsIssuesButtonVisible={IsIssuesButtonVisible}, IsBusy={IsBusy}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
+        
+        // Don't load vehicles in constructor - let OnAppearing handle it to avoid timing issues
+        Console.WriteLine("VehicleViewModel: Constructor complete, LoadVehicles will be called from OnAppearing");
             Console.WriteLine($"VehicleViewModel: Error in constructor: {ex.Message}, StackTrace: {ex.StackTrace}");
         }
         
@@ -102,6 +112,8 @@ public partial class VehicleViewModel : BaseViewModel
     {
         try
         {
+            Console.WriteLine($"LoadVehicles: Starting, App.CurrentUser={(App.CurrentUser != null ? $"Email={App.CurrentUser.Email}, UserId={App.CurrentUser.UserId}, VehiclesCount={App.CurrentUser.Vehicles?.Count ?? 0}" : "null")}");
+            
             // Try to restore user if missing (defensive programming for standalone app)
             if (App.CurrentUser == null)
             {
@@ -118,7 +130,7 @@ public partial class VehicleViewModel : BaseViewModel
                             // Update button visibility based on restored user role
                             IsVehicleButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
                             IsIssuesButtonVisible = storedUser.Role is "Driver" or "Manager" or "Owner";
-                            Console.WriteLine($"LoadVehicles: Restored user from Preferences, Email={storedUser.Email}, Role={storedUser.Role}");
+                            Console.WriteLine($"LoadVehicles: Restored user from Preferences, Email={storedUser.Email}, Role={storedUser.Role}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
                     catch (Exception ex)
@@ -130,11 +142,12 @@ public partial class VehicleViewModel : BaseViewModel
             
             if (App.CurrentUser != null && App.CurrentUser.Vehicles != null && App.CurrentUser.UserId > 0)
             {
+                Console.WriteLine($"LoadVehicles: Processing {App.CurrentUser.Vehicles.Count} vehicles for UserId={App.CurrentUser.UserId}");
                 Vehicles.Clear();
                 foreach (var vehicle in App.CurrentUser.Vehicles)
                 {
                     Vehicles.Add(vehicle);
-                    Console.WriteLine($"LoadVehicles: Vehicle VIN ending={vehicle.LastSixVin}, VehicleId={vehicle.VehicleId}, CurrentUserId={vehicle.CurrentUserId}, DateAssigned={vehicle.DateAssigned}");
+                    Console.WriteLine($"LoadVehicles: Added vehicle VIN ending={vehicle.LastSixVin}, VehicleId={vehicle.VehicleId}, CurrentUserId={vehicle.CurrentUserId}, DateAssigned={vehicle.DateAssigned}");
                 }
                 // Select vehicle with matching CurrentUserId only
                 var userId = App.CurrentUser.UserId; // Store in local variable to avoid race condition
@@ -150,22 +163,24 @@ public partial class VehicleViewModel : BaseViewModel
                 OnPropertyChanged(nameof(Vehicle));
                 OnPropertyChanged(nameof(NoVehicleMessageVisible));
                 OnPropertyChanged(nameof(Vehicles));
-                Console.WriteLine($"LoadVehicles: Loaded {Vehicles.Count} vehicles, Selected Vehicle={(selectedVehicle != null ? $"VIN ending {selectedVehicle.LastSixVin}, VehicleId={selectedVehicle.VehicleId}, CurrentUserId={selectedVehicle.CurrentUserId}, DateAssigned={selectedVehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
+                OnPropertyChanged(nameof(IsVehicleButtonVisible));
+                OnPropertyChanged(nameof(IsIssuesButtonVisible));
+                Console.WriteLine($"LoadVehicles: SUCCESS - Loaded {Vehicles.Count} vehicles, Selected Vehicle={(selectedVehicle != null ? $"VIN ending {selectedVehicle.LastSixVin}, VehicleId={selectedVehicle.VehicleId}, CurrentUserId={selectedVehicle.CurrentUserId}, DateAssigned={selectedVehicle.DateAssigned}" : "none")}, CurrentUserId={userId}");
             }
             else
             {
+                Console.WriteLine($"LoadVehicles: No vehicles or user data - CurrentUser={App.CurrentUser != null}, HasVehicles={App.CurrentUser?.Vehicles != null}, UserId={App.CurrentUser?.UserId ?? 0}");
                 Vehicles.Clear();
                 Vehicle = null;
                 NoVehicleMessageVisible = true;
                 OnPropertyChanged(nameof(Vehicles));
                 OnPropertyChanged(nameof(Vehicle));
                 OnPropertyChanged(nameof(NoVehicleMessageVisible));
-                Console.WriteLine($"LoadVehicles: No vehicles or user data available, CurrentUserId={App.CurrentUser?.UserId ?? 0}, HasVehicles={App.CurrentUser?.Vehicles != null}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"LoadVehicles: Exception occurred: {ex.Message}, StackTrace: {ex.StackTrace}");
+            Console.WriteLine($"LoadVehicles: EXCEPTION - {ex.Message}, StackTrace: {ex.StackTrace}");
             Vehicles.Clear();
             Vehicle = null;
             NoVehicleMessageVisible = true;

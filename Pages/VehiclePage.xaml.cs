@@ -7,6 +7,12 @@ namespace HiatMeApp;
 
 public partial class VehiclePage : ContentPage
 {
+    // Default constructor for DataTemplate (used by AppShell)
+    public VehiclePage() : this(App.Services?.GetService<VehicleViewModel>() ?? new VehicleViewModel())
+    {
+    }
+
+    // Constructor with dependency injection
     public VehiclePage(VehicleViewModel viewModel)
     {
         try
@@ -26,7 +32,7 @@ public partial class VehiclePage : ContentPage
                         if (storedUser != null)
                         {
                             App.CurrentUser = storedUser;
-                            Console.WriteLine($"VehiclePage: Restored user from stored data in constructor, Email={storedUser.Email}, Role={storedUser.Role}");
+                            Console.WriteLine($"VehiclePage: Restored user from stored data in constructor, Email={storedUser.Email}, Role={storedUser.Role}, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
                         }
                     }
                     catch (Exception ex)
@@ -45,7 +51,15 @@ public partial class VehiclePage : ContentPage
             }
             
             BindingContext = viewModel;
-            Console.WriteLine("VehiclePage: BindingContext set to VehicleViewModel");
+            Console.WriteLine($"VehiclePage: BindingContext set to VehicleViewModel, HasVehicle={viewModel.Vehicle != null}");
+            
+            // Set NavigationBar BindingContext immediately after setting page BindingContext
+            // Use a small delay to ensure Content is loaded
+            Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Task.Delay(50);
+                SetNavigationBarBindingContext(viewModel);
+            });
         }
         catch (Exception ex)
         {
@@ -53,12 +67,41 @@ public partial class VehiclePage : ContentPage
             // Try to create a basic view model even if there's an error
             try
             {
-                BindingContext = new VehicleViewModel();
+                var fallbackViewModel = new VehicleViewModel();
+                BindingContext = fallbackViewModel;
+                Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await Task.Delay(50);
+                    SetNavigationBarBindingContext(fallbackViewModel);
+                });
             }
             catch
             {
                 // If even that fails, we're in trouble but at least we logged it
             }
+        }
+    }
+    
+    private void SetNavigationBarBindingContext(VehicleViewModel vm)
+    {
+        try
+        {
+            if (Content is Grid grid)
+            {
+                foreach (var child in grid.Children)
+                {
+                    if (child is Controls.NavigationBar navBar)
+                    {
+                        navBar.BindingContext = vm;
+                        Console.WriteLine("VehiclePage: NavigationBar BindingContext set in SetNavigationBarBindingContext");
+                        return;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"VehiclePage: Error setting NavigationBar BindingContext: {ex.Message}");
         }
     }
 
@@ -111,18 +154,10 @@ public partial class VehiclePage : ContentPage
                     }
                     
                     // Set NavigationBar BindingContext explicitly (ContentView doesn't inherit automatically)
-                    if (Content is Grid grid)
-                    {
-                        foreach (var child in grid.Children)
-                        {
-                            if (child is Controls.NavigationBar navBar)
-                            {
-                                navBar.BindingContext = vm;
-                                Console.WriteLine("VehiclePage: NavigationBar BindingContext set explicitly in OnAppearing");
-                                break;
-                            }
-                        }
-                    }
+                    SetNavigationBarBindingContext(vm);
+                    
+                    // Force UI update
+                    OnPropertyChanged(nameof(BindingContext));
                 }
                 catch (Exception ex)
                 {
