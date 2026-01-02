@@ -85,7 +85,7 @@ public partial class VehicleViewModel : BaseViewModel
 
     private void UpdateVehicle(Vehicle newVehicle)
     {
-        if (App.CurrentUser?.Vehicles != null)
+        if (App.CurrentUser != null && App.CurrentUser.Vehicles != null)
         {
             // Set CurrentUserId if missing
             if (!newVehicle.CurrentUserId.HasValue || newVehicle.CurrentUserId == 0)
@@ -103,6 +103,10 @@ public partial class VehicleViewModel : BaseViewModel
             Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
             Console.WriteLine($"UpdateVehicle: Updated vehicle list, new vehicle VIN ending={newVehicle.LastSixVin}, VehicleId={newVehicle.VehicleId}, CurrentUserId={newVehicle.CurrentUserId}, DateAssigned={newVehicle.DateAssigned}, Total vehicles={updatedVehicles.Count}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
             LoadVehicles(); // Reload to ensure Vehicle property is updated
+        }
+        else
+        {
+            Console.WriteLine($"UpdateVehicle: Cannot update - App.CurrentUser is null or has no vehicles");
         }
     }
 
