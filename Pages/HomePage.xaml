@@ -20,6 +20,13 @@
                        FontSize="18"
                        TextColor="White"
                        HorizontalOptions="Center" />
+                <Button Text="View Vehicle Page Log"
+                        FontSize="14"
+                        Clicked="OnViewLogClicked"
+                        BackgroundColor="#666"
+                        TextColor="White"
+                        HorizontalOptions="Center"
+                        Margin="0,20,0,0" />
             </VerticalStackLayout>
         </ScrollView>
         <local:NavigationBar Grid.Row="2" />

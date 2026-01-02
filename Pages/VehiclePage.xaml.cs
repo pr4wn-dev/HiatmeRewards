@@ -78,36 +78,35 @@ public partial class VehiclePage : ContentPage
     {
         try
         {
-            var logPath = Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
+            // Try multiple locations to ensure we can write
+            string logPath = null;
+            
+            // Try cache directory first (more accessible)
+            try
+            {
+                logPath = Path.Combine(FileSystem.CacheDirectory, "vehicle_page_log.txt");
+            }
+            catch
+            {
+                // Fallback to app data directory
+                try
+                {
+                    logPath = Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
+                }
+                catch
+                {
+                    // Last resort - try temp path
+                    logPath = Path.Combine(Path.GetTempPath(), "vehicle_page_log.txt");
+                }
+            }
+            
             var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n";
             File.AppendAllText(logPath, logEntry);
-            // Also write to console for Visual Studio debugging
-            System.Diagnostics.Debug.WriteLine(message);
-        }
-        catch { }
-    }
-    
-    // Method to get log file path for display
-    public static string GetLogPath()
-    {
-        return Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
-    }
-    
-    // Method to read log content
-    public static string ReadLog()
-    {
-        try
-        {
-            var logPath = GetLogPath();
-            if (File.Exists(logPath))
-            {
-                return File.ReadAllText(logPath);
-            }
-            return "Log file not found.";
+            System.Diagnostics.Debug.WriteLine($"LOG: {message}");
         }
         catch (Exception ex)
         {
-            return $"Error reading log: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"LOG ERROR: {ex.Message}");
         }
     }
     
