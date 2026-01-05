@@ -575,8 +575,35 @@ namespace HiatMeApp.Services
                     }
                     else
                     {
-                        Console.WriteLine($"RegisterAsync failed: {result.Message ?? "Unknown error"}");
-                        return (false, result.Message ?? "Registration failed.");
+                        string errorMsg = result.Message ?? "Unknown error";
+                        Console.WriteLine($"RegisterAsync failed: {errorMsg}");
+                        
+                        // If CSRF token error, try fetching a new token and retrying once
+                        if (errorMsg.Contains("CSRF token") || errorMsg.Contains("Invalid CSRF") || errorMsg.Contains("csrf") || errorMsg.Contains("session token"))
+                        {
+                            LogMessage($"RegisterAsync: CSRF token error detected: {errorMsg}, fetching new token and retrying");
+                            if (await FetchCSRFTokenAsync())
+                            {
+                                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                                _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                                var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                                var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                                var retryResult = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(retryJson));
+                                
+                                if (retryResult?.Success == true)
+                                {
+                                    if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                    {
+                                        _csrfToken = retryResult.CsrfToken;
+                                        Preferences.Set("CSRFToken", _csrfToken);
+                                    }
+                                    LogMessage($"RegisterAsync: Retry successful");
+                                    return (true, retryResult.Message ?? "Registration successful.");
+                                }
+                            }
+                        }
+                        
+                        return (false, errorMsg);
                     }
                 });
             }
@@ -791,8 +818,16 @@ namespace HiatMeApp.Services
         public async Task<(bool Success, string Message, int? MileageId)> SubmitStartMileageAsync(int mileageId, double startMiles)
         {
             Console.WriteLine($"SubmitStartMileageAsync: Starting with mileage_id={mileageId}, start_miles={startMiles}");
-            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            LogMessage($"SubmitStartMileageAsync: Starting with mileage_id={mileageId}, start_miles={startMiles}");
+            
+            // Always fetch a fresh CSRF token to avoid stale token issues after app restart
+            LogMessage("SubmitStartMileageAsync: Fetching fresh CSRF token");
+            if (!await FetchCSRFTokenAsync())
+            {
+                LogMessage("SubmitStartMileageAsync: Failed to fetch CSRF token");
                 return (false, "Failed to retrieve session token.", null);
+            }
+            LogMessage($"SubmitStartMileageAsync: Using CSRF token={_csrfToken}");
 
             var authToken = Preferences.Get("AuthToken", null);
             if (string.IsNullOrEmpty(authToken))
@@ -837,11 +872,60 @@ namespace HiatMeApp.Services
                         return (false, "Invalid response format from server.", null);
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
+                    }
 
                     Console.WriteLine($"SubmitStartMileageAsync: Updated CSRF token: {_csrfToken}");
-                    Console.WriteLine($"SubmitStartMileageAsync: Successfully submitted start mileage for vehicle_id={result.VehicleId}, mileage_id={result.MileageId}");
-                    return (result.Success, result.Message ?? "Failed to submit start mileage.", result.MileageId);
+                    LogMessage($"SubmitStartMileageAsync: Response Success={result.Success}, Message={result.Message}");
+                    
+                    if (result.Success)
+                    {
+                        Console.WriteLine($"SubmitStartMileageAsync: Successfully submitted start mileage for vehicle_id={result.VehicleId}, mileage_id={result.MileageId}");
+                        return (true, result.Message ?? "Start mileage submitted successfully.", result.MileageId);
+                    }
+                    else
+                    {
+                        string errorMsg = result.Message ?? "Failed to submit start mileage.";
+                        Console.WriteLine($"SubmitStartMileageAsync failed: {errorMsg}");
+                        LogMessage($"SubmitStartMileageAsync: Error - {errorMsg}");
+                        
+                        // If CSRF token error, try fetching a new token and retrying once
+                        if (errorMsg.Contains("CSRF token") || errorMsg.Contains("Invalid CSRF") || errorMsg.Contains("csrf") || errorMsg.Contains("session token"))
+                        {
+                            LogMessage($"SubmitStartMileageAsync: CSRF token error detected, fetching new token and retrying");
+                            if (await FetchCSRFTokenAsync())
+                            {
+                                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                                _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                                LogMessage($"SubmitStartMileageAsync: Retrying with fresh CSRF token={_csrfToken}");
+                                
+                                var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                                var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                                LogMessage($"SubmitStartMileageAsync: Retry response StatusCode={retryResponse.StatusCode}, JSON={retryJson}");
+                                
+                                var retryResult = await Task.Run(() => JsonConvert.DeserializeObject<SubmitMileageResponse>(retryJson));
+                                
+                                if (retryResult?.Success == true)
+                                {
+                                    if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                    {
+                                        _csrfToken = retryResult.CsrfToken;
+                                        Preferences.Set("CSRFToken", _csrfToken);
+                                    }
+                                    LogMessage($"SubmitStartMileageAsync: Retry successful");
+                                    return (true, retryResult.Message ?? "Start mileage submitted successfully.", retryResult.MileageId);
+                                }
+                                else
+                                {
+                                    LogMessage($"SubmitStartMileageAsync: Retry also failed - {retryResult?.Message ?? "Unknown error"}");
+                                }
+                            }
+                        }
+                        
+                        return (false, errorMsg, null);
+                    }
                 });
             }
             catch (HttpRequestException ex)

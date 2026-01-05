@@ -157,6 +157,11 @@ public partial class HomeViewModel : BaseViewModel
                         {
                             errorMessage = "Failed to submit starting miles. Please try again or reassign the vehicle.";
                         }
+                        else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
+                        {
+                            // CSRF token error - show user-friendly message
+                            errorMessage = "Session expired. Please close and reopen the app.";
+                        }
                         await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                     }
                 }
