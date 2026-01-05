@@ -88,6 +88,42 @@ public partial class ViewLogPage : ContentPage
                 logContent += "No splash page log found.";
             }
             
+            logContent += "\n\n=== AUTH SERVICE LOG ===\n\n";
+            bool foundAuth = false;
+            
+            // Try to load auth service log
+            try
+            {
+                var logPath = Path.Combine(FileSystem.CacheDirectory, "auth_service_log.txt");
+                if (File.Exists(logPath))
+                {
+                    logContent += File.ReadAllText(logPath);
+                    _currentLogPath = logPath;
+                    foundAuth = true;
+                }
+            }
+            catch { }
+            
+            if (!foundAuth)
+            {
+                try
+                {
+                    var logPath = Path.Combine(FileSystem.AppDataDirectory, "auth_service_log.txt");
+                    if (File.Exists(logPath))
+                    {
+                        logContent += File.ReadAllText(logPath);
+                        _currentLogPath = logPath;
+                        foundAuth = true;
+                    }
+                }
+                catch { }
+            }
+            
+            if (!foundAuth)
+            {
+                logContent += "No auth service log found.";
+            }
+            
             LogEditor.Text = logContent;
         }
         catch (Exception ex)
@@ -164,6 +200,29 @@ public partial class ViewLogPage : ContentPage
             try
             {
                 var logPath = Path.Combine(FileSystem.AppDataDirectory, "splash_page_log.txt");
+                if (File.Exists(logPath))
+                {
+                    File.WriteAllText(logPath, string.Empty);
+                    cleared = true;
+                }
+            }
+            catch { }
+            
+            // Clear auth service log
+            try
+            {
+                var logPath = Path.Combine(FileSystem.CacheDirectory, "auth_service_log.txt");
+                if (File.Exists(logPath))
+                {
+                    File.WriteAllText(logPath, string.Empty);
+                    cleared = true;
+                }
+            }
+            catch { }
+            
+            try
+            {
+                var logPath = Path.Combine(FileSystem.AppDataDirectory, "auth_service_log.txt");
                 if (File.Exists(logPath))
                 {
                     File.WriteAllText(logPath, string.Empty);
