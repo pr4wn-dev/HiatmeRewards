@@ -191,6 +191,13 @@ namespace HiatMeApp.Services
                     Console.WriteLine("ValidateSessionAsync: Session is invalid (401 Unauthorized)");
                     return (false, null, "Session expired. Please log in again.");
                 }
+                
+                // Also check for 403 Forbidden
+                if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    Console.WriteLine("ValidateSessionAsync: Session is invalid (403 Forbidden)");
+                    return (false, null, "Session expired. Please log in again.");
+                }
 
                 // Parse as LoginResponse since validate_session returns user data in same format
                 LoginResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<LoginResponse>(json, new JsonSerializerSettings
