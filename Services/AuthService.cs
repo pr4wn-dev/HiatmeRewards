@@ -218,9 +218,20 @@ namespace HiatMeApp.Services
                 {
                     string errorMsg = result.Message ?? "Session validation failed.";
                     Console.WriteLine($"ValidateSessionAsync: Session validation failed - Success=false, Message={errorMsg}");
+                    LogMessage($"ValidateSessionAsync: Server response - Success=false, Message={errorMsg}, Full JSON: {json}");
                     
                     // Check if it's an invalid token/expired session
+                    // "Invalid request" is NOT an expired session - it's a request format issue
                     string lowerError = errorMsg.ToLowerInvariant();
+                    bool isInvalidRequest = lowerError.Contains("invalid request") && !lowerError.Contains("token");
+                    
+                    if (isInvalidRequest)
+                    {
+                        Console.WriteLine($"ValidateSessionAsync: Server returned 'Invalid request' - this is a request format issue, not expired session");
+                        Console.WriteLine($"ValidateSessionAsync: Treating 'Invalid request' as network/request error, will attempt offline restore");
+                        return (false, null, $"Server error: {errorMsg}. Please check your connection.");
+                    }
+                    
                     if (lowerError.Contains("invalid token") || 
                         lowerError.Contains("expired") || 
                         lowerError.Contains("no authentication token") ||

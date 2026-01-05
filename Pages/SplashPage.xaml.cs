@@ -69,21 +69,28 @@ public partial class SplashPage : ContentPage
                     // vs. an invalid/expired session
                     // IMPORTANT: Only treat as network error if message explicitly says so AND doesn't mention expired/invalid
                     string lowerMessage = message.ToLowerInvariant();
-                    bool isExpiredOrInvalid = lowerMessage.Contains("session expired") || 
+                    // "Invalid request" is NOT an expired session - it's a request format issue
+                    // Only treat as expired if it specifically mentions token/session being invalid/expired
+                    // "Invalid request" is NOT an expired session - it's a request format/server issue
+                    bool isInvalidRequest = lowerMessage.Contains("invalid request") && !lowerMessage.Contains("token");
+                    bool isExpiredOrInvalid = !isInvalidRequest && (
+                                             lowerMessage.Contains("session expired") || 
                                              lowerMessage.Contains("invalid token") ||
-                                             lowerMessage.Contains("expired") ||
-                                             (lowerMessage.Contains("invalid") && !lowerMessage.Contains("response")) ||
+                                             (lowerMessage.Contains("expired") && !lowerMessage.Contains("invalid request")) ||
                                              lowerMessage.Contains("unauthorized") ||
                                              lowerMessage.Contains("forbidden") ||
-                                             lowerMessage.Contains("no authentication token");
+                                             lowerMessage.Contains("no authentication token") ||
+                                             lowerMessage.Contains("unverified"));
                     
-                    bool isNetworkError = !isExpiredOrInvalid && 
+                    // Treat "Invalid request" as a network/server error (not expired session)
+                    bool isNetworkError = (isInvalidRequest || (!isExpiredOrInvalid && 
                                          (lowerMessage.Contains("network error") || 
                                           lowerMessage.Contains("failed to retrieve session token") ||
                                           lowerMessage.Contains("connection") ||
                                           lowerMessage.Contains("timeout") ||
                                           lowerMessage.Contains("dns") ||
-                                          lowerMessage.Contains("name resolution"));
+                                          lowerMessage.Contains("name resolution") ||
+                                          lowerMessage.Contains("server error"))));
                     
                     if (isExpiredOrInvalid)
                     {
