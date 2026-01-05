@@ -1,5 +1,6 @@
 using HiatMeApp.Services;
 using Microsoft.Maui.Storage;
+using System.IO;
 
 namespace HiatMeApp;
 
@@ -23,11 +24,13 @@ public partial class SplashPage : ContentPage
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
         var authToken = Preferences.Get("AuthToken", null);
         var userDataJson = Preferences.Get("UserData", string.Empty);
+        LogMessage($"SplashPage: OnAppearing - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}, HasUserData={!string.IsNullOrEmpty(userDataJson)}");
         Console.WriteLine($"SplashPage: OnAppearing - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}, HasUserData={!string.IsNullOrEmpty(userDataJson)}");
         
         // If we have stored data but IsLoggedIn is false, try to restore anyway (might be a preference issue)
         if (!isLoggedIn && !string.IsNullOrEmpty(authToken) && !string.IsNullOrEmpty(userDataJson))
         {
+            LogMessage("SplashPage: Found stored auth token and user data but IsLoggedIn is false, attempting to validate");
             Console.WriteLine("SplashPage: Found stored auth token and user data but IsLoggedIn is false, attempting to validate");
             isLoggedIn = true; // Set to true so we attempt validation
         }
@@ -38,13 +41,16 @@ public partial class SplashPage : ContentPage
             {
                 // Validate session with server
                 var authService = App.Services.GetRequiredService<AuthService>();
+                LogMessage($"SplashPage: Calling ValidateSessionAsync with AuthToken={(!string.IsNullOrEmpty(authToken) ? "present" : "missing")}");
                 Console.WriteLine($"SplashPage: Calling ValidateSessionAsync with AuthToken={(!string.IsNullOrEmpty(authToken) ? "present" : "missing")}");
                 var (sessionValid, user, message) = await authService.ValidateSessionAsync();
+                LogMessage($"SplashPage: ValidateSessionAsync returned - Success={sessionValid}, HasUser={user != null}, Message={message}");
                 Console.WriteLine($"SplashPage: ValidateSessionAsync returned - Success={sessionValid}, HasUser={user != null}, Message={message}");
                 
                 // Log the raw response for debugging
                 if (!sessionValid)
                 {
+                    LogMessage($"SplashPage: Validation failed - will check if expired or network error. Message: '{message}'");
                     Console.WriteLine($"SplashPage: Validation failed - will check if expired or network error. Message: '{message}'");
                 }
                 
@@ -53,6 +59,7 @@ public partial class SplashPage : ContentPage
                     App.CurrentUser = user;
                     // Ensure IsLoggedIn is set to true
                     Preferences.Set("IsLoggedIn", true);
+                    LogMessage($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     Console.WriteLine($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     isLoggedIn = true;
                 }
@@ -81,6 +88,7 @@ public partial class SplashPage : ContentPage
                     if (isExpiredOrInvalid)
                     {
                         // Session is definitely expired/invalid - clear login state
+                        LogMessage($"SplashPage: Session expired/invalid: {message}, clearing login state");
                         Console.WriteLine($"SplashPage: Session expired/invalid: {message}, clearing login state");
                         Preferences.Set("IsLoggedIn", false);
                         Preferences.Remove("AuthToken");
@@ -92,6 +100,7 @@ public partial class SplashPage : ContentPage
                     {
                         // Only restore from stored data if we genuinely can't reach the server
                         // This allows offline use, but we should still validate when online
+                        LogMessage($"SplashPage: Network error during validation (offline?), attempting to restore from stored data");
                         Console.WriteLine($"SplashPage: Network error during validation (offline?), attempting to restore from stored data");
                         if (!string.IsNullOrEmpty(userDataJson))
                         {
@@ -101,12 +110,14 @@ public partial class SplashPage : ContentPage
                                 if (storedUser != null)
                                 {
                                     App.CurrentUser = storedUser;
+                                    LogMessage($"SplashPage: Restored user from stored data (offline mode), Email={storedUser.Email}, Role={storedUser.Role}");
                                     Console.WriteLine($"SplashPage: Restored user from stored data (offline mode), Email={storedUser.Email}, Role={storedUser.Role}");
                                     isLoggedIn = true;
                                 }
                             }
                             catch (Exception restoreEx)
                             {
+                                LogMessage($"SplashPage: Failed to restore from stored data: {restoreEx.Message}");
                                 Console.WriteLine($"SplashPage: Failed to restore from stored data: {restoreEx.Message}");
                                 isLoggedIn = false;
                             }
@@ -121,6 +132,7 @@ public partial class SplashPage : ContentPage
                         // Unknown error - for now, restore from stored data to allow app to work
                         // This is a fallback - ideally validation should work, but if it doesn't, 
                         // we'll use stored data so the user can still use the app
+                        LogMessage($"SplashPage: Unknown validation error: {message}, attempting to restore from stored data as fallback");
                         Console.WriteLine($"SplashPage: Unknown validation error: {message}, attempting to restore from stored data as fallback");
                         if (!string.IsNullOrEmpty(userDataJson) && !string.IsNullOrEmpty(authToken))
                         {
@@ -130,6 +142,7 @@ public partial class SplashPage : ContentPage
                                 if (storedUser != null)
                                 {
                                     App.CurrentUser = storedUser;
+                                    LogMessage($"SplashPage: Restored user from stored data (unknown error fallback), Email={storedUser.Email}, Role={storedUser.Role}");
                                     Console.WriteLine($"SplashPage: Restored user from stored data (unknown error fallback), Email={storedUser.Email}, Role={storedUser.Role}");
                                     // Keep IsLoggedIn as true since we have valid stored data
                                     Preferences.Set("IsLoggedIn", true);
@@ -142,12 +155,14 @@ public partial class SplashPage : ContentPage
                             }
                             catch (Exception restoreEx)
                             {
+                                LogMessage($"SplashPage: Failed to restore from stored data: {restoreEx.Message}");
                                 Console.WriteLine($"SplashPage: Failed to restore from stored data: {restoreEx.Message}");
                                 isLoggedIn = false;
                             }
                         }
                         else
                         {
+                            LogMessage($"SplashPage: No stored data or auth token available");
                             Console.WriteLine($"SplashPage: No stored data or auth token available");
                             isLoggedIn = false;
                         }
@@ -155,6 +170,7 @@ public partial class SplashPage : ContentPage
                         // Only clear if we couldn't restore
                         if (!isLoggedIn)
                         {
+                            LogMessage($"SplashPage: Could not restore from stored data, clearing login state");
                             Console.WriteLine($"SplashPage: Could not restore from stored data, clearing login state");
                             Preferences.Set("IsLoggedIn", false);
                             Preferences.Remove("AuthToken");
@@ -166,6 +182,7 @@ public partial class SplashPage : ContentPage
             }
             catch (Exception ex)
             {
+                LogMessage($"SplashPage: Exception validating session: {ex.Message}, StackTrace: {ex.StackTrace}");
                 Console.WriteLine($"SplashPage: Exception validating session: {ex.Message}, StackTrace: {ex.StackTrace}");
                 // Only restore from stored data if it's a network/connection exception, not a validation failure
                 bool isNetworkException = ex is HttpRequestException || 
@@ -177,6 +194,7 @@ public partial class SplashPage : ContentPage
                 if (isNetworkException)
                 {
                     // Network issue - allow offline mode with stored data
+                    LogMessage($"SplashPage: Network exception, attempting offline restore");
                     Console.WriteLine($"SplashPage: Network exception, attempting offline restore");
                     if (!string.IsNullOrEmpty(userDataJson))
                     {
@@ -186,12 +204,14 @@ public partial class SplashPage : ContentPage
                             if (storedUser != null)
                             {
                                 App.CurrentUser = storedUser;
+                                LogMessage($"SplashPage: Restored user from stored data (offline mode), Email={storedUser.Email}");
                                 Console.WriteLine($"SplashPage: Restored user from stored data (offline mode), Email={storedUser.Email}");
                                 isLoggedIn = true;
                             }
                         }
                         catch
                         {
+                            LogMessage($"SplashPage: Failed to restore from stored data");
                             Console.WriteLine($"SplashPage: Failed to restore from stored data");
                         }
                     }
@@ -200,6 +220,7 @@ public partial class SplashPage : ContentPage
                 // If we couldn't restore or it wasn't a network error, clear login state
                 if (!isLoggedIn)
                 {
+                    LogMessage($"SplashPage: Clearing login state due to exception");
                     Console.WriteLine($"SplashPage: Clearing login state due to exception");
                     Preferences.Set("IsLoggedIn", false);
                     Preferences.Remove("AuthToken");
@@ -211,6 +232,7 @@ public partial class SplashPage : ContentPage
         }
         else
         {
+            LogMessage($"SplashPage: Not logged in or no auth token - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}");
             Console.WriteLine($"SplashPage: Not logged in or no auth token - IsLoggedIn={isLoggedIn}, HasAuthToken={!string.IsNullOrEmpty(authToken)}");
         }
         
@@ -226,14 +248,17 @@ public partial class SplashPage : ContentPage
         
             // Navigate to appropriate route based on login status
             string targetRoute = isLoggedIn ? "//Home" : "//Login";
+            LogMessage($"SplashPage: Navigating to {targetRoute}, isLoggedIn={isLoggedIn}");
             Console.WriteLine($"SplashPage: Navigating to {targetRoute}");
             try
             {
                 await Shell.Current.GoToAsync(targetRoute);
+                LogMessage($"SplashPage: Navigation to {targetRoute} completed");
                 Console.WriteLine($"SplashPage: Navigation to {targetRoute} completed");
             }
             catch (Exception navEx)
             {
+                LogMessage($"SplashPage: Navigation error: {navEx.Message}, StackTrace: {navEx.StackTrace}");
                 Console.WriteLine($"SplashPage: Navigation error: {navEx.Message}, StackTrace: {navEx.StackTrace}");
                 // Fallback to login if navigation fails
                 try
@@ -242,12 +267,14 @@ public partial class SplashPage : ContentPage
                 }
                 catch
                 {
+                    LogMessage("SplashPage: Fallback navigation also failed");
                     Console.WriteLine("SplashPage: Fallback navigation also failed");
                 }
             }
         }
         catch (Exception ex)
         {
+            LogMessage($"SplashPage: Critical error in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
             Console.WriteLine($"SplashPage: Critical error in OnAppearing: {ex.Message}, StackTrace: {ex.StackTrace}");
             // Try to navigate to login as fallback
             try
@@ -256,8 +283,45 @@ public partial class SplashPage : ContentPage
             }
             catch
             {
+                LogMessage("SplashPage: Could not navigate to Login after error");
                 Console.WriteLine("SplashPage: Could not navigate to Login after error");
             }
+        }
+    }
+    
+    private void LogMessage(string message)
+    {
+        try
+        {
+            // Try multiple locations to ensure we can write
+            string? logPath = null;
+            
+            // Try cache directory first (more accessible)
+            try
+            {
+                logPath = Path.Combine(FileSystem.CacheDirectory, "splash_page_log.txt");
+            }
+            catch
+            {
+                // Fallback to app data directory
+                try
+                {
+                    logPath = Path.Combine(FileSystem.AppDataDirectory, "splash_page_log.txt");
+                }
+                catch
+                {
+                    // Last resort - try temp path
+                    logPath = Path.Combine(Path.GetTempPath(), "splash_page_log.txt");
+                }
+            }
+            
+            var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n";
+            File.AppendAllText(logPath, logEntry);
+            System.Diagnostics.Debug.WriteLine($"SPLASH LOG: {message}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"SPLASH LOG ERROR: {ex.Message}");
         }
     }
 }

@@ -18,78 +18,74 @@ public partial class ViewLogPage : ContentPage
     {
         try
         {
-            string logContent = "Log file not found. Tried:\n\n";
-            bool found = false;
+            string logContent = "=== VEHICLE PAGE LOG ===\n\n";
+            bool foundVehicle = false;
             
-            // Try cache directory
+            // Try to load vehicle page log
             try
             {
                 var logPath = Path.Combine(FileSystem.CacheDirectory, "vehicle_page_log.txt");
                 if (File.Exists(logPath))
                 {
-                    logContent = File.ReadAllText(logPath);
-                    _currentLogPath = logPath;
-                    found = true;
-                }
-                else
-                {
-                    logContent += $"- {logPath} (not found)\n";
+                    logContent += File.ReadAllText(logPath);
+                    foundVehicle = true;
                 }
             }
-            catch (Exception ex)
-            {
-                logContent += $"Cache directory error: {ex.Message}\n";
-            }
+            catch { }
             
-            // Try app data directory
-            if (!found)
+            if (!foundVehicle)
             {
                 try
                 {
                     var logPath = Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
                     if (File.Exists(logPath))
                     {
-                        logContent = File.ReadAllText(logPath);
-                        _currentLogPath = logPath;
-                        found = true;
-                    }
-                    else
-                    {
-                        logContent += $"- {logPath} (not found)\n";
+                        logContent += File.ReadAllText(logPath);
+                        foundVehicle = true;
                     }
                 }
-                catch (Exception ex)
-                {
-                    logContent += $"App data directory error: {ex.Message}\n";
-                }
+                catch { }
             }
             
-            // Try temp path
-            if (!found)
+            if (!foundVehicle)
+            {
+                logContent += "No vehicle page log found.\n";
+            }
+            
+            logContent += "\n\n=== SPLASH PAGE LOG ===\n\n";
+            bool foundSplash = false;
+            
+            // Try to load splash page log
+            try
+            {
+                var logPath = Path.Combine(FileSystem.CacheDirectory, "splash_page_log.txt");
+                if (File.Exists(logPath))
+                {
+                    logContent += File.ReadAllText(logPath);
+                    _currentLogPath = logPath;
+                    foundSplash = true;
+                }
+            }
+            catch { }
+            
+            if (!foundSplash)
             {
                 try
                 {
-                    var logPath = Path.Combine(Path.GetTempPath(), "vehicle_page_log.txt");
+                    var logPath = Path.Combine(FileSystem.AppDataDirectory, "splash_page_log.txt");
                     if (File.Exists(logPath))
                     {
-                        logContent = File.ReadAllText(logPath);
+                        logContent += File.ReadAllText(logPath);
                         _currentLogPath = logPath;
-                        found = true;
-                    }
-                    else
-                    {
-                        logContent += $"- {logPath} (not found)\n";
+                        foundSplash = true;
                     }
                 }
-                catch (Exception ex)
-                {
-                    logContent += $"Temp path error: {ex.Message}\n";
-                }
+                catch { }
             }
             
-            if (!found)
+            if (!foundSplash)
             {
-                logContent += "\nNo log file found. The Vehicle page may not have been accessed yet, or logging failed.";
+                logContent += "No splash page log found.";
             }
             
             LogEditor.Text = logContent;
@@ -124,63 +120,66 @@ public partial class ViewLogPage : ContentPage
     {
         try
         {
-            bool confirmed = await DisplayAlert("Clear Log", "Are you sure you want to clear the log file?", "Yes", "No");
+            bool confirmed = await DisplayAlert("Clear Log", "Are you sure you want to clear all log files?", "Yes", "No");
             if (!confirmed)
                 return;
             
-            if (!string.IsNullOrEmpty(_currentLogPath) && File.Exists(_currentLogPath))
+            bool cleared = false;
+            
+            // Clear vehicle page log
+            try
             {
-                File.WriteAllText(_currentLogPath, string.Empty);
-                LogEditor.Text = "Log cleared.";
-                ShowStatus("Log cleared successfully!", true);
+                var logPath = Path.Combine(FileSystem.CacheDirectory, "vehicle_page_log.txt");
+                if (File.Exists(logPath))
+                {
+                    File.WriteAllText(logPath, string.Empty);
+                    cleared = true;
+                }
+            }
+            catch { }
+            
+            try
+            {
+                var logPath = Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
+                if (File.Exists(logPath))
+                {
+                    File.WriteAllText(logPath, string.Empty);
+                    cleared = true;
+                }
+            }
+            catch { }
+            
+            // Clear splash page log
+            try
+            {
+                var logPath = Path.Combine(FileSystem.CacheDirectory, "splash_page_log.txt");
+                if (File.Exists(logPath))
+                {
+                    File.WriteAllText(logPath, string.Empty);
+                    cleared = true;
+                }
+            }
+            catch { }
+            
+            try
+            {
+                var logPath = Path.Combine(FileSystem.AppDataDirectory, "splash_page_log.txt");
+                if (File.Exists(logPath))
+                {
+                    File.WriteAllText(logPath, string.Empty);
+                    cleared = true;
+                }
+            }
+            catch { }
+            
+            if (cleared)
+            {
+                LogEditor.Text = "Logs cleared.";
+                ShowStatus("Logs cleared successfully!", true);
             }
             else
             {
-                // Try to clear from all possible locations
-                bool cleared = false;
-                
-                try
-                {
-                    var logPath = Path.Combine(FileSystem.CacheDirectory, "vehicle_page_log.txt");
-                    if (File.Exists(logPath))
-                    {
-                        File.WriteAllText(logPath, string.Empty);
-                        cleared = true;
-                    }
-                }
-                catch { }
-                
-                try
-                {
-                    var logPath = Path.Combine(FileSystem.AppDataDirectory, "vehicle_page_log.txt");
-                    if (File.Exists(logPath))
-                    {
-                        File.WriteAllText(logPath, string.Empty);
-                        cleared = true;
-                    }
-                }
-                catch { }
-                
-                try
-                {
-                    var logPath = Path.Combine(Path.GetTempPath(), "vehicle_page_log.txt");
-                    if (File.Exists(logPath))
-                    {
-                        File.WriteAllText(logPath, string.Empty);
-                        cleared = true;
-                    }
-                }
-                catch { }
-                
-                if (cleared)
-                {
-                    LogEditor.Text = "Log cleared.";
-                    ShowStatus("Log cleared successfully!", true);
-                }
-                else
-                {
-                    ShowStatus("No log file found to clear", false);
-                }
+                ShowStatus("No log files found to clear", false);
             }
         }
         catch (Exception ex)
