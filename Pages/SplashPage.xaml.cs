@@ -53,18 +53,22 @@ public partial class SplashPage : ContentPage
                     // Session validation failed - check if it's a genuine network error (can't reach server)
                     // vs. an invalid/expired session
                     // IMPORTANT: Only treat as network error if message explicitly says so AND doesn't mention expired/invalid
-                    bool isExpiredOrInvalid = message.Contains("Session expired") || 
-                                             message.Contains("Invalid token") ||
-                                             message.Contains("expired") ||
-                                             message.Contains("invalid") ||
-                                             message.Contains("unauthorized") ||
-                                             message.Contains("Unauthorized");
+                    string lowerMessage = message.ToLowerInvariant();
+                    bool isExpiredOrInvalid = lowerMessage.Contains("session expired") || 
+                                             lowerMessage.Contains("invalid token") ||
+                                             lowerMessage.Contains("expired") ||
+                                             (lowerMessage.Contains("invalid") && !lowerMessage.Contains("response")) ||
+                                             lowerMessage.Contains("unauthorized") ||
+                                             lowerMessage.Contains("forbidden") ||
+                                             lowerMessage.Contains("no authentication token");
                     
                     bool isNetworkError = !isExpiredOrInvalid && 
-                                         (message.Contains("Network error") || 
-                                          message.Contains("Failed to retrieve session token") ||
-                                          message.Contains("connection") ||
-                                          message.Contains("timeout"));
+                                         (lowerMessage.Contains("network error") || 
+                                          lowerMessage.Contains("failed to retrieve session token") ||
+                                          lowerMessage.Contains("connection") ||
+                                          lowerMessage.Contains("timeout") ||
+                                          lowerMessage.Contains("dns") ||
+                                          lowerMessage.Contains("name resolution"));
                     
                     if (isExpiredOrInvalid)
                     {
@@ -106,13 +110,40 @@ public partial class SplashPage : ContentPage
                     }
                     else
                     {
-                        // Unknown error - assume session is invalid
-                        Console.WriteLine($"SplashPage: Unknown validation error: {message}, clearing login state");
-                        Preferences.Set("IsLoggedIn", false);
-                        Preferences.Remove("AuthToken");
-                        Preferences.Remove("UserData");
-                        App.CurrentUser = null;
-                        isLoggedIn = false;
+                        // Unknown error - be more lenient, try to restore from stored data first
+                        // Only clear if we really can't determine what happened
+                        Console.WriteLine($"SplashPage: Unknown validation error: {message}, attempting to restore from stored data");
+                        if (!string.IsNullOrEmpty(userDataJson))
+                        {
+                            try
+                            {
+                                var storedUser = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                                if (storedUser != null)
+                                {
+                                    App.CurrentUser = storedUser;
+                                    Console.WriteLine($"SplashPage: Restored user from stored data (unknown error fallback), Email={storedUser.Email}, Role={storedUser.Role}");
+                                    isLoggedIn = true;
+                                }
+                                else
+                                {
+                                    isLoggedIn = false;
+                                }
+                            }
+                            catch
+                            {
+                                isLoggedIn = false;
+                            }
+                        }
+                        
+                        // Only clear if we couldn't restore
+                        if (!isLoggedIn)
+                        {
+                            Console.WriteLine($"SplashPage: Could not restore from stored data, clearing login state");
+                            Preferences.Set("IsLoggedIn", false);
+                            Preferences.Remove("AuthToken");
+                            Preferences.Remove("UserData");
+                            App.CurrentUser = null;
+                        }
                     }
                 }
             }
