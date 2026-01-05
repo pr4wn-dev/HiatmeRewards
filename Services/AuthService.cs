@@ -308,8 +308,19 @@ namespace HiatMeApp.Services
 
         public async Task<(bool Success, User? User, string Message)> LoginAsync(string? email, string? password)
         {
-            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
-                return (false, null, "Failed to retrieve session token.");
+            LogMessage($"LoginAsync: Starting login for Email={email}");
+            
+            if (string.IsNullOrEmpty(_csrfToken))
+            {
+                LogMessage("LoginAsync: No CSRF token, fetching new one");
+                if (!await FetchCSRFTokenAsync())
+                {
+                    LogMessage("LoginAsync: Failed to fetch CSRF token");
+                    return (false, null, "Failed to retrieve session token.");
+                }
+            }
+            
+            LogMessage($"LoginAsync: Using CSRF token={_csrfToken}");
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 return (false, null, "Email and password are required.");
@@ -329,6 +340,7 @@ namespace HiatMeApp.Services
                 return await _loginRetryPolicy.ExecuteAsync(async () =>
                 {
                     Console.WriteLine($"LoginAsync: Sending request for Email={email}, CSRF={_csrfToken}");
+                    LogMessage($"LoginAsync: Sending login request with CSRF token={_csrfToken}");
                     var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
                     Console.WriteLine($"LoginAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
                     Console.WriteLine("LoginAsync: Response headers:");
@@ -339,6 +351,7 @@ namespace HiatMeApp.Services
 
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"LoginAsync raw response: {json}");
+                    LogMessage($"LoginAsync: Response StatusCode={response.StatusCode}, JSON={json}");
 
                     if (string.IsNullOrWhiteSpace(json))
                     {
@@ -394,8 +407,64 @@ namespace HiatMeApp.Services
                     }
                     else
                     {
-                        Console.WriteLine($"LoginAsync failed: {result?.Message ?? "Unknown error"}");
-                        return (false, null, result?.Message ?? "Login failed.");
+                        string errorMsg = result?.Message ?? "Unknown error";
+                        Console.WriteLine($"LoginAsync failed: {errorMsg}");
+                        LogMessage($"LoginAsync: Login failed - Message={errorMsg}");
+                        
+                        // If CSRF token error, try fetching a new token and retrying once
+                        if (errorMsg.Contains("CSRF token") || errorMsg.Contains("Invalid CSRF") || errorMsg.Contains("csrf") || errorMsg.Contains("session token"))
+                        {
+                            LogMessage("LoginAsync: CSRF token error detected, fetching new token and retrying");
+                            if (await FetchCSRFTokenAsync())
+                            {
+                                LogMessage($"LoginAsync: Fetched new CSRF token={_csrfToken}, retrying login");
+                                // Retry with new token
+                                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                                _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                                
+                                var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                                var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                                LogMessage($"LoginAsync: Retry response StatusCode={retryResponse.StatusCode}, JSON={retryJson}");
+                                
+                                var retryResult = await Task.Run(() => JsonConvert.DeserializeObject<LoginResponse>(retryJson, new JsonSerializerSettings
+                                {
+                                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                                    NullValueHandling = NullValueHandling.Ignore
+                                }));
+                                
+                                if (retryResult?.Success == true)
+                                {
+                                    // Handle successful retry
+                                    if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                    {
+                                        _csrfToken = retryResult.CsrfToken;
+                                    }
+                                    var user = new User
+                                    {
+                                        Email = retryResult.Email,
+                                        Name = retryResult.Name,
+                                        Phone = retryResult.Phone,
+                                        ProfilePicture = retryResult.ProfilePicture,
+                                        Role = retryResult.Role,
+                                        UserId = retryResult.UserId,
+                                        Vehicles = retryResult.Vehicles
+                                    };
+                                    App.CurrentUser = user;
+                                    Preferences.Set("UserEmail", user.Email);
+                                    Preferences.Set("IsLoggedIn", true);
+                                    Preferences.Set("UserData", JsonConvert.SerializeObject(user));
+                                    Preferences.Set("AuthToken", retryResult.AuthToken);
+                                    LogMessage($"LoginAsync: Retry successful for Email={email}");
+                                    return (true, user, "Login successful");
+                                }
+                                else
+                                {
+                                    LogMessage($"LoginAsync: Retry also failed - {retryResult?.Message ?? "Unknown error"}");
+                                }
+                            }
+                        }
+                        
+                        return (false, null, errorMsg);
                     }
                 });
             }
