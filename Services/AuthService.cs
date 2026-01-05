@@ -175,18 +175,24 @@ namespace HiatMeApp.Services
                     { "action", "validate_session" }
                 };
                 var content = new FormUrlEncodedContent(data);
+                
+                // Ensure Content-Type is set (FormUrlEncodedContent should do this automatically, but be explicit)
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
                 _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
                 _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
                 _httpClient.DefaultRequestHeaders.Remove("Authorization");
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
 
-                Console.WriteLine($"ValidateSessionAsync: Sending validation request with auth_token={authToken}");
+                Console.WriteLine($"ValidateSessionAsync: Sending validation request with auth_token={authToken}, CSRF token={_csrfToken}");
+                LogMessage($"ValidateSessionAsync: Request - action=validate_session, CSRF token present={!string.IsNullOrEmpty(_csrfToken)}, Auth token present={!string.IsNullOrEmpty(authToken)}");
+                
                 var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
                 Console.WriteLine($"ValidateSessionAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
 
                 var json = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"ValidateSessionAsync response: {json}");
+                LogMessage($"ValidateSessionAsync: Response StatusCode={response.StatusCode}, JSON={json}");
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
