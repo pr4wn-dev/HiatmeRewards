@@ -33,6 +33,15 @@ namespace HiatMeApp.Services
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "HiatMeApp/1.0");
             _httpClient.DefaultRequestHeaders.Add("Connection", "close"); // Prevent keep-alive issues
             Console.WriteLine("AuthService initialized with BaseAddress: " + _httpClient.BaseAddress);
+            
+            // Try to restore CSRF token from Preferences (if it exists and is recent)
+            // But we'll still fetch a fresh one for each request to be safe
+            var storedToken = Preferences.Get("CSRFToken", null);
+            if (!string.IsNullOrEmpty(storedToken))
+            {
+                _csrfToken = storedToken;
+                Console.WriteLine($"AuthService: Restored CSRF token from Preferences: {_csrfToken}");
+            }
 
             _mileageRetryPolicy = Policy<(bool, string, int?)>
                 .Handle<HttpRequestException>()
@@ -126,7 +135,10 @@ namespace HiatMeApp.Services
                 if (result?.Success == true && !string.IsNullOrEmpty(result.CsrfToken))
                 {
                     _csrfToken = result.CsrfToken;
+                    // Store in Preferences for potential restoration (though we'll still fetch fresh)
+                    Preferences.Set("CSRFToken", _csrfToken);
                     Console.WriteLine($"FetchCSRFTokenAsync: CSRF token fetched successfully: {_csrfToken}");
+                    LogMessage($"FetchCSRFTokenAsync: CSRF token fetched and stored: {_csrfToken}");
                     return true;
                 }
                 else
@@ -155,18 +167,26 @@ namespace HiatMeApp.Services
         public async Task<(bool Success, User? User, string Message)> ValidateSessionAsync()
         {
             Console.WriteLine("ValidateSessionAsync: Starting session validation");
+            LogMessage("ValidateSessionAsync: Starting session validation");
+            
             var authToken = Preferences.Get("AuthToken", null);
             if (string.IsNullOrEmpty(authToken))
             {
                 Console.WriteLine("ValidateSessionAsync: No auth token found");
+                LogMessage("ValidateSessionAsync: No auth token found");
                 return (false, null, "No authentication token available.");
             }
 
-            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            // Always fetch a fresh CSRF token for session validation to avoid stale token issues
+            // The server regenerates tokens after each request, so we need a fresh one
+            LogMessage("ValidateSessionAsync: Fetching fresh CSRF token for session validation");
+            if (!await FetchCSRFTokenAsync())
             {
                 Console.WriteLine("ValidateSessionAsync: Failed to retrieve CSRF token");
+                LogMessage("ValidateSessionAsync: Failed to retrieve CSRF token");
                 return (false, null, "Failed to retrieve session token.");
             }
+            LogMessage($"ValidateSessionAsync: Fetched fresh CSRF token: {_csrfToken}");
 
             try
             {
@@ -370,7 +390,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result?.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"LoginAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"LoginAsync: Updated CSRF token: {_csrfToken}");
                     }
                     else
                     {
