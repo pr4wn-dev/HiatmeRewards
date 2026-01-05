@@ -217,17 +217,21 @@ namespace HiatMeApp.Services
                 if (result.Success == false)
                 {
                     string errorMsg = result.Message ?? "Session validation failed.";
-                    Console.WriteLine($"ValidateSessionAsync: Session validation failed: {errorMsg}");
+                    Console.WriteLine($"ValidateSessionAsync: Session validation failed - Success=false, Message={errorMsg}");
                     
                     // Check if it's an invalid token/expired session
-                    if (errorMsg.Contains("Invalid token") || 
-                        errorMsg.Contains("expired") || 
-                        errorMsg.Contains("No authentication token") ||
-                        errorMsg.Contains("unverified"))
+                    string lowerError = errorMsg.ToLowerInvariant();
+                    if (lowerError.Contains("invalid token") || 
+                        lowerError.Contains("expired") || 
+                        lowerError.Contains("no authentication token") ||
+                        lowerError.Contains("unverified") ||
+                        lowerError.Contains("no token provided"))
                     {
+                        Console.WriteLine($"ValidateSessionAsync: Detected expired/invalid session: {errorMsg}");
                         return (false, null, "Session expired. Please log in again.");
                     }
                     
+                    Console.WriteLine($"ValidateSessionAsync: Unknown error message: {errorMsg}");
                     return (false, null, errorMsg);
                 }
                 
@@ -261,11 +265,18 @@ namespace HiatMeApp.Services
             }
             catch (HttpRequestException ex)
             {
-                Console.WriteLine($"ValidateSessionAsync: HTTP error: {ex.Message}");
-                if (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+                Console.WriteLine($"ValidateSessionAsync: HTTP error: {ex.Message}, InnerException: {ex.InnerException?.Message ?? "none"}");
+                // Check for 401/403 status codes
+                if (ex.Message.Contains("401") || 
+                    ex.Message.Contains("Unauthorized") ||
+                    ex.Message.Contains("403") ||
+                    ex.Message.Contains("Forbidden") ||
+                    (ex.InnerException != null && (ex.InnerException.Message.Contains("401") || ex.InnerException.Message.Contains("403"))))
                 {
+                    Console.WriteLine($"ValidateSessionAsync: Detected 401/403 - session expired");
                     return (false, null, "Session expired. Please log in again.");
                 }
+                Console.WriteLine($"ValidateSessionAsync: Network error (not 401/403): {ex.Message}");
                 return (false, null, $"Network error: {ex.Message}");
             }
             catch (Exception ex)

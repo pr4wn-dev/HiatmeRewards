@@ -38,13 +38,21 @@ public partial class SplashPage : ContentPage
             {
                 // Validate session with server
                 var authService = App.Services.GetRequiredService<AuthService>();
-                Console.WriteLine("SplashPage: Calling ValidateSessionAsync...");
+                Console.WriteLine($"SplashPage: Calling ValidateSessionAsync with AuthToken={(!string.IsNullOrEmpty(authToken) ? "present" : "missing")}");
                 var (sessionValid, user, message) = await authService.ValidateSessionAsync();
                 Console.WriteLine($"SplashPage: ValidateSessionAsync returned - Success={sessionValid}, HasUser={user != null}, Message={message}");
+                
+                // Log the raw response for debugging
+                if (!sessionValid)
+                {
+                    Console.WriteLine($"SplashPage: Validation failed - will check if expired or network error. Message: '{message}'");
+                }
                 
                 if (sessionValid && user != null)
                 {
                     App.CurrentUser = user;
+                    // Ensure IsLoggedIn is set to true
+                    Preferences.Set("IsLoggedIn", true);
                     Console.WriteLine($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     isLoggedIn = true;
                 }
@@ -110,10 +118,11 @@ public partial class SplashPage : ContentPage
                     }
                     else
                     {
-                        // Unknown error - be more lenient, try to restore from stored data first
-                        // Only clear if we really can't determine what happened
-                        Console.WriteLine($"SplashPage: Unknown validation error: {message}, attempting to restore from stored data");
-                        if (!string.IsNullOrEmpty(userDataJson))
+                        // Unknown error - for now, restore from stored data to allow app to work
+                        // This is a fallback - ideally validation should work, but if it doesn't, 
+                        // we'll use stored data so the user can still use the app
+                        Console.WriteLine($"SplashPage: Unknown validation error: {message}, attempting to restore from stored data as fallback");
+                        if (!string.IsNullOrEmpty(userDataJson) && !string.IsNullOrEmpty(authToken))
                         {
                             try
                             {
@@ -122,6 +131,8 @@ public partial class SplashPage : ContentPage
                                 {
                                     App.CurrentUser = storedUser;
                                     Console.WriteLine($"SplashPage: Restored user from stored data (unknown error fallback), Email={storedUser.Email}, Role={storedUser.Role}");
+                                    // Keep IsLoggedIn as true since we have valid stored data
+                                    Preferences.Set("IsLoggedIn", true);
                                     isLoggedIn = true;
                                 }
                                 else
@@ -129,10 +140,16 @@ public partial class SplashPage : ContentPage
                                     isLoggedIn = false;
                                 }
                             }
-                            catch
+                            catch (Exception restoreEx)
                             {
+                                Console.WriteLine($"SplashPage: Failed to restore from stored data: {restoreEx.Message}");
                                 isLoggedIn = false;
                             }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"SplashPage: No stored data or auth token available");
+                            isLoggedIn = false;
                         }
                         
                         // Only clear if we couldn't restore
