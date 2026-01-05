@@ -1,9 +1,11 @@
 ﻿using HiatMeApp.Models;
+using Microsoft.Maui.Storage;
 using Newtonsoft.Json;
 using Polly;
 using Polly.Retry;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -1339,6 +1341,42 @@ namespace HiatMeApp.Services
             public string? Phone { get; set; }
             [JsonProperty("profile_picture")]
             public string? ProfilePicture { get; set; }
+        }
+        
+        private void LogMessage(string message)
+        {
+            try
+            {
+                // Try multiple locations to ensure we can write
+                string? logPath = null;
+                
+                // Try cache directory first (more accessible)
+                try
+                {
+                    logPath = Path.Combine(FileSystem.CacheDirectory, "auth_service_log.txt");
+                }
+                catch
+                {
+                    // Fallback to app data directory
+                    try
+                    {
+                        logPath = Path.Combine(FileSystem.AppDataDirectory, "auth_service_log.txt");
+                    }
+                    catch
+                    {
+                        // Last resort - try temp path
+                        logPath = Path.Combine(Path.GetTempPath(), "auth_service_log.txt");
+                    }
+                }
+                
+                var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n";
+                File.AppendAllText(logPath, logEntry);
+                System.Diagnostics.Debug.WriteLine($"AUTH LOG: {message}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"AUTH LOG ERROR: {ex.Message}");
+            }
         }
     }
 }
