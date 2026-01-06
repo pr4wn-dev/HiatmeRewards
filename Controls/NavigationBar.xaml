@@ -48,5 +48,8 @@
         <Button Text="&#xE8AF;" Style="{StaticResource NavButtonStyle}" 
                 Command="{Binding GoToFinishDayCommand}" />
         <!-- Done icon for Finish Day -->
+        <Button Text="&#xE894;" Style="{StaticResource NavButtonStyle}" 
+                Command="{Binding GoToViewLogCommand}" />
+        <!-- Description icon for View Log -->
     </HorizontalStackLayout>
 </ContentView>

@@ -11,16 +11,4 @@ public partial class HomePage : ContentPage
         InitializeComponent();
         BindingContext = viewModel;
     }
-    
-    private async void OnViewLogClicked(object sender, EventArgs e)
-    {
-        try
-        {
-            await Shell.Current.GoToAsync("//ViewLog");
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Error", $"Could not open log page: {ex.Message}", "OK");
-        }
-    }
 }

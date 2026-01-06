@@ -113,5 +113,18 @@ public partial class ViewLogViewModel : BaseViewModel
             Console.WriteLine($"GoToRequestDayOff: Error navigating to Request Day Off: {ex.Message}");
         }
     }
+
+    [RelayCommand]
+    private async Task GoToViewLog()
+    {
+        try
+        {
+            await Shell.Current.GoToAsync("//ViewLog");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToViewLog: Error navigating to View Log: {ex.Message}");
+        }
+    }
 }
 

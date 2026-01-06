@@ -169,6 +169,21 @@ public partial class RequestDayOffViewModel : BaseViewModel
             await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Request Day Off page.", "OK");
         }
     }
+
+    [RelayCommand]
+    private async Task GoToViewLog()
+    {
+        try
+        {
+            Console.WriteLine("GoToViewLog: Navigating to View Log");
+            await Shell.Current.GoToAsync("//ViewLog");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToViewLog: Error navigating to View Log: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to View Log page.", "OK");
+        }
+    }
 }
 
 
