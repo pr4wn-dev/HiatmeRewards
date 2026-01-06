@@ -46,6 +46,9 @@ public partial class HomeViewModel : BaseViewModel
     {
         try
         {
+            // Small delay to ensure ValidateSessionAsync has completed and saved the CSRF token
+            await Task.Delay(500);
+            
             if (App.CurrentUser == null || App.CurrentUser.Vehicles == null || !App.CurrentUser.Vehicles.Any())
             {
                 Console.WriteLine("CheckVehicleAssignmentAsync: No vehicles assigned or user not logged in, navigating to Vehicle page.");

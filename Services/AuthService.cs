@@ -113,37 +113,48 @@ namespace HiatMeApp.Services
             {
                 string endpoint = "/includes/hiatme_config.php?action=get_csrf_token";
                 Console.WriteLine($"Fetching CSRF token from: {_httpClient.BaseAddress}{endpoint}");
+                LogMessage($"FetchCSRFTokenAsync: Fetching from {endpoint}");
+                
+                // Remove any existing CSRF token header before fetching
+                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                
                 var response = await _httpClient.GetAsync(endpoint);
                 Console.WriteLine($"FetchCSRFTokenAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                LogMessage($"FetchCSRFTokenAsync: StatusCode={response.StatusCode}");
 
                 if (!response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"FetchCSRFTokenAsync failed: Status={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    LogMessage($"FetchCSRFTokenAsync: Failed - StatusCode={response.StatusCode}");
                     return false;
                 }
 
                 var json = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"FetchCSRFTokenAsync response: {json}");
+                LogMessage($"FetchCSRFTokenAsync: Response JSON={json}");
 
                 if (string.IsNullOrWhiteSpace(json))
                 {
                     Console.WriteLine("FetchCSRFTokenAsync: Empty response received.");
+                    LogMessage("FetchCSRFTokenAsync: Empty response received");
                     return false;
                 }
 
                 var result = await Task.Run(() => JsonConvert.DeserializeObject<CsrfResponse>(json));
                 if (result?.Success == true && !string.IsNullOrEmpty(result.CsrfToken))
                 {
+                    string oldToken = _csrfToken;
                     _csrfToken = result.CsrfToken;
                     // Store in Preferences for potential restoration (though we'll still fetch fresh)
                     Preferences.Set("CSRFToken", _csrfToken);
-                    Console.WriteLine($"FetchCSRFTokenAsync: CSRF token fetched successfully: {_csrfToken}");
-                    LogMessage($"FetchCSRFTokenAsync: CSRF token fetched and stored: {_csrfToken}");
+                    Console.WriteLine($"FetchCSRFTokenAsync: CSRF token fetched successfully: {_csrfToken} (old: {oldToken})");
+                    LogMessage($"FetchCSRFTokenAsync: CSRF token fetched and stored: {_csrfToken} (old token was: {oldToken})");
                     return true;
                 }
                 else
                 {
                     Console.WriteLine($"FetchCSRFTokenAsync: Invalid response. Success={result?.Success}, Token={result?.CsrfToken}");
+                    LogMessage($"FetchCSRFTokenAsync: Invalid response - Success={result?.Success}, Token present={!string.IsNullOrEmpty(result?.CsrfToken)}");
                     return false;
                 }
             }
@@ -278,6 +289,20 @@ namespace HiatMeApp.Services
                 // Success must be true AND we must have valid user data
                 if (result.Success == true && result.UserId > 0)
                 {
+                    // CRITICAL: Update CSRF token from server response - server regenerates it after each request
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
+                        Console.WriteLine($"ValidateSessionAsync: Updated CSRF token from server response: {_csrfToken}");
+                        LogMessage($"ValidateSessionAsync: Updated CSRF token from server response: {_csrfToken}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"ValidateSessionAsync: WARNING - No CSRF token in server response!");
+                        LogMessage($"ValidateSessionAsync: WARNING - No CSRF token in server response!");
+                    }
+                    
                     // Session is valid, create user from server response
                     var user = new User
                     {
@@ -295,6 +320,7 @@ namespace HiatMeApp.Services
                     Preferences.Set("UserEmail", user.Email ?? string.Empty);
                     Preferences.Set("UserRole", user.Role ?? string.Empty);
                     Console.WriteLine($"ValidateSessionAsync: Session valid, restored user from server Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
+                    LogMessage($"ValidateSessionAsync: Session validated successfully, Email={user.Email}, Role={user.Role}");
                     return (true, user, "Session is valid");
                 }
                 else
@@ -565,7 +591,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"RegisterAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"RegisterAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
@@ -669,7 +697,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"ForgotPasswordAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"ForgotPasswordAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
@@ -762,7 +792,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"AssignVehicleAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"AssignVehicleAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success && result.Vehicle != null)
@@ -820,14 +852,30 @@ namespace HiatMeApp.Services
             Console.WriteLine($"SubmitStartMileageAsync: Starting with mileage_id={mileageId}, start_miles={startMiles}");
             LogMessage($"SubmitStartMileageAsync: Starting with mileage_id={mileageId}, start_miles={startMiles}");
             
-            // Always fetch a fresh CSRF token to avoid stale token issues after app restart
-            LogMessage("SubmitStartMileageAsync: Fetching fresh CSRF token");
-            if (!await FetchCSRFTokenAsync())
+            // CRITICAL: Use the token from the last successful response (stored in Preferences)
+            // The server regenerates tokens after each request, so we MUST use the token from the PREVIOUS request
+            // DO NOT fetch a fresh token - that will cause "Invalid CSRF token" errors
+            var storedToken = Preferences.Get("CSRFToken", null);
+            if (!string.IsNullOrEmpty(storedToken))
             {
-                LogMessage("SubmitStartMileageAsync: Failed to fetch CSRF token");
-                return (false, "Failed to retrieve session token.", null);
+                _csrfToken = storedToken;
+                LogMessage($"SubmitStartMileageAsync: Using CSRF token from last response (Preferences): {_csrfToken}");
             }
-            LogMessage($"SubmitStartMileageAsync: Using CSRF token={_csrfToken}");
+            else if (string.IsNullOrEmpty(_csrfToken))
+            {
+                // Only fetch if we have NO token at all (shouldn't happen after validate_session)
+                LogMessage("SubmitStartMileageAsync: WARNING - No token found, fetching fresh CSRF token");
+                if (!await FetchCSRFTokenAsync())
+                {
+                    LogMessage("SubmitStartMileageAsync: Failed to fetch CSRF token");
+                    return (false, "Failed to retrieve session token.", null);
+                }
+                LogMessage($"SubmitStartMileageAsync: Fetched fresh CSRF token: {_csrfToken}");
+            }
+            else
+            {
+                LogMessage($"SubmitStartMileageAsync: Using existing CSRF token from memory: {_csrfToken}");
+            }
 
             var authToken = Preferences.Get("AuthToken", null);
             if (string.IsNullOrEmpty(authToken))
@@ -853,8 +901,10 @@ namespace HiatMeApp.Services
                 return await _mileageRetryPolicy.ExecuteAsync(async () =>
                 {
                     Console.WriteLine($"SubmitStartMileageAsync: Sending POST request with CSRF={_csrfToken}, mileage_id={mileageId}, start_miles={startMiles}, start_miles_datetime={startMilesDatetime}");
+                    LogMessage($"SubmitStartMileageAsync: Sending request with CSRF token={_csrfToken}, mileage_id={mileageId}, start_miles={startMiles}");
                     var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
                     Console.WriteLine($"SubmitStartMileageAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
+                    LogMessage($"SubmitStartMileageAsync: Response StatusCode={response.StatusCode}");
                     Console.WriteLine("SubmitStartMileageAsync: Response headers:");
                     foreach (var header in response.Headers)
                     {
@@ -1003,7 +1053,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"SubmitEndMileageAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"SubmitEndMileageAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     Console.WriteLine($"SubmitEndMileageAsync: Successfully submitted end mileage for vehicle_id={result.VehicleId}, mileage_id={result.MileageId}");
@@ -1083,7 +1135,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"GetVehicleIssuesAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"GetVehicleIssuesAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
@@ -1176,7 +1230,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"AddVehicleIssueAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"AddVehicleIssueAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
@@ -1369,7 +1425,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"UpdateProfileAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"UpdateProfileAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success && result.User != null)
@@ -1480,7 +1538,9 @@ namespace HiatMeApp.Services
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
                         _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"SubmitDayOffRequestAsync: Updated CSRF token: {_csrfToken}");
+                        LogMessage($"SubmitDayOffRequestAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
