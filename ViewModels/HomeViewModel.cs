@@ -108,6 +108,118 @@ public partial class HomeViewModel : BaseViewModel
                     Preferences.Set("ShouldConfirmVehicle", false);
                 }
 
+                // Check if mileage record has both start and ending miles - need to create new record
+                if (AssignedVehicle.MileageRecord != null && 
+                    AssignedVehicle.MileageRecord.StartMiles != null && 
+                    AssignedVehicle.MileageRecord.EndingMiles != null)
+                {
+                    Console.WriteLine($"CheckVehicleAssignmentAsync: Mileage record is complete (both start and ending miles filled), creating new mileage record for vehicle_id={AssignedVehicle.VehicleId}");
+                    string vinSuffix = AssignedVehicle.LastSixVin ?? string.Empty;
+                    if (string.IsNullOrEmpty(vinSuffix))
+                    {
+                        Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or empty VIN suffix.");
+                        await PageDialogService.DisplayAlertAsync("Error", "Vehicle VIN is invalid.", "OK");
+                        await Shell.Current.GoToAsync("Vehicle");
+                        return;
+                    }
+
+                    var authService = App.Services.GetRequiredService<AuthService>();
+                    
+                    // Ensure we have a fresh CSRF token before reassigning
+                    Console.WriteLine("CheckVehicleAssignmentAsync: Ensuring fresh CSRF token before reassigning vehicle");
+                    if (!await authService.FetchCSRFTokenAsync())
+                    {
+                        Console.WriteLine("CheckVehicleAssignmentAsync: Failed to fetch CSRF token");
+                        await PageDialogService.DisplayAlertAsync("Error", "Failed to retrieve session token. Please try again.", "OK");
+                        return;
+                    }
+                    
+                    // Reassign vehicle to create a new mileage record
+                    (bool success, Vehicle? newVehicle, string message, List<MileageRecord>? incompleteRecords, int? mileageId) = await authService.AssignVehicleAsync(vinSuffix, allowIncompleteEndingMiles: true);
+
+                    if (success && newVehicle != null && mileageId.HasValue)
+                    {
+                        Console.WriteLine($"CheckVehicleAssignmentAsync: Created new mileage record, VIN={newVehicle.Vin}, VehicleId={newVehicle.VehicleId}, MileageId={mileageId}");
+                        var updatedVehicles = App.CurrentUser.Vehicles
+                            .Where(v => v.VehicleId != newVehicle.VehicleId)
+                            .ToList();
+                        updatedVehicles.Add(newVehicle);
+                        App.CurrentUser.Vehicles = updatedVehicles;
+                        AssignedVehicle = newVehicle;
+                        Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
+                        OnPropertyChanged(nameof(AssignedVehicle));
+                        WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
+
+                        // Prompt for starting miles for the new mileage record
+                        string? startMilesInput = await PageDialogService.DisplayPromptAsync(
+                            "New Mileage Entry",
+                            $"Please enter the starting miles for {newVehicle.Make} {newVehicle.Model} (VIN ending {newVehicle.LastSixVin}):",
+                            maxLength: 8,
+                            keyboard: Keyboard.Numeric
+                        );
+
+                        if (string.IsNullOrEmpty(startMilesInput) || !double.TryParse(startMilesInput, out double startMiles) || startMiles < 0 || startMiles > 999999.99)
+                        {
+                            Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or cancelled start miles input.");
+                            await PageDialogService.DisplayAlertAsync("Error", "Invalid starting miles. Please try again.", "OK");
+                            return;
+                        }
+
+                        (bool submitSuccess, string submitMessage, int? returnedMileageId) = await authService.SubmitStartMileageAsync(mileageId.Value, startMiles);
+                        if (submitSuccess)
+                        {
+                            Console.WriteLine($"CheckVehicleAssignmentAsync: Successfully submitted start miles for new mileage record, mileage_id={returnedMileageId}, vehicle_id={newVehicle.VehicleId}");
+                            await PageDialogService.DisplayAlertAsync("Success", "New mileage record created and starting miles submitted successfully.", "OK");
+                            newVehicle.MileageRecord = new MileageRecord
+                            {
+                                MileageId = returnedMileageId ?? 0,
+                                VehicleId = newVehicle.VehicleId,
+                                UserId = App.CurrentUser.UserId,
+                                StartMiles = (float?)startMiles,
+                                StartMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                            };
+                            App.CurrentUser.Vehicles = updatedVehicles;
+                            AssignedVehicle = newVehicle;
+                            Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
+                            OnPropertyChanged(nameof(AssignedVehicle));
+                            WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
+                        }
+                        else
+                        {
+                            Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to submit start miles: {submitMessage}");
+                            string errorMessage = submitMessage;
+                            if (submitMessage.Contains("Too many attempts"))
+                            {
+                                errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                            }
+                            else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
+                            {
+                                errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
+                            }
+                            else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
+                            {
+                                errorMessage = "Session expired. Please close and reopen the app.";
+                            }
+                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to create new mileage record: {message}");
+                        string errorMessage = message;
+                        if (message.Contains("invalid") && message.Contains("unverified"))
+                        {
+                            errorMessage = "Authentication error. Please close and reopen the app, or log in again.";
+                        }
+                        else if (message.Contains("Network error"))
+                        {
+                            errorMessage = "Network issue. Please check your connection and try again.";
+                        }
+                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
+                    }
+                    return;
+                }
+
                 if (AssignedVehicle.MileageRecord != null && AssignedVehicle.MileageRecord.StartMiles != null && AssignedVehicle.MileageRecord.EndingMiles == null)
                 {
                     Console.WriteLine($"CheckVehicleAssignmentAsync: Open mileage record found for vehicle_id={AssignedVehicle.VehicleId}, mileage_id={AssignedVehicle.MileageRecord.MileageId}");
