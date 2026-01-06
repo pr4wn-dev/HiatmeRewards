@@ -72,15 +72,6 @@
                         TextColor="White"
                         HorizontalOptions="Center"
                         Margin="0,10,0,10" />
-                <Button Text="Submit End Mileage"
-                        FontSize="18"
-                        IsVisible="{Binding Vehicle.MileageRecord, Converter={StaticResource NotNullConverter}}"
-                        IsEnabled="{Binding Vehicle.MileageRecord.EndingMiles, Converter={StaticResource NotNullConverter}, ConverterParameter=Inverse}"
-                        Command="{Binding SubmitEndMileageCommand}"
-                        BackgroundColor="#28a745"
-                        TextColor="White"
-                        HorizontalOptions="Center"
-                        Margin="0,10,0,0" />
             </VerticalStackLayout>
         </ScrollView>
         <local:NavigationBar Grid.Row="2" BindingContext="{Binding .}" />
