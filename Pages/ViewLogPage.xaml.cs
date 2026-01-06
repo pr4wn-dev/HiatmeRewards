@@ -1,3 +1,4 @@
+using HiatMeApp.ViewModels;
 using Microsoft.Maui.Controls;
 using System.IO;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ public partial class ViewLogPage : ContentPage
     public ViewLogPage()
     {
         InitializeComponent();
+        BindingContext = App.Services?.GetService<ViewLogViewModel>() ?? new ViewLogViewModel();
         LoadLog();
     }
     

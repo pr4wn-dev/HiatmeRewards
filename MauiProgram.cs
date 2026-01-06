@@ -50,6 +50,7 @@ public static class MauiProgram
         builder.Services.AddTransient<FinishDayViewModel>();
         builder.Services.AddTransient<ProfileViewModel>();
         builder.Services.AddTransient<RequestDayOffViewModel>();
+        builder.Services.AddTransient<ViewLogViewModel>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddTransient<ForgotPasswordPage>();
