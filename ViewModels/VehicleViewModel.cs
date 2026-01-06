@@ -116,107 +116,55 @@ public partial class VehicleViewModel : BaseViewModel
             IsLoading = true;
             await Task.Delay(150);
             
-            // CRITICAL: Always refresh vehicle data from server if we have a valid session
-            // This ensures we have the most current data including mileage records
-            bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
-            var authToken = Preferences.Get("AuthToken", null);
-            
-            if (isLoggedIn && !string.IsNullOrEmpty(authToken))
+            // Restore user if needed - App.CurrentUser should already be set by ValidateSessionAsync on app start
+            // Only restore from Preferences if App.CurrentUser is null (shouldn't happen if session is valid)
+            if (App.CurrentUser == null)
             {
-                try
+                var userDataJson = Preferences.Get("UserData", string.Empty);
+                if (!string.IsNullOrEmpty(userDataJson))
                 {
-                    Console.WriteLine("LoadVehiclesAsync: Refreshing vehicle data from server");
-                    var authService = App.Services?.GetService<AuthService>();
-                    if (authService != null)
+                    try
                     {
-                        var (sessionValid, user, message) = await authService.ValidateSessionAsync();
-                        if (sessionValid && user != null)
+                        var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                        if (storedUser != null)
                         {
-                            App.CurrentUser = user;
-                            Preferences.Set("UserData", JsonConvert.SerializeObject(user));
-                            Console.WriteLine($"LoadVehiclesAsync: Refreshed user data from server, VehiclesCount={user.Vehicles?.Count ?? 0}");
-                            // Log mileage records from fresh data
-                            if (user.Vehicles != null)
+                            App.CurrentUser = storedUser;
+                            Console.WriteLine($"LoadVehiclesAsync: Restored user from Preferences, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
+                            // Log mileage records from stored data
+                            if (storedUser.Vehicles != null)
                             {
-                                foreach (var v in user.Vehicles)
+                                foreach (var v in storedUser.Vehicles)
                                 {
                                     if (v.MileageRecord != null)
                                     {
-                                        Console.WriteLine($"LoadVehiclesAsync: Fresh vehicle {v.VehicleId} has MileageRecord - MileageId={v.MileageRecord.MileageId}, StartMiles={v.MileageRecord.StartMiles}, EndingMiles={v.MileageRecord.EndingMiles}");
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine($"LoadVehiclesAsync: Fresh vehicle {v.VehicleId} has NO MileageRecord");
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine($"LoadVehiclesAsync: Session validation failed: {message}, falling back to stored data");
-                            // Fall back to stored data if session validation fails
-                            if (App.CurrentUser == null)
-                            {
-                                var userDataJson = Preferences.Get("UserData", string.Empty);
-                                if (!string.IsNullOrEmpty(userDataJson))
-                                {
-                                    try
-                                    {
-                                        var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
-                                        if (storedUser != null)
-                                        {
-                                            App.CurrentUser = storedUser;
-                                            Console.WriteLine($"LoadVehiclesAsync: Restored user from Preferences, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine($"LoadVehiclesAsync: Error restoring user from Preferences: {ex.Message}");
+                                        Console.WriteLine($"LoadVehiclesAsync: Stored vehicle {v.VehicleId} has MileageRecord - MileageId={v.MileageRecord.MileageId}, StartMiles={v.MileageRecord.StartMiles}, EndingMiles={v.MileageRecord.EndingMiles}");
                                     }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"LoadVehiclesAsync: Error refreshing from server: {ex.Message}, falling back to stored data");
-                    // Fall back to stored data if refresh fails
-                    if (App.CurrentUser == null)
+                    catch (Exception ex)
                     {
-                        var userDataJson = Preferences.Get("UserData", string.Empty);
-                        if (!string.IsNullOrEmpty(userDataJson))
-                        {
-                            try
-                            {
-                                var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
-                                if (storedUser != null)
-                                {
-                                    App.CurrentUser = storedUser;
-                                }
-                            }
-                            catch { }
-                        }
+                        Console.WriteLine($"LoadVehiclesAsync: Error restoring user from Preferences: {ex.Message}");
                     }
                 }
             }
             else
             {
-                // Not logged in, use stored data if available
-                if (App.CurrentUser == null)
+                // Log what we have in App.CurrentUser
+                Console.WriteLine($"LoadVehiclesAsync: Using App.CurrentUser, VehiclesCount={App.CurrentUser.Vehicles?.Count ?? 0}");
+                if (App.CurrentUser.Vehicles != null)
                 {
-                    var userDataJson = Preferences.Get("UserData", string.Empty);
-                    if (!string.IsNullOrEmpty(userDataJson))
+                    foreach (var v in App.CurrentUser.Vehicles)
                     {
-                        try
+                        if (v.MileageRecord != null)
                         {
-                            var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
-                            if (storedUser != null)
-                            {
-                                App.CurrentUser = storedUser;
-                            }
+                            Console.WriteLine($"LoadVehiclesAsync: App.CurrentUser vehicle {v.VehicleId} has MileageRecord - MileageId={v.MileageRecord.MileageId}, StartMiles={v.MileageRecord.StartMiles}, EndingMiles={v.MileageRecord.EndingMiles}");
                         }
-                        catch { }
+                        else
+                        {
+                            Console.WriteLine($"LoadVehiclesAsync: App.CurrentUser vehicle {v.VehicleId} has NO MileageRecord");
+                        }
                     }
                 }
             }
@@ -253,10 +201,22 @@ public partial class VehicleViewModel : BaseViewModel
                         Vehicles.Add(v);
                     }
                     
+                    // Set Vehicle property and explicitly notify of changes
                     Vehicle = selectedVehicle;
+                    OnPropertyChanged(nameof(Vehicle));
+                    if (Vehicle?.MileageRecord != null)
+                    {
+                        // Force property change notification for nested properties
+                        OnPropertyChanged(nameof(Vehicle.MileageRecord));
+                        OnPropertyChanged(nameof(Vehicle.MileageRecord.StartMiles));
+                        OnPropertyChanged(nameof(Vehicle.MileageRecord.EndingMiles));
+                    }
+                    
                     NoVehicleMessageVisible = Vehicle == null;
                     IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                     IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
+                    
+                    Console.WriteLine($"LoadVehiclesAsync: Set Vehicle property, VehicleId={Vehicle?.VehicleId}, HasMileageRecord={Vehicle?.MileageRecord != null}, StartMiles={Vehicle?.MileageRecord?.StartMiles}");
                 });
             }
             else
