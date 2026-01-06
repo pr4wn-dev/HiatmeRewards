@@ -54,6 +54,14 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
                 return;
             }
 
+            // Check if ending miles are already set
+            if (vehicle.MileageRecord.EndingMiles != null)
+            {
+                await ShowAlertAsync("Finish Day", "Ending mileage has already been submitted for this vehicle.");
+                await Shell.Current.GoToAsync("//Home");
+                return;
+            }
+
             _vehicleId = vehicle.VehicleId;
             _startingMiles = vehicle.MileageRecord.StartMiles;
         }
@@ -79,18 +87,30 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
                 return;
             }
 
+            // Check if ending miles are already set - refresh vehicle data first
+            var user = App.CurrentUser;
+            var vehicle = user?.Vehicles?.FirstOrDefault(v => v.VehicleId == _vehicleId.Value);
+            
+            if (vehicle?.MileageRecord?.EndingMiles != null)
+            {
+                await ShowAlertAsync("Finish Day", "Ending mileage has already been submitted for this vehicle.");
+                return;
+            }
+
             IsBusy = true;
 
             var promptResult = await ShowPromptAsync("Ending Mileage", "Enter the ending mileage for your vehicle:");
 
             if (string.IsNullOrWhiteSpace(promptResult) || !double.TryParse(promptResult, out double endingMiles))
             {
+                IsBusy = false;
                 await ShowAlertAsync("Finish Day", "Please enter a valid number.");
                 return;
             }
 
             if (endingMiles <= _startingMiles.Value)
             {
+                IsBusy = false;
                 await ShowAlertAsync("Finish Day", "Ending mileage must be greater than the starting mileage.");
                 return;
             }
@@ -99,6 +119,7 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
 
             if (!success)
             {
+                IsBusy = false;
                 await ShowAlertAsync("Finish Day", message);
                 return;
             }
