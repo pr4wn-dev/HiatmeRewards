@@ -314,13 +314,31 @@ namespace HiatMeApp.Services
                         UserId = result.UserId,
                         Vehicles = result.Vehicles
                     };
+                    
+                    // Log vehicle details including mileage records for debugging
+                    if (user.Vehicles != null)
+                    {
+                        foreach (var vehicle in user.Vehicles)
+                        {
+                            if (vehicle.MileageRecord != null)
+                            {
+                                Console.WriteLine($"ValidateSessionAsync: Vehicle {vehicle.VehicleId} has MileageRecord - MileageId={vehicle.MileageRecord.MileageId}, StartMiles={vehicle.MileageRecord.StartMiles}, EndingMiles={vehicle.MileageRecord.EndingMiles}");
+                                LogMessage($"ValidateSessionAsync: Vehicle {vehicle.VehicleId} has MileageRecord - MileageId={vehicle.MileageRecord.MileageId}, StartMiles={vehicle.MileageRecord.StartMiles}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"ValidateSessionAsync: Vehicle {vehicle.VehicleId} has NO MileageRecord");
+                            }
+                        }
+                    }
+                    
                     App.CurrentUser = user;
                     // Update stored user data with fresh data from server
                     Preferences.Set("UserData", JsonConvert.SerializeObject(user));
                     Preferences.Set("UserEmail", user.Email ?? string.Empty);
                     Preferences.Set("UserRole", user.Role ?? string.Empty);
                     Console.WriteLine($"ValidateSessionAsync: Session valid, restored user from server Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
-                    LogMessage($"ValidateSessionAsync: Session validated successfully, Email={user.Email}, Role={user.Role}");
+                    LogMessage($"ValidateSessionAsync: Session validated successfully, Email={user.Email}, Role={user.Role}, VehiclesCount={user.Vehicles?.Count ?? 0}");
                     return (true, user, "Session is valid");
                 }
                 else

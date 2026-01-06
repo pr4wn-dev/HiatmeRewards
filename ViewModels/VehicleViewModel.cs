@@ -121,14 +121,35 @@ public partial class VehicleViewModel : BaseViewModel
                 var userDataJson = Preferences.Get("UserData", string.Empty);
                 if (!string.IsNullOrEmpty(userDataJson))
                 {
-                    var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
-                    if (storedUser != null)
+                    try
                     {
-                        App.CurrentUser = storedUser;
+                        var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                        if (storedUser != null)
+                        {
+                            App.CurrentUser = storedUser;
+                            Console.WriteLine($"LoadVehiclesAsync: Restored user from Preferences, VehiclesCount={storedUser.Vehicles?.Count ?? 0}");
+                            // Log mileage records from restored data
+                            if (storedUser.Vehicles != null)
+                            {
+                                foreach (var v in storedUser.Vehicles)
+                                {
+                                    if (v.MileageRecord != null)
+                                    {
+                                        Console.WriteLine($"LoadVehiclesAsync: Restored vehicle {v.VehicleId} has MileageRecord - StartMiles={v.MileageRecord.StartMiles}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"LoadVehiclesAsync: Error restoring user from Preferences: {ex.Message}");
                     }
                 }
             }
             
+            // Always use App.CurrentUser (which should have fresh data from ValidateSessionAsync)
+            // Don't reload from Preferences if App.CurrentUser is already set
             if (App.CurrentUser?.Vehicles != null && App.CurrentUser.UserId > 0)
             {
                 var vehiclesList = App.CurrentUser.Vehicles.Where(v => v != null).ToList();
@@ -137,6 +158,20 @@ public partial class VehicleViewModel : BaseViewModel
                     .Where(v => v.CurrentUserId == userId)
                     .OrderByDescending(v => DateTime.TryParse(v.DateAssigned, out var date) ? date : DateTime.MinValue)
                     .FirstOrDefault();
+
+                // Log vehicle and mileage record details for debugging
+                if (selectedVehicle != null)
+                {
+                    Console.WriteLine($"LoadVehiclesAsync: Selected vehicle VehicleId={selectedVehicle.VehicleId}, VIN ending={selectedVehicle.LastSixVin}");
+                    if (selectedVehicle.MileageRecord != null)
+                    {
+                        Console.WriteLine($"LoadVehiclesAsync: Vehicle has MileageRecord - MileageId={selectedVehicle.MileageRecord.MileageId}, StartMiles={selectedVehicle.MileageRecord.StartMiles}, EndingMiles={selectedVehicle.MileageRecord.EndingMiles}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"LoadVehiclesAsync: Vehicle has NO MileageRecord");
+                    }
+                }
 
                 // Update UI on main thread
                 await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
