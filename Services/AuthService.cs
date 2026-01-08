@@ -26,6 +26,9 @@ namespace HiatMeApp.Services
         private readonly AsyncRetryPolicy<(bool, List<VehicleIssue>?, string)> _vehicleIssuesRetryPolicy;
         private readonly AsyncRetryPolicy<(bool, Models.User?, string)> _updateProfileRetryPolicy;
         private readonly AsyncRetryPolicy<(bool, string)> _dayOffRequestRetryPolicy;
+        private static bool _isHandlingLoggedInElsewhere = false;
+        private static bool _isCheckingLoggedInElsewhere = false;
+        private static readonly object _loggedInElsewhereLock = new object();
 
         public AuthService(HttpClient httpClient)
         {
@@ -253,9 +256,26 @@ namespace HiatMeApp.Services
         /// <summary>
         /// Checks with the server to see if the user logged in elsewhere when we get a token error
         /// Returns true if logged in elsewhere, false if normal token error
+        /// Uses a static flag to prevent multiple simultaneous server checks
         /// </summary>
         private async Task<bool> CheckLoggedInElsewhereWithServerAsync(string errorMessage)
         {
+            // Check if we're already handling logged in elsewhere or checking with server
+            lock (_loggedInElsewhereLock)
+            {
+                if (_isHandlingLoggedInElsewhere)
+                {
+                    LogMessage("CheckLoggedInElsewhereWithServerAsync: Already handling logged in elsewhere, skipping check");
+                    return true; // Already being handled, return true to prevent other error handling
+                }
+                if (_isCheckingLoggedInElsewhere)
+                {
+                    LogMessage("CheckLoggedInElsewhereWithServerAsync: Already checking with server, skipping duplicate check");
+                    return false; // Let the existing check complete
+                }
+                _isCheckingLoggedInElsewhere = true;
+            }
+            
             try
             {
                 LogMessage($"CheckLoggedInElsewhereWithServerAsync: Token error detected, validating session with server to check for logged in elsewhere. Error: {errorMessage}");
@@ -269,7 +289,7 @@ namespace HiatMeApp.Services
                 {
                     LogMessage($"CheckLoggedInElsewhereWithServerAsync: Server confirmed user logged in elsewhere");
                     string actualMessage = message.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                    _ = HandleLoggedInElsewhereAsync(actualMessage);
+                    await HandleLoggedInElsewhereAsync(actualMessage);
                     return true;
                 }
                 
@@ -291,13 +311,33 @@ namespace HiatMeApp.Services
                 // If we can't check with server, don't treat as logged in elsewhere
                 return false;
             }
+            finally
+            {
+                lock (_loggedInElsewhereLock)
+                {
+                    _isCheckingLoggedInElsewhere = false;
+                }
+            }
         }
 
         /// <summary>
         /// Handles logout due to another device logging in - shows popup and navigates to login
+        /// Uses a static flag to prevent multiple simultaneous popups
         /// </summary>
         private async Task HandleLoggedInElsewhereAsync(string message)
         {
+            // Check if we're already handling this - prevent multiple popups
+            lock (_loggedInElsewhereLock)
+            {
+                if (_isHandlingLoggedInElsewhere)
+                {
+                    LogMessage("HandleLoggedInElsewhereAsync: Already handling logged in elsewhere, skipping duplicate call");
+                    Console.WriteLine("HandleLoggedInElsewhereAsync: Already handling, skipping duplicate");
+                    return;
+                }
+                _isHandlingLoggedInElsewhere = true;
+            }
+            
             try
             {
                 LogMessage($"HandleLoggedInElsewhereAsync: User logged in elsewhere, clearing session and showing popup");
@@ -344,6 +384,18 @@ namespace HiatMeApp.Services
             {
                 Console.WriteLine($"HandleLoggedInElsewhereAsync: Error: {ex.Message}");
                 LogMessage($"HandleLoggedInElsewhereAsync: Error: {ex.Message}");
+            }
+            finally
+            {
+                // Reset flag after a delay to allow popup to be shown and dismissed
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(5000); // Wait 5 seconds before allowing another call
+                    lock (_loggedInElsewhereLock)
+                    {
+                        _isHandlingLoggedInElsewhere = false;
+                    }
+                });
             }
         }
 
