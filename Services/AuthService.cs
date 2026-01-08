@@ -249,6 +249,49 @@ namespace HiatMeApp.Services
                 Console.WriteLine($"RecordSuccessfulApiCall: Error recording timestamp: {ex.Message}");
             }
         }
+        
+        /// <summary>
+        /// Checks with the server to see if the user logged in elsewhere when we get a token error
+        /// Returns true if logged in elsewhere, false if normal token error
+        /// </summary>
+        private async Task<bool> CheckLoggedInElsewhereWithServerAsync(string errorMessage)
+        {
+            try
+            {
+                LogMessage($"CheckLoggedInElsewhereWithServerAsync: Token error detected, validating session with server to check for logged in elsewhere. Error: {errorMessage}");
+                Console.WriteLine($"CheckLoggedInElsewhereWithServerAsync: Validating session to check for logged in elsewhere");
+                
+                // Always check with server first before showing token error popups
+                var (sessionValid, user, message) = await ValidateSessionAsync();
+                
+                // If session validation returns "LOGGED_IN_ELSEWHERE", handle it
+                if (message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogMessage($"CheckLoggedInElsewhereWithServerAsync: Server confirmed user logged in elsewhere");
+                    string actualMessage = message.Substring("LOGGED_IN_ELSEWHERE:".Length);
+                    _ = HandleLoggedInElsewhereAsync(actualMessage);
+                    return true;
+                }
+                
+                // If session is valid, the error was something else (not a token issue)
+                if (sessionValid && user != null)
+                {
+                    LogMessage($"CheckLoggedInElsewhereWithServerAsync: Session is valid, error was not due to token issue");
+                    return false;
+                }
+                
+                // Session invalid but not due to logged in elsewhere - normal expiration
+                LogMessage($"CheckLoggedInElsewhereWithServerAsync: Session invalid but not logged in elsewhere: {message}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"CheckLoggedInElsewhereWithServerAsync: Error checking with server: {ex.Message}");
+                Console.WriteLine($"CheckLoggedInElsewhereWithServerAsync: Error: {ex.Message}");
+                // If we can't check with server, don't treat as logged in elsewhere
+                return false;
+            }
+        }
 
         /// <summary>
         /// Handles logout due to another device logging in - shows popup and navigates to login
@@ -1375,22 +1418,39 @@ namespace HiatMeApp.Services
                         return (false, null, "Invalid response format from server.");
                     }
 
-                    // Check for CSRF token error and retry, or logged in elsewhere
+                    // Check for errors - always check with server first for token errors
                     if (!result.Success)
                     {
                         string errorMsg = result.Message ?? "Unknown error";
                         string lowerError = errorMsg.ToLowerInvariant();
                         
-                        // Check if logged in elsewhere first (before CSRF retry)
-                        if (IsLoggedInElsewhere(errorMsg) || errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        // If server explicitly says logged in elsewhere, handle it
+                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                         {
-                            string actualMessage = errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) 
-                                ? errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length) 
-                                : "Session ended. You have been logged out because someone logged into your account from another device or browser.";
-                            
-                            LogMessage($"GetVehicleIssuesAsync: Detected logged in elsewhere: {errorMsg}");
+                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
+                            LogMessage($"GetVehicleIssuesAsync: Server reported logged in elsewhere");
                             _ = HandleLoggedInElsewhereAsync(actualMessage);
                             return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
+                        
+                        // If it's a token/auth error, check with server first before showing error popup
+                        bool isTokenError = lowerError.Contains("invalid token") || 
+                                          lowerError.Contains("expired") || 
+                                          lowerError.Contains("unauthorized") || 
+                                          lowerError.Contains("forbidden") ||
+                                          lowerError.Contains("invalid csrf") ||
+                                          lowerError.Contains("authentication token") ||
+                                          lowerError.Contains("unverified user");
+                        
+                        if (isTokenError)
+                        {
+                            LogMessage($"GetVehicleIssuesAsync: Token/auth error detected, checking with server first");
+                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
+                            if (loggedInElsewhere)
+                            {
+                                // HandleLoggedInElsewhereAsync already called in CheckLoggedInElsewhereWithServerAsync
+                                return (false, null, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
+                            }
                         }
                         
                         // If CSRF token error, try fetching a new token and retrying once
@@ -1423,6 +1483,14 @@ namespace HiatMeApp.Services
                                 }
                                 else
                                 {
+                                    // Check again for logged in elsewhere on retry failure
+                                    if (retryResult != null && retryResult.Message?.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) == true)
+                                    {
+                                        string actualMessage = retryResult.Message.Substring("LOGGED_IN_ELSEWHERE:".Length);
+                                        _ = HandleLoggedInElsewhereAsync(actualMessage);
+                                        return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                                    }
+                                    
                                     LogMessage($"GetVehicleIssuesAsync: Retry also failed: {retryResult?.Message ?? "Unknown error"}");
                                     return (false, null, retryResult?.Message ?? "Failed to fetch issues after retry.");
                                 }
@@ -1432,15 +1500,6 @@ namespace HiatMeApp.Services
                                 LogMessage("GetVehicleIssuesAsync: Failed to fetch new CSRF token for retry");
                                 return (false, null, "Failed to retrieve session token. Please try again.");
                             }
-                        }
-                        
-                        // Check if it's an authentication error - IsLoggedInElsewhere handles the timestamp check
-                        if (IsLoggedInElsewhere(errorMsg))
-                        {
-                            string actualMessage = "Session ended. You have been logged out because someone logged into your account from another device or browser.";
-                            LogMessage($"GetVehicleIssuesAsync: Detected logged in elsewhere via IsLoggedInElsewhere check");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
                         }
                     }
 
@@ -1562,22 +1621,39 @@ namespace HiatMeApp.Services
                         return (false, "Invalid response format from server.");
                     }
 
-                    // Check for CSRF token error and retry, or logged in elsewhere
+                    // Check for errors - always check with server first for token errors
                     if (!result.Success)
                     {
                         string errorMsg = result.Message ?? "Unknown error";
                         string lowerError = errorMsg.ToLowerInvariant();
                         
-                        // Check if logged in elsewhere first (before CSRF retry)
-                        if (IsLoggedInElsewhere(errorMsg) || errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        // If server explicitly says logged in elsewhere, handle it
+                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                         {
-                            string actualMessage = errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) 
-                                ? errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length) 
-                                : "Session ended. You have been logged out because someone logged into your account from another device or browser.";
-                            
-                            LogMessage($"AddVehicleIssueAsync: Detected logged in elsewhere: {errorMsg}");
+                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
+                            LogMessage($"AddVehicleIssueAsync: Server reported logged in elsewhere");
                             _ = HandleLoggedInElsewhereAsync(actualMessage);
                             return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
+                        
+                        // If it's a token/auth error, check with server first before showing error popup
+                        bool isTokenError = lowerError.Contains("invalid token") || 
+                                          lowerError.Contains("expired") || 
+                                          lowerError.Contains("unauthorized") || 
+                                          lowerError.Contains("forbidden") ||
+                                          lowerError.Contains("invalid csrf") ||
+                                          lowerError.Contains("authentication token") ||
+                                          lowerError.Contains("unverified user");
+                        
+                        if (isTokenError)
+                        {
+                            LogMessage($"AddVehicleIssueAsync: Token/auth error detected, checking with server first");
+                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
+                            if (loggedInElsewhere)
+                            {
+                                // HandleLoggedInElsewhereAsync already called in CheckLoggedInElsewhereWithServerAsync
+                                return (false, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
+                            }
                         }
                         
                         // If CSRF token error, try fetching a new token and retrying once
@@ -1610,6 +1686,14 @@ namespace HiatMeApp.Services
                                 }
                                 else
                                 {
+                                    // Check again for logged in elsewhere on retry failure
+                                    if (retryResult != null && retryResult.Message?.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) == true)
+                                    {
+                                        string actualMessage = retryResult.Message.Substring("LOGGED_IN_ELSEWHERE:".Length);
+                                        _ = HandleLoggedInElsewhereAsync(actualMessage);
+                                        return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                                    }
+                                    
                                     LogMessage($"AddVehicleIssueAsync: Retry also failed: {retryResult?.Message ?? "Unknown error"}");
                                     return (false, retryResult?.Message ?? "Failed to add issue after retry.");
                                 }
@@ -1619,15 +1703,6 @@ namespace HiatMeApp.Services
                                 LogMessage("AddVehicleIssueAsync: Failed to fetch new CSRF token for retry");
                                 return (false, "Failed to retrieve session token. Please try again.");
                             }
-                        }
-                        
-                        // Check if it's an authentication error - IsLoggedInElsewhere handles the timestamp check
-                        if (IsLoggedInElsewhere(errorMsg))
-                        {
-                            string actualMessage = "Session ended. You have been logged out because someone logged into your account from another device or browser.";
-                            LogMessage($"AddVehicleIssueAsync: Detected logged in elsewhere via IsLoggedInElsewhere check");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
                         }
                     }
 
