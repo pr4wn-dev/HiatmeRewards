@@ -15,7 +15,7 @@
     <Grid RowDefinitions="Auto,*,Auto">
         <local:TopBar Grid.Row="0" />
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="18">
+            <VerticalStackLayout Padding="20" Spacing="12">
                 <Label Text="Update Profile" 
                        FontSize="26" 
                        HorizontalOptions="Center" 
@@ -25,12 +25,12 @@
                 <BoxView HeightRequest="2"
                          BackgroundColor="#007BFF"
                          HorizontalOptions="FillAndExpand"
-                         Margin="0,0,0,20" />
+                         Margin="0,0,0,12" />
                 
                 <!-- Profile Picture -->
-                <VerticalStackLayout Spacing="12"
+                <VerticalStackLayout Spacing="8"
                                      HorizontalOptions="Center"
-                                     Margin="0,0,0,20">
+                                     Margin="0,0,0,12">
                     <Image x:Name="ProfileImage"
                            HeightRequest="120" 
                            WidthRequest="120"
@@ -51,8 +51,8 @@
                        BorderColor="#333333" 
                        BackgroundColor="#333333"
                        CornerRadius="8">
-                    <VerticalStackLayout Spacing="15">
-                        <VerticalStackLayout Spacing="8">
+                    <VerticalStackLayout Spacing="12">
+                        <VerticalStackLayout Spacing="6">
                             <Label Text="Full Name" 
                                    FontSize="18" 
                                    FontAttributes="Bold"
@@ -67,7 +67,7 @@
                                                        IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
-                        <VerticalStackLayout Spacing="8">
+                        <VerticalStackLayout Spacing="6">
                             <Label Text="Email" 
                                    FontSize="18" 
                                    FontAttributes="Bold"
@@ -83,7 +83,7 @@
                                                        IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
-                        <VerticalStackLayout Spacing="8">
+                        <VerticalStackLayout Spacing="6">
                             <Label Text="Phone Number" 
                                    FontSize="18" 
                                    FontAttributes="Bold"
@@ -99,7 +99,7 @@
                                                        IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
-                        <VerticalStackLayout Spacing="8">
+                        <VerticalStackLayout Spacing="6">
                             <Label Text="Role" 
                                    FontSize="18" 
                                    FontAttributes="Bold"
@@ -112,7 +112,7 @@
                 </Frame>
                 
                 <!-- Action Buttons -->
-                <VerticalStackLayout Spacing="12" Margin="0,25,0,0">
+                <VerticalStackLayout Spacing="12" Margin="0,15,0,0">
                     <Button Text="Edit" 
                             FontSize="18"
                             Command="{Binding StartEditingCommand}"
