@@ -30,7 +30,7 @@
                 <!-- Profile Picture -->
                 <VerticalStackLayout Spacing="8"
                                      HorizontalOptions="Center"
-                                     Margin="0,0,0,12">
+                                     Margin="0,0,0,6">
                     <Image x:Name="ProfileImage"
                            HeightRequest="120" 
                            WidthRequest="120"
@@ -43,14 +43,16 @@
                             BackgroundColor="Transparent"
                             TextColor="#007BFF"
                             HorizontalOptions="Center"
-                            Padding="15,8" />
+                            Padding="15,4"
+                            Margin="0,0,0,0" />
                 </VerticalStackLayout>
                 
                 <!-- User Information -->
-                <Frame Padding="18" 
+                <Frame Padding="18,12,18,18" 
                        BorderColor="#333333" 
                        BackgroundColor="#333333"
-                       CornerRadius="8">
+                       CornerRadius="8"
+                       Margin="0,0,0,0">
                     <VerticalStackLayout Spacing="12">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Full Name" 
