@@ -48,7 +48,7 @@
                 
                 <!-- User Information -->
                 <Frame Padding="18" 
-                       BorderColor="#666" 
+                       BorderColor="#333333" 
                        BackgroundColor="#333333"
                        CornerRadius="8">
                     <VerticalStackLayout Spacing="15">
