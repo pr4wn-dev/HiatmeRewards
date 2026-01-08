@@ -331,10 +331,31 @@ namespace HiatMeApp.Services
             try
             {
                 // Validate session using the validate_session endpoint
+                // Include email if available to help server detect "logged in elsewhere"
+                var userDataJson = Preferences.Get("UserData", string.Empty);
+                string? userEmail = null;
+                if (!string.IsNullOrEmpty(userDataJson))
+                {
+                    try
+                    {
+                        var storedUser = JsonConvert.DeserializeObject<Models.User>(userDataJson);
+                        userEmail = storedUser?.Email;
+                    }
+                    catch { }
+                }
+                
                 var data = new Dictionary<string, string>
                 {
                     { "action", "validate_session" }
                 };
+                
+                // Include email to help server detect if logged in elsewhere
+                if (!string.IsNullOrEmpty(userEmail))
+                {
+                    data.Add("email", userEmail);
+                    LogMessage($"ValidateSessionAsync: Including email in request to help detect logged in elsewhere: {userEmail}");
+                }
+                
                 var content = new FormUrlEncodedContent(data);
                 
                 // Ensure Content-Type is set (FormUrlEncodedContent should do this automatically, but be explicit)
