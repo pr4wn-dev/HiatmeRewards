@@ -1095,16 +1095,32 @@ namespace HiatMeApp.Services
         public async Task<(bool Success, List<VehicleIssue>? Issues, string Message)> GetVehicleIssuesAsync(int vehicleId)
         {
             Console.WriteLine($"GetVehicleIssuesAsync: Starting for vehicle_id={vehicleId}");
-            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            LogMessage($"GetVehicleIssuesAsync: Starting for vehicle_id={vehicleId}");
+            
+            // Use stored token from Preferences (from last successful response)
+            var storedToken = Preferences.Get("CSRFToken", null);
+            if (!string.IsNullOrEmpty(storedToken))
             {
-                Console.WriteLine("GetVehicleIssuesAsync: Failed to retrieve CSRF token.");
-                return (false, null, "Failed to retrieve session token.");
+                _csrfToken = storedToken;
+                LogMessage($"GetVehicleIssuesAsync: Using CSRF token from last response (Preferences): {_csrfToken}");
+            }
+            else if (string.IsNullOrEmpty(_csrfToken))
+            {
+                // Only fetch if we have NO token at all
+                LogMessage("GetVehicleIssuesAsync: No token found, fetching fresh CSRF token");
+                if (!await FetchCSRFTokenAsync())
+                {
+                    Console.WriteLine("GetVehicleIssuesAsync: Failed to retrieve CSRF token.");
+                    LogMessage("GetVehicleIssuesAsync: Failed to retrieve CSRF token.");
+                    return (false, null, "Failed to retrieve session token.");
+                }
             }
 
             var authToken = Preferences.Get("AuthToken", null);
             if (string.IsNullOrEmpty(authToken))
             {
                 Console.WriteLine("GetVehicleIssuesAsync: No auth_token found in Preferences.");
+                LogMessage("GetVehicleIssuesAsync: No auth_token found in Preferences.");
                 return (false, null, "No authentication token available. Please log in again.");
             }
 
@@ -1126,20 +1142,19 @@ namespace HiatMeApp.Services
                 return await _vehicleIssuesRetryPolicy.ExecuteAsync(async () =>
                 {
                     Console.WriteLine($"GetVehicleIssuesAsync: Sending POST request with CSRF={_csrfToken}, vehicle_id={vehicleId}, auth_token={authToken}");
+                    LogMessage($"GetVehicleIssuesAsync: Sending POST request with CSRF token present={!string.IsNullOrEmpty(_csrfToken)}, vehicle_id={vehicleId}");
                     var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
                     Console.WriteLine($"GetVehicleIssuesAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
-                    Console.WriteLine("GetVehicleIssuesAsync: Response headers:");
-                    foreach (var header in response.Headers)
-                    {
-                        Console.WriteLine($"GetVehicleIssuesAsync: {header.Key}: {string.Join(", ", header.Value)}");
-                    }
+                    LogMessage($"GetVehicleIssuesAsync: StatusCode={response.StatusCode}");
 
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"GetVehicleIssuesAsync response: {json}");
+                    LogMessage($"GetVehicleIssuesAsync: Response JSON={json}");
 
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("GetVehicleIssuesAsync: Empty response received.");
+                        LogMessage("GetVehicleIssuesAsync: Empty response received.");
                         return (false, null, "Empty response from server.");
                     }
 
@@ -1147,7 +1162,56 @@ namespace HiatMeApp.Services
                     if (result == null)
                     {
                         Console.WriteLine("GetVehicleIssuesAsync: Deserialized response is null.");
+                        LogMessage("GetVehicleIssuesAsync: Deserialized response is null.");
                         return (false, null, "Invalid response format from server.");
+                    }
+
+                    // Check for CSRF token error and retry
+                    if (!result.Success)
+                    {
+                        string errorMsg = result.Message ?? "Unknown error";
+                        string lowerError = errorMsg.ToLowerInvariant();
+                        
+                        // If CSRF token error, try fetching a new token and retrying once
+                        if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
+                        {
+                            LogMessage($"GetVehicleIssuesAsync: CSRF token error detected: {errorMsg}, fetching new token and retrying");
+                            if (await FetchCSRFTokenAsync())
+                            {
+                                LogMessage($"GetVehicleIssuesAsync: Fetched new CSRF token={_csrfToken}, retrying");
+                                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                                _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                                
+                                var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                                var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                                LogMessage($"GetVehicleIssuesAsync: Retry response StatusCode={retryResponse.StatusCode}, JSON={retryJson}");
+                                
+                                var retryResult = await Task.Run(() => JsonConvert.DeserializeObject<VehicleIssuesResponse>(retryJson));
+                                
+                                if (retryResult?.Success == true)
+                                {
+                                    // Update token from retry response
+                                    if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                    {
+                                        _csrfToken = retryResult.CsrfToken;
+                                        Preferences.Set("CSRFToken", _csrfToken);
+                                        LogMessage($"GetVehicleIssuesAsync: Updated CSRF token from retry: {_csrfToken}");
+                                    }
+                                    Console.WriteLine($"GetVehicleIssuesAsync: Successfully fetched {retryResult.Issues?.Count ?? 0} issues after retry");
+                                    return (true, retryResult.Issues, "Issues fetched successfully.");
+                                }
+                                else
+                                {
+                                    LogMessage($"GetVehicleIssuesAsync: Retry also failed: {retryResult?.Message ?? "Unknown error"}");
+                                    return (false, null, retryResult?.Message ?? "Failed to fetch issues after retry.");
+                                }
+                            }
+                            else
+                            {
+                                LogMessage("GetVehicleIssuesAsync: Failed to fetch new CSRF token for retry");
+                                return (false, null, "Failed to retrieve session token. Please try again.");
+                            }
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
@@ -1161,11 +1225,13 @@ namespace HiatMeApp.Services
                     if (result.Success)
                     {
                         Console.WriteLine($"GetVehicleIssuesAsync: Successfully fetched {result.Issues?.Count ?? 0} issues for vehicle_id={vehicleId}");
+                        LogMessage($"GetVehicleIssuesAsync: Successfully fetched {result.Issues?.Count ?? 0} issues");
                         return (true, result.Issues, "Issues fetched successfully.");
                     }
                     else
                     {
                         Console.WriteLine($"GetVehicleIssuesAsync failed: {result.Message ?? "Unknown error"}");
+                        LogMessage($"GetVehicleIssuesAsync failed: {result.Message ?? "Unknown error"}");
                         return (false, null, result.Message ?? "Failed to fetch issues.");
                     }
                 });
@@ -1173,11 +1239,13 @@ namespace HiatMeApp.Services
             catch (HttpRequestException ex)
             {
                 Console.WriteLine($"GetVehicleIssuesAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                LogMessage($"GetVehicleIssuesAsync: HTTP error: {ex.Message}");
                 return (false, null, $"Network error: {ex.Message}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"GetVehicleIssuesAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                LogMessage($"GetVehicleIssuesAsync: Unexpected error: {ex.Message}");
                 return (false, null, $"An error occurred: {ex.Message}");
             }
         }
@@ -1185,16 +1253,32 @@ namespace HiatMeApp.Services
         public async Task<(bool Success, string Message)> AddVehicleIssueAsync(int vehicleId, string issueType, string? description)
         {
             Console.WriteLine($"AddVehicleIssueAsync: Starting for vehicle_id={vehicleId}, issue_type={issueType}");
-            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            LogMessage($"AddVehicleIssueAsync: Starting for vehicle_id={vehicleId}, issue_type={issueType}");
+            
+            // Use stored token from Preferences (from last successful response)
+            var storedToken = Preferences.Get("CSRFToken", null);
+            if (!string.IsNullOrEmpty(storedToken))
             {
-                Console.WriteLine("AddVehicleIssueAsync: Failed to retrieve CSRF token.");
-                return (false, "Failed to retrieve session token.");
+                _csrfToken = storedToken;
+                LogMessage($"AddVehicleIssueAsync: Using CSRF token from last response (Preferences): {_csrfToken}");
+            }
+            else if (string.IsNullOrEmpty(_csrfToken))
+            {
+                // Only fetch if we have NO token at all
+                LogMessage("AddVehicleIssueAsync: No token found, fetching fresh CSRF token");
+                if (!await FetchCSRFTokenAsync())
+                {
+                    Console.WriteLine("AddVehicleIssueAsync: Failed to retrieve CSRF token.");
+                    LogMessage("AddVehicleIssueAsync: Failed to retrieve CSRF token.");
+                    return (false, "Failed to retrieve session token.");
+                }
             }
 
             var authToken = Preferences.Get("AuthToken", null);
             if (string.IsNullOrEmpty(authToken))
             {
                 Console.WriteLine("AddVehicleIssueAsync: No auth_token found in Preferences.");
+                LogMessage("AddVehicleIssueAsync: No auth_token found in Preferences.");
                 return (false, "No authentication token available. Please log in again.");
             }
 
@@ -1221,20 +1305,19 @@ namespace HiatMeApp.Services
                 return await _genericRetryPolicy.ExecuteAsync(async () =>
                 {
                     Console.WriteLine($"AddVehicleIssueAsync: Sending POST request with CSRF={_csrfToken}, vehicle_id={vehicleId}, issue_type={issueType}, auth_token={authToken}");
+                    LogMessage($"AddVehicleIssueAsync: Sending POST request with CSRF token present={!string.IsNullOrEmpty(_csrfToken)}, vehicle_id={vehicleId}");
                     var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
                     Console.WriteLine($"AddVehicleIssueAsync: StatusCode={response.StatusCode}, Reason={response.ReasonPhrase}");
-                    Console.WriteLine("AddVehicleIssueAsync: Response headers:");
-                    foreach (var header in response.Headers)
-                    {
-                        Console.WriteLine($"AddVehicleIssueAsync: {header.Key}: {string.Join(", ", header.Value)}");
-                    }
+                    LogMessage($"AddVehicleIssueAsync: StatusCode={response.StatusCode}");
 
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"AddVehicleIssueAsync response: {json}");
+                    LogMessage($"AddVehicleIssueAsync: Response JSON={json}");
 
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("AddVehicleIssueAsync: Empty response received.");
+                        LogMessage("AddVehicleIssueAsync: Empty response received.");
                         return (false, "Empty response from server.");
                     }
 
@@ -1242,7 +1325,56 @@ namespace HiatMeApp.Services
                     if (result == null)
                     {
                         Console.WriteLine("AddVehicleIssueAsync: Deserialized response is null.");
+                        LogMessage("AddVehicleIssueAsync: Deserialized response is null.");
                         return (false, "Invalid response format from server.");
+                    }
+
+                    // Check for CSRF token error and retry
+                    if (!result.Success)
+                    {
+                        string errorMsg = result.Message ?? "Unknown error";
+                        string lowerError = errorMsg.ToLowerInvariant();
+                        
+                        // If CSRF token error, try fetching a new token and retrying once
+                        if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
+                        {
+                            LogMessage($"AddVehicleIssueAsync: CSRF token error detected: {errorMsg}, fetching new token and retrying");
+                            if (await FetchCSRFTokenAsync())
+                            {
+                                LogMessage($"AddVehicleIssueAsync: Fetched new CSRF token={_csrfToken}, retrying");
+                                _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                                _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                                
+                                var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                                var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                                LogMessage($"AddVehicleIssueAsync: Retry response StatusCode={retryResponse.StatusCode}, JSON={retryJson}");
+                                
+                                var retryResult = await Task.Run(() => JsonConvert.DeserializeObject<GenericResponse>(retryJson));
+                                
+                                if (retryResult?.Success == true)
+                                {
+                                    // Update token from retry response
+                                    if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                    {
+                                        _csrfToken = retryResult.CsrfToken;
+                                        Preferences.Set("CSRFToken", _csrfToken);
+                                        LogMessage($"AddVehicleIssueAsync: Updated CSRF token from retry: {_csrfToken}");
+                                    }
+                                    Console.WriteLine($"AddVehicleIssueAsync: Successfully added issue after retry");
+                                    return (true, retryResult.Message ?? "Issue added successfully.");
+                                }
+                                else
+                                {
+                                    LogMessage($"AddVehicleIssueAsync: Retry also failed: {retryResult?.Message ?? "Unknown error"}");
+                                    return (false, retryResult?.Message ?? "Failed to add issue after retry.");
+                                }
+                            }
+                            else
+                            {
+                                LogMessage("AddVehicleIssueAsync: Failed to fetch new CSRF token for retry");
+                                return (false, "Failed to retrieve session token. Please try again.");
+                            }
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
@@ -1256,11 +1388,13 @@ namespace HiatMeApp.Services
                     if (result.Success)
                     {
                         Console.WriteLine($"AddVehicleIssueAsync: Successfully added issue for vehicle_id={vehicleId}, issue_type={issueType}");
+                        LogMessage($"AddVehicleIssueAsync: Successfully added issue");
                         return (true, result.Message ?? "Issue added successfully.");
                     }
                     else
                     {
                         Console.WriteLine($"AddVehicleIssueAsync failed: {result.Message ?? "Unknown error"}");
+                        LogMessage($"AddVehicleIssueAsync failed: {result.Message ?? "Unknown error"}");
                         return (false, result.Message ?? "Failed to add issue.");
                     }
                 });
@@ -1268,11 +1402,13 @@ namespace HiatMeApp.Services
             catch (HttpRequestException ex)
             {
                 Console.WriteLine($"AddVehicleIssueAsync: HTTP error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                LogMessage($"AddVehicleIssueAsync: HTTP error: {ex.Message}");
                 return (false, $"Network error: {ex.Message}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"AddVehicleIssueAsync: Unexpected error: {ex.Message}, StackTrace: {ex.StackTrace}");
+                LogMessage($"AddVehicleIssueAsync: Unexpected error: {ex.Message}");
                 return (false, $"An error occurred: {ex.Message}");
             }
         }
