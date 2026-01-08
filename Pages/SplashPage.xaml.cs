@@ -73,7 +73,13 @@ public partial class SplashPage : ContentPage
                     // Only treat as expired if it specifically mentions token/session being invalid/expired
                     // "Invalid request" is NOT an expired session - it's a request format/server issue
                     bool isInvalidRequest = lowerMessage.Contains("invalid request") && !lowerMessage.Contains("token");
-                    bool isExpiredOrInvalid = !isInvalidRequest && (
+                    // Check if logged in elsewhere (this takes priority)
+                    bool isLoggedInElsewhere = lowerMessage.Contains("logged_in_elsewhere") || 
+                                               lowerMessage.Contains("logged in elsewhere") ||
+                                               lowerMessage.Contains("another device") ||
+                                               lowerMessage.Contains("another session");
+                    
+                    bool isExpiredOrInvalid = !isInvalidRequest && !isLoggedInElsewhere && (
                                              lowerMessage.Contains("session expired") || 
                                              lowerMessage.Contains("invalid token") ||
                                              (lowerMessage.Contains("expired") && !lowerMessage.Contains("invalid request")) ||
@@ -92,7 +98,20 @@ public partial class SplashPage : ContentPage
                                           lowerMessage.Contains("name resolution") ||
                                           lowerMessage.Contains("server error"))));
                     
-                    if (isExpiredOrInvalid)
+                    if (isLoggedInElsewhere)
+                    {
+                        // User logged in elsewhere - already handled by AuthService with popup
+                        LogMessage($"SplashPage: User logged in elsewhere, clearing login state");
+                        Console.WriteLine($"SplashPage: User logged in elsewhere, clearing login state");
+                        Preferences.Set("IsLoggedIn", false);
+                        Preferences.Remove("AuthToken");
+                        Preferences.Remove("UserData");
+                        Preferences.Remove("CSRFToken");
+                        App.CurrentUser = null;
+                        isLoggedIn = false;
+                        // AuthService already showed popup and navigated, will navigate to login below
+                    }
+                    else if (isExpiredOrInvalid)
                     {
                         // Session is definitely expired/invalid - clear login state
                         LogMessage($"SplashPage: Session expired/invalid: {message}, clearing login state");

@@ -1,4 +1,6 @@
 ﻿using HiatMeApp.Models;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
 using Newtonsoft.Json;
 using Polly;
@@ -6,6 +8,7 @@ using Polly.Retry;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -175,6 +178,132 @@ namespace HiatMeApp.Services
             }
         }
 
+        /// <summary>
+        /// Checks if the error message indicates that user logged in from another device/browser
+        /// Only triggers if session was recently valid (within 10 minutes) to distinguish from normal expiration
+        /// </summary>
+        private bool IsLoggedInElsewhere(string errorMessage)
+        {
+            if (string.IsNullOrEmpty(errorMessage))
+                return false;
+            
+            string lowerError = errorMessage.ToLowerInvariant();
+            
+            // Check for explicit server messages indicating duplicate login
+            if (lowerError.Contains("logged in elsewhere") ||
+                lowerError.Contains("another device") ||
+                lowerError.Contains("another session") ||
+                lowerError.Contains("session terminated") ||
+                lowerError.Contains("new login detected") ||
+                lowerError.Contains("duplicate login") ||
+                lowerError.Contains("logged in on another"))
+            {
+                return true;
+            }
+            
+            // For "invalid token" errors, only treat as "logged in elsewhere" if:
+            // 1. User is currently logged in (IsLoggedIn = true)
+            // 2. Last successful API call was recent (within 10 minutes) - indicates session was valid recently
+            if (lowerError.Contains("invalid token") && Preferences.Get("IsLoggedIn", false))
+            {
+                string lastSuccessTimestamp = Preferences.Get("LastSuccessfulApiCall", null);
+                if (!string.IsNullOrEmpty(lastSuccessTimestamp))
+                {
+                    if (DateTime.TryParse(lastSuccessTimestamp, out DateTime lastSuccess))
+                    {
+                        TimeSpan timeSinceLastSuccess = DateTime.Now - lastSuccess;
+                        // Only treat as "logged in elsewhere" if last success was within 10 minutes
+                        // This distinguishes from normal expiration (which would be hours/days later)
+                        if (timeSinceLastSuccess.TotalMinutes <= 10)
+                        {
+                            LogMessage($"IsLoggedInElsewhere: Invalid token detected but last successful API call was {timeSinceLastSuccess.TotalMinutes:F1} minutes ago - likely logged in elsewhere");
+                            return true;
+                        }
+                        else
+                        {
+                            LogMessage($"IsLoggedInElsewhere: Invalid token detected but last successful API call was {timeSinceLastSuccess.TotalMinutes:F1} minutes ago - likely normal expiration, not logged in elsewhere");
+                            return false;
+                        }
+                    }
+                }
+                // If no timestamp stored, can't determine - err on side of caution, don't trigger
+                LogMessage("IsLoggedInElsewhere: Invalid token but no last success timestamp - cannot determine if logged in elsewhere");
+                return false;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Records the timestamp of a successful API call to track session validity
+        /// </summary>
+        private void RecordSuccessfulApiCall()
+        {
+            try
+            {
+                Preferences.Set("LastSuccessfulApiCall", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                LogMessage($"RecordSuccessfulApiCall: Recorded timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RecordSuccessfulApiCall: Error recording timestamp: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles logout due to another device logging in - shows popup and navigates to login
+        /// </summary>
+        private async Task HandleLoggedInElsewhereAsync(string message)
+        {
+            try
+            {
+                LogMessage($"HandleLoggedInElsewhereAsync: User logged in elsewhere, clearing session and showing popup");
+                Console.WriteLine($"HandleLoggedInElsewhereAsync: User logged in elsewhere, clearing session");
+                
+                // Clear login state
+                Preferences.Set("IsLoggedIn", false);
+                Preferences.Remove("AuthToken");
+                Preferences.Remove("UserData");
+                Preferences.Remove("CSRFToken");
+                Preferences.Remove("LastSuccessfulApiCall"); // Clear timestamp
+                App.CurrentUser = null;
+                _csrfToken = string.Empty;
+                
+                // Show popup on main thread
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    try
+                    {
+                        var page = Application.Current?.MainPage ?? Application.Current?.Windows.FirstOrDefault()?.Page;
+                        if (page != null)
+                        {
+                            await page.DisplayAlert(
+                                "Session Ended",
+                                "You have been logged out because someone logged into your account from another device or browser. Please log in again to continue.",
+                                "OK"
+                            );
+                            
+                            // Navigate to login page
+                            if (Shell.Current != null)
+                            {
+                                await Shell.Current.GoToAsync("//Login");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"HandleLoggedInElsewhereAsync: Error showing popup: {ex.Message}");
+                        LogMessage($"HandleLoggedInElsewhereAsync: Error showing popup: {ex.Message}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"HandleLoggedInElsewhereAsync: Error: {ex.Message}");
+                LogMessage($"HandleLoggedInElsewhereAsync: Error: {ex.Message}");
+            }
+        }
+
         public async Task<(bool Success, User? User, string Message)> ValidateSessionAsync()
         {
             Console.WriteLine("ValidateSessionAsync: Starting session validation");
@@ -229,6 +358,20 @@ namespace HiatMeApp.Services
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     Console.WriteLine("ValidateSessionAsync: Session is invalid (401 Unauthorized)");
+                    // Only treat as "logged in elsewhere" if session was recently valid (within 10 minutes)
+                    if (Preferences.Get("IsLoggedIn", false))
+                    {
+                        string lastSuccessTimestamp = Preferences.Get("LastSuccessfulApiCall", null);
+                        if (!string.IsNullOrEmpty(lastSuccessTimestamp) && DateTime.TryParse(lastSuccessTimestamp, out DateTime lastSuccess))
+                        {
+                            TimeSpan timeSinceLastSuccess = DateTime.Now - lastSuccess;
+                            if (timeSinceLastSuccess.TotalMinutes <= 10)
+                            {
+                                LogMessage($"ValidateSessionAsync: 401 Unauthorized while logged in, last success was {timeSinceLastSuccess.TotalMinutes:F1} minutes ago - likely logged in elsewhere");
+                                return (false, null, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
+                            }
+                        }
+                    }
                     return (false, null, "Session expired. Please log in again.");
                 }
                 
@@ -236,6 +379,20 @@ namespace HiatMeApp.Services
                 if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     Console.WriteLine("ValidateSessionAsync: Session is invalid (403 Forbidden)");
+                    // Only treat as "logged in elsewhere" if session was recently valid (within 10 minutes)
+                    if (Preferences.Get("IsLoggedIn", false))
+                    {
+                        string lastSuccessTimestamp = Preferences.Get("LastSuccessfulApiCall", null);
+                        if (!string.IsNullOrEmpty(lastSuccessTimestamp) && DateTime.TryParse(lastSuccessTimestamp, out DateTime lastSuccess))
+                        {
+                            TimeSpan timeSinceLastSuccess = DateTime.Now - lastSuccess;
+                            if (timeSinceLastSuccess.TotalMinutes <= 10)
+                            {
+                                LogMessage($"ValidateSessionAsync: 403 Forbidden while logged in, last success was {timeSinceLastSuccess.TotalMinutes:F1} minutes ago - likely logged in elsewhere");
+                                return (false, null, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
+                            }
+                        }
+                    }
                     return (false, null, "Session expired. Please log in again.");
                 }
 
@@ -272,12 +429,37 @@ namespace HiatMeApp.Services
                         return (false, null, $"Server error: {errorMsg}. Please check your connection.");
                     }
                     
+                    // Check if logged in elsewhere first
+                    if (IsLoggedInElsewhere(errorMsg) || errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string actualMessage = errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) 
+                            ? errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length) 
+                            : "Session ended. You have been logged out because someone logged into your account from another device or browser.";
+                        
+                        Console.WriteLine($"ValidateSessionAsync: Detected logged in elsewhere: {errorMsg}");
+                        LogMessage($"ValidateSessionAsync: Detected logged in elsewhere: {errorMsg}");
+                        
+                        // Handle the logout
+                        _ = HandleLoggedInElsewhereAsync(actualMessage);
+                        
+                        return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                    }
+                    
                     if (lowerError.Contains("invalid token") || 
                         lowerError.Contains("expired") || 
                         lowerError.Contains("no authentication token") ||
                         lowerError.Contains("unverified") ||
                         lowerError.Contains("no token provided"))
                     {
+                        // Check if logged in elsewhere - this uses timestamp logic to only trigger if session was recently valid
+                        if (IsLoggedInElsewhere(errorMsg))
+                        {
+                            string actualMessage = "Session ended. You have been logged out because someone logged into your account from another device or browser.";
+                            LogMessage($"ValidateSessionAsync: Detected logged in elsewhere via IsLoggedInElsewhere check");
+                            _ = HandleLoggedInElsewhereAsync(actualMessage);
+                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
+                        
                         Console.WriteLine($"ValidateSessionAsync: Detected expired/invalid session: {errorMsg}");
                         return (false, null, "Session expired. Please log in again.");
                     }
@@ -289,6 +471,9 @@ namespace HiatMeApp.Services
                 // Success must be true AND we must have valid user data
                 if (result.Success == true && result.UserId > 0)
                 {
+                    // Record successful API call timestamp
+                    RecordSuccessfulApiCall();
+                    
                     // CRITICAL: Update CSRF token from server response - server regenerates it after each request
                     if (!string.IsNullOrEmpty(result.CsrfToken))
                     {
@@ -466,6 +651,9 @@ namespace HiatMeApp.Services
                         Preferences.Set("IsLoggedIn", true);
                         Preferences.Set("UserData", JsonConvert.SerializeObject(user));
                         Preferences.Set("AuthToken", result.AuthToken);
+                        // Record successful API call timestamp on login
+                        RecordSuccessfulApiCall();
+                        
                         Console.WriteLine($"LoginAsync: Login successful for Email={email}, Role={result.Role}, UserId={result.UserId}, VehiclesCount={result.Vehicles?.Count ?? 0}, AuthToken={result.AuthToken}");
                         Console.WriteLine($"LoginAsync: ProfilePicture from server: '{result.ProfilePicture ?? "null"}' (length: {result.ProfilePicture?.Length ?? 0})");
                         Console.WriteLine($"LoginAsync: User.ProfilePicture after assignment: '{user.ProfilePicture ?? "null"}' (length: {user.ProfilePicture?.Length ?? 0})");
@@ -1166,11 +1354,23 @@ namespace HiatMeApp.Services
                         return (false, null, "Invalid response format from server.");
                     }
 
-                    // Check for CSRF token error and retry
+                    // Check for CSRF token error and retry, or logged in elsewhere
                     if (!result.Success)
                     {
                         string errorMsg = result.Message ?? "Unknown error";
                         string lowerError = errorMsg.ToLowerInvariant();
+                        
+                        // Check if logged in elsewhere first (before CSRF retry)
+                        if (IsLoggedInElsewhere(errorMsg) || errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string actualMessage = errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) 
+                                ? errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length) 
+                                : "Session ended. You have been logged out because someone logged into your account from another device or browser.";
+                            
+                            LogMessage($"GetVehicleIssuesAsync: Detected logged in elsewhere: {errorMsg}");
+                            _ = HandleLoggedInElsewhereAsync(actualMessage);
+                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
                         
                         // If CSRF token error, try fetching a new token and retrying once
                         if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
@@ -1212,6 +1412,15 @@ namespace HiatMeApp.Services
                                 return (false, null, "Failed to retrieve session token. Please try again.");
                             }
                         }
+                        
+                        // Check if it's an authentication error - IsLoggedInElsewhere handles the timestamp check
+                        if (IsLoggedInElsewhere(errorMsg))
+                        {
+                            string actualMessage = "Session ended. You have been logged out because someone logged into your account from another device or browser.";
+                            LogMessage($"GetVehicleIssuesAsync: Detected logged in elsewhere via IsLoggedInElsewhere check");
+                            _ = HandleLoggedInElsewhereAsync(actualMessage);
+                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
@@ -1224,6 +1433,9 @@ namespace HiatMeApp.Services
 
                     if (result.Success)
                     {
+                        // Record successful API call timestamp
+                        RecordSuccessfulApiCall();
+                        
                         Console.WriteLine($"GetVehicleIssuesAsync: Successfully fetched {result.Issues?.Count ?? 0} issues for vehicle_id={vehicleId}");
                         LogMessage($"GetVehicleIssuesAsync: Successfully fetched {result.Issues?.Count ?? 0} issues");
                         return (true, result.Issues, "Issues fetched successfully.");
@@ -1329,11 +1541,23 @@ namespace HiatMeApp.Services
                         return (false, "Invalid response format from server.");
                     }
 
-                    // Check for CSRF token error and retry
+                    // Check for CSRF token error and retry, or logged in elsewhere
                     if (!result.Success)
                     {
                         string errorMsg = result.Message ?? "Unknown error";
                         string lowerError = errorMsg.ToLowerInvariant();
+                        
+                        // Check if logged in elsewhere first (before CSRF retry)
+                        if (IsLoggedInElsewhere(errorMsg) || errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string actualMessage = errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) 
+                                ? errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length) 
+                                : "Session ended. You have been logged out because someone logged into your account from another device or browser.";
+                            
+                            LogMessage($"AddVehicleIssueAsync: Detected logged in elsewhere: {errorMsg}");
+                            _ = HandleLoggedInElsewhereAsync(actualMessage);
+                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
                         
                         // If CSRF token error, try fetching a new token and retrying once
                         if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
@@ -1375,6 +1599,15 @@ namespace HiatMeApp.Services
                                 return (false, "Failed to retrieve session token. Please try again.");
                             }
                         }
+                        
+                        // Check if it's an authentication error - IsLoggedInElsewhere handles the timestamp check
+                        if (IsLoggedInElsewhere(errorMsg))
+                        {
+                            string actualMessage = "Session ended. You have been logged out because someone logged into your account from another device or browser.";
+                            LogMessage($"AddVehicleIssueAsync: Detected logged in elsewhere via IsLoggedInElsewhere check");
+                            _ = HandleLoggedInElsewhereAsync(actualMessage);
+                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
@@ -1387,6 +1620,9 @@ namespace HiatMeApp.Services
 
                     if (result.Success)
                     {
+                        // Record successful API call timestamp
+                        RecordSuccessfulApiCall();
+                        
                         Console.WriteLine($"AddVehicleIssueAsync: Successfully added issue for vehicle_id={vehicleId}, issue_type={issueType}");
                         LogMessage($"AddVehicleIssueAsync: Successfully added issue");
                         return (true, result.Message ?? "Issue added successfully.");
