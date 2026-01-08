@@ -5,8 +5,8 @@
       Margin="0,8"
       HeightRequest="60">
     <Border x:Name="EntryBorder"
-            Stroke="#666666"
-            StrokeThickness="1"
+            Stroke="Transparent"
+            StrokeThickness="0"
             StrokeShape="RoundRectangle 4,4,4,4"
             BackgroundColor="#444444"
             Padding="12,0"
