@@ -294,7 +294,11 @@ public partial class ProfileViewModel : BaseViewModel
             else
             {
                 Console.WriteLine($"SaveProfile: Failed to update profile: {message}");
-                await PageDialogService.DisplayAlertAsync("Error", message, "OK");
+                // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    await PageDialogService.DisplayAlertAsync("Error", message, "OK");
+                }
             }
         }
         catch (Exception ex)

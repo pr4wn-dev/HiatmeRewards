@@ -420,8 +420,12 @@ public partial class HomeViewModel : BaseViewModel
                     else
                     {
                         Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to reassign vehicle: {message}");
-                        await PageDialogService.DisplayAlertAsync("Error", message, "OK");
-                        await Shell.Current.GoToAsync("Vehicle");
+                        // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                        if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await PageDialogService.DisplayAlertAsync("Error", message, "OK");
+                            await Shell.Current.GoToAsync("Vehicle");
+                        }
                     }
                 }
             }

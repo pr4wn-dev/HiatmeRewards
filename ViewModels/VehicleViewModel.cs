@@ -533,24 +533,32 @@ public partial class VehicleViewModel : BaseViewModel
                     else
                     {
                         Console.WriteLine($"AssignVehicleByVin: Failed to assign vehicle after resolving incomplete records: {message}");
-                        string errorMessage = message;
-                        if (message.Contains("Network error"))
+                        // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                        if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                         {
-                            errorMessage = "Network issue assigning vehicle. Please check your connection and try again.";
+                            string errorMessage = message;
+                            if (message.Contains("Network error"))
+                            {
+                                errorMessage = "Network issue assigning vehicle. Please check your connection and try again.";
+                            }
+                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
-                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         break;
                     }
                 }
                 else
                 {
                     Console.WriteLine($"AssignVehicleByVin: Failed to assign vehicle: {message}");
-                    string errorMessage = message;
-                    if (message.Contains("Network error"))
+                    // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                    if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                     {
-                        errorMessage = "Network issue assigning vehicle. Please check your connection and try again.";
+                        string errorMessage = message;
+                        if (message.Contains("Network error"))
+                        {
+                            errorMessage = "Network issue assigning vehicle. Please check your connection and try again.";
+                        }
+                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                     }
-                    await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                     break;
                 }
             }
@@ -612,16 +620,20 @@ public partial class VehicleViewModel : BaseViewModel
             else
             {
                 Console.WriteLine($"SubmitEndMileage: Failed to submit end miles: {submitMessage}");
-                string errorMessage = submitMessage;
-                if (submitMessage.Contains("Too many attempts"))
+                // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                 {
-                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                    string errorMessage = submitMessage;
+                    if (submitMessage.Contains("Too many attempts"))
+                    {
+                        errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                    }
+                    else if (submitMessage.Contains("Network error"))
+                    {
+                        errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
+                    }
+                    await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                 }
-                else if (submitMessage.Contains("Network error"))
-                {
-                    errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
-                }
-                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
             }
         }
         catch (Exception ex)

@@ -120,7 +120,11 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
             if (!success)
             {
                 IsBusy = false;
-                await ShowAlertAsync("Finish Day", message);
+                // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ShowAlertAsync("Finish Day", message);
+                }
                 return;
             }
 
