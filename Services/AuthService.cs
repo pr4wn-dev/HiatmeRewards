@@ -2212,10 +2212,25 @@ namespace HiatMeApp.Services
         public async Task<(bool Success, List<DayOffRequest>? Requests, string Message)> GetMyDayOffRequestsAsync()
         {
             Console.WriteLine("GetMyDayOffRequestsAsync: Starting");
-            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            LogMessage("GetMyDayOffRequestsAsync: Starting");
+            
+            // Use stored token from Preferences (from last successful response)
+            var storedToken = Preferences.Get("CSRFToken", null);
+            if (!string.IsNullOrEmpty(storedToken))
             {
-                Console.WriteLine("GetMyDayOffRequestsAsync: Failed to retrieve CSRF token.");
-                return (false, null, "Failed to retrieve session token.");
+                _csrfToken = storedToken;
+                LogMessage($"GetMyDayOffRequestsAsync: Using CSRF token from Preferences");
+            }
+            else if (string.IsNullOrEmpty(_csrfToken))
+            {
+                // Only fetch if we have NO token at all
+                LogMessage("GetMyDayOffRequestsAsync: No token found, fetching fresh CSRF token");
+                if (!await FetchCSRFTokenAsync())
+                {
+                    Console.WriteLine("GetMyDayOffRequestsAsync: Failed to retrieve CSRF token.");
+                    LogMessage("GetMyDayOffRequestsAsync: Failed to retrieve CSRF token.");
+                    return (false, null, "Failed to retrieve session token.");
+                }
             }
 
             var authToken = Preferences.Get("AuthToken", null);
@@ -2280,9 +2295,47 @@ namespace HiatMeApp.Services
                 }
                 else
                 {
+                    string errorMsg = result.Message ?? "Failed to get requests.";
+                    string lowerError = errorMsg.ToLowerInvariant();
+                    
+                    // If CSRF token error, try fetching a new token and retrying once
+                    if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
+                    {
+                        Console.WriteLine("GetMyDayOffRequestsAsync: CSRF token error detected, fetching new token and retrying");
+                        if (await FetchCSRFTokenAsync())
+                        {
+                            Console.WriteLine($"GetMyDayOffRequestsAsync: Fetched new CSRF token, retrying");
+                            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+                            
+                            var retryResponse = await _httpClient.PostAsync("/includes/hiatme_config.php", new FormUrlEncodedContent(data));
+                            var retryJson = await retryResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine($"GetMyDayOffRequestsAsync: Retry response: {retryJson}");
+                            
+                            var retryResult = await Task.Run(() => JsonConvert.DeserializeObject<DayOffRequestsResponse>(retryJson));
+                            
+                            if (retryResult?.Success == true)
+                            {
+                                if (!string.IsNullOrEmpty(retryResult.CsrfToken))
+                                {
+                                    _csrfToken = retryResult.CsrfToken;
+                                    Preferences.Set("CSRFToken", _csrfToken);
+                                }
+                                Console.WriteLine($"GetMyDayOffRequestsAsync: Retry successful, retrieved {retryResult.Requests?.Count ?? 0} requests");
+                                return (true, retryResult.Requests, "Requests retrieved successfully.");
+                            }
+                            else
+                            {
+                                // Use centralized auth error handler on retry failure
+                                var (retryLoggedInElsewhere, retryMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, retryResult?.Message, "GetMyDayOffRequestsAsync");
+                                return (false, null, retryMsg);
+                            }
+                        }
+                    }
+                    
                     // Use centralized auth error handler
-                    var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to get requests.", "GetMyDayOffRequestsAsync");
-                    return (false, null, errorMsg);
+                    var (isLoggedInElsewhere, processedMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, errorMsg, "GetMyDayOffRequestsAsync");
+                    return (false, null, processedMsg);
                 }
             }
             catch (HttpRequestException ex)
