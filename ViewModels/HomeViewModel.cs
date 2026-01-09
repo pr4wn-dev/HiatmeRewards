@@ -585,51 +585,6 @@ public partial class HomeViewModel : BaseViewModel
         }
     }
 
-    [RelayCommand]
-    private async Task GoToVehicle()
-    {
-        try
-        {
-            Console.WriteLine("GoToVehicle: Navigating to Vehicle page");
-            await Shell.Current.GoToAsync("//Vehicle");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToVehicle: Error navigating to Vehicle: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToIssues()
-    {
-        try
-        {
-            Console.WriteLine("GoToIssues: Navigating to Vehicle Issues page");
-            await Shell.Current.GoToAsync("//VehicleIssues");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle Issues page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToFinishDay()
-    {
-        try
-        {
-            Console.WriteLine("GoToFinishDay: Navigating to Finish Day page");
-            await Shell.Current.GoToAsync("//FinishDay");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
-        }
-    }
-
     private void UpdateVehicleStatus()
     {
         if (App.CurrentUser?.Vehicles != null && App.CurrentUser.Vehicles.Any())
