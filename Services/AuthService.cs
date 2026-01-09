@@ -2240,53 +2240,50 @@ namespace HiatMeApp.Services
 
             try
             {
-                return await _genericRetryPolicy.ExecuteAsync(async () =>
+                Console.WriteLine($"GetMyDayOffRequestsAsync: Sending POST request");
+                var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                Console.WriteLine($"GetMyDayOffRequestsAsync: StatusCode={response.StatusCode}");
+
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GetMyDayOffRequestsAsync response: {json}");
+
+                // Use centralized auth error handler for HTTP status codes
+                var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "GetMyDayOffRequestsAsync");
+                if (isAuthError)
                 {
-                    Console.WriteLine($"GetMyDayOffRequestsAsync: Sending POST request");
-                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
-                    Console.WriteLine($"GetMyDayOffRequestsAsync: StatusCode={response.StatusCode}");
+                    return (false, null, authErrorMsg);
+                }
 
-                    var json = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"GetMyDayOffRequestsAsync response: {json}");
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    Console.WriteLine("GetMyDayOffRequestsAsync: Empty response received.");
+                    return (false, null, "Empty response from server.");
+                }
 
-                    // Use centralized auth error handler for HTTP status codes
-                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "GetMyDayOffRequestsAsync");
-                    if (isAuthError)
-                    {
-                        return (false, null, authErrorMsg);
-                    }
+                DayOffRequestsResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<DayOffRequestsResponse>(json));
+                if (result == null)
+                {
+                    Console.WriteLine("GetMyDayOffRequestsAsync: Deserialized response is null.");
+                    return (false, null, "Invalid response format from server.");
+                }
 
-                    if (string.IsNullOrWhiteSpace(json))
-                    {
-                        Console.WriteLine("GetMyDayOffRequestsAsync: Empty response received.");
-                        return (false, null, "Empty response from server.");
-                    }
+                if (!string.IsNullOrEmpty(result.CsrfToken))
+                {
+                    _csrfToken = result.CsrfToken;
+                    Preferences.Set("CSRFToken", _csrfToken);
+                }
 
-                    DayOffRequestsResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<DayOffRequestsResponse>(json));
-                    if (result == null)
-                    {
-                        Console.WriteLine("GetMyDayOffRequestsAsync: Deserialized response is null.");
-                        return (false, null, "Invalid response format from server.");
-                    }
-
-                    if (!string.IsNullOrEmpty(result.CsrfToken))
-                    {
-                        _csrfToken = result.CsrfToken;
-                        Preferences.Set("CSRFToken", _csrfToken);
-                    }
-
-                    if (result.Success)
-                    {
-                        Console.WriteLine($"GetMyDayOffRequestsAsync: Retrieved {result.Requests?.Count ?? 0} requests");
-                        return (true, result.Requests, "Requests retrieved successfully.");
-                    }
-                    else
-                    {
-                        // Use centralized auth error handler
-                        var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to get requests.", "GetMyDayOffRequestsAsync");
-                        return (false, null, errorMsg);
-                    }
-                });
+                if (result.Success)
+                {
+                    Console.WriteLine($"GetMyDayOffRequestsAsync: Retrieved {result.Requests?.Count ?? 0} requests");
+                    return (true, result.Requests, "Requests retrieved successfully.");
+                }
+                else
+                {
+                    // Use centralized auth error handler
+                    var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to get requests.", "GetMyDayOffRequestsAsync");
+                    return (false, null, errorMsg);
+                }
             }
             catch (HttpRequestException ex)
             {
