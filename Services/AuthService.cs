@@ -399,6 +399,71 @@ namespace HiatMeApp.Services
             }
         }
 
+        /// <summary>
+        /// Centralized helper to check if an API error indicates the user was logged in elsewhere.
+        /// Call this whenever you get an error response from the server.
+        /// If this returns true, the popup has already been shown and navigation to login initiated.
+        /// The returned message will start with "LOGGED_IN_ELSEWHERE:" if logged in elsewhere.
+        /// </summary>
+        /// <param name="response">The HTTP response (for checking status codes)</param>
+        /// <param name="errorMessage">The error message from the server response</param>
+        /// <param name="methodName">Name of the calling method for logging</param>
+        /// <returns>(IsLoggedInElsewhere, ProcessedErrorMessage)</returns>
+        private async Task<(bool IsLoggedInElsewhere, string Message)> CheckAndHandleAuthErrorAsync(
+            System.Net.HttpStatusCode statusCode, 
+            string? errorMessage, 
+            string methodName)
+        {
+            // Check HTTP status codes first - 401/403 indicate auth issues
+            if (statusCode == System.Net.HttpStatusCode.Unauthorized || 
+                statusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                Console.WriteLine($"{methodName}: HTTP {(int)statusCode} - checking if logged in elsewhere");
+                LogMessage($"{methodName}: HTTP {(int)statusCode} - checking if logged in elsewhere");
+                bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync($"HTTP {(int)statusCode}");
+                if (loggedInElsewhere)
+                {
+                    return (true, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
+                }
+                return (false, "Session expired. Please log in again.");
+            }
+            
+            // Check error message for explicit LOGGED_IN_ELSEWHERE prefix
+            if (!string.IsNullOrEmpty(errorMessage) && errorMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+            {
+                string actualMessage = errorMessage.Substring("LOGGED_IN_ELSEWHERE:".Length);
+                LogMessage($"{methodName}: Server reported logged in elsewhere");
+                _ = HandleLoggedInElsewhereAsync(actualMessage);
+                return (true, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+            }
+            
+            // Check for token/auth error keywords that might indicate logged in elsewhere
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                string lowerError = errorMessage.ToLowerInvariant();
+                bool isTokenError = lowerError.Contains("invalid token") || 
+                                  lowerError.Contains("expired") || 
+                                  lowerError.Contains("unauthorized") || 
+                                  lowerError.Contains("forbidden") ||
+                                  lowerError.Contains("invalid csrf") ||
+                                  lowerError.Contains("authentication token") ||
+                                  lowerError.Contains("unverified user");
+                
+                if (isTokenError)
+                {
+                    LogMessage($"{methodName}: Token/auth error detected, checking with server");
+                    bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMessage);
+                    if (loggedInElsewhere)
+                    {
+                        return (true, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
+                    }
+                }
+            }
+            
+            // Not a logged-in-elsewhere situation - return original error
+            return (false, errorMessage ?? "Unknown error");
+        }
+
         public async Task<(bool Success, User? User, string Message)> ValidateSessionAsync()
         {
             Console.WriteLine("ValidateSessionAsync: Starting session validation");
@@ -1096,6 +1161,13 @@ namespace HiatMeApp.Services
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"AssignVehicleAsync raw response: {json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "AssignVehicleAsync");
+                    if (isAuthError)
+                    {
+                        return (false, null, authErrorMsg, null, null);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("AssignVehicleAsync: Empty response received.");
@@ -1114,7 +1186,6 @@ namespace HiatMeApp.Services
                         _csrfToken = result.CsrfToken;
                         Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"AssignVehicleAsync: Updated CSRF token: {_csrfToken}");
-                        LogMessage($"AssignVehicleAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success && result.Vehicle != null)
@@ -1124,37 +1195,11 @@ namespace HiatMeApp.Services
                     }
                     else
                     {
-                        string errorMsg = result.Message ?? "Unknown error";
-                        string lowerError = errorMsg.ToLowerInvariant();
-                        Console.WriteLine($"AssignVehicleAsync failed: {errorMsg}");
-                        
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        // Use centralized auth error handler for error messages
+                        var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Unknown error", "AssignVehicleAsync");
+                        if (isLoggedInElsewhere)
                         {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"AssignVehicleAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}", null, null);
-                        }
-                        
-                        // Check for token/auth errors and verify with server
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("invalid csrf") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"AssignVehicleAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                // HandleLoggedInElsewhereAsync already called in CheckLoggedInElsewhereWithServerAsync
-                                return (false, null, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.", null, null);
-                            }
+                            return (false, null, errorMsg, null, null);
                         }
                         
                         if (result.Message == "Invalid request" && await FetchCSRFTokenAsync())
@@ -1273,6 +1318,13 @@ namespace HiatMeApp.Services
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"SubmitStartMileageAsync response: {json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "SubmitStartMileageAsync");
+                    if (isAuthError)
+                    {
+                        return (false, authErrorMsg, null);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                         return (false, "Empty response from server.", null);
 
@@ -1297,35 +1349,13 @@ namespace HiatMeApp.Services
                     else
                     {
                         string errorMsg = result.Message ?? "Failed to submit start mileage.";
-                        string lowerError = errorMsg.ToLowerInvariant();
                         Console.WriteLine($"SubmitStartMileageAsync failed: {errorMsg}");
-                        LogMessage($"SubmitStartMileageAsync: Error - {errorMsg}");
                         
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        // Use centralized auth error handler
+                        var (isLoggedInElsewhere, processedMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, errorMsg, "SubmitStartMileageAsync");
+                        if (isLoggedInElsewhere)
                         {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"SubmitStartMileageAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}", null);
-                        }
-                        
-                        // Check for token/auth errors and verify with server
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"SubmitStartMileageAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                return (false, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.", null);
-                            }
+                            return (false, processedMsg, null);
                         }
                         
                         // If CSRF token error, try fetching a new token and retrying once
@@ -1357,18 +1387,17 @@ namespace HiatMeApp.Services
                                 else
                                 {
                                     // Check for logged in elsewhere on retry failure
-                                    if (retryResult != null && retryResult.Message?.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) == true)
+                                    var (retryLoggedInElsewhere, retryMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, retryResult?.Message, "SubmitStartMileageAsync");
+                                    if (retryLoggedInElsewhere)
                                     {
-                                        string actualMessage = retryResult.Message.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                                        _ = HandleLoggedInElsewhereAsync(actualMessage);
-                                        return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}", null);
+                                        return (false, retryMsg, null);
                                     }
                                     LogMessage($"SubmitStartMileageAsync: Retry also failed - {retryResult?.Message ?? "Unknown error"}");
                                 }
                             }
                         }
                         
-                        return (false, errorMsg, null);
+                        return (false, processedMsg, null);
                     }
                 });
             }
@@ -1431,6 +1460,13 @@ namespace HiatMeApp.Services
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"SubmitEndMileageAsync response: {json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "SubmitEndMileageAsync");
+                    if (isAuthError)
+                    {
+                        return (false, authErrorMsg, null);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("SubmitEndMileageAsync: Empty response received.");
@@ -1449,7 +1485,6 @@ namespace HiatMeApp.Services
                         _csrfToken = result.CsrfToken;
                         Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"SubmitEndMileageAsync: Updated CSRF token: {_csrfToken}");
-                        LogMessage($"SubmitEndMileageAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
@@ -1459,39 +1494,8 @@ namespace HiatMeApp.Services
                     }
                     else
                     {
-                        string errorMsg = result.Message ?? "Failed to submit end mileage.";
-                        string lowerError = errorMsg.ToLowerInvariant();
-                        Console.WriteLine($"SubmitEndMileageAsync failed: {errorMsg}");
-                        LogMessage($"SubmitEndMileageAsync: Error - {errorMsg}");
-                        
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"SubmitEndMileageAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}", null);
-                        }
-                        
-                        // Check for token/auth errors and verify with server
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("invalid csrf") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"SubmitEndMileageAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                return (false, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.", null);
-                            }
-                        }
-                        
+                        // Use centralized auth error handler
+                        var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to submit end mileage.", "SubmitEndMileageAsync");
                         return (false, errorMsg, null);
                     }
                 });
@@ -1567,10 +1571,16 @@ namespace HiatMeApp.Services
                     Console.WriteLine($"GetVehicleIssuesAsync response: {json}");
                     LogMessage($"GetVehicleIssuesAsync: Response JSON={json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "GetVehicleIssuesAsync");
+                    if (isAuthError)
+                    {
+                        return (false, null, authErrorMsg);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("GetVehicleIssuesAsync: Empty response received.");
-                        LogMessage("GetVehicleIssuesAsync: Empty response received.");
                         return (false, null, "Empty response from server.");
                     }
 
@@ -1578,49 +1588,26 @@ namespace HiatMeApp.Services
                     if (result == null)
                     {
                         Console.WriteLine("GetVehicleIssuesAsync: Deserialized response is null.");
-                        LogMessage("GetVehicleIssuesAsync: Deserialized response is null.");
                         return (false, null, "Invalid response format from server.");
                     }
 
-                    // Check for errors - always check with server first for token errors
+                    // Check for errors
                     if (!result.Success)
                     {
                         string errorMsg = result.Message ?? "Unknown error";
                         string lowerError = errorMsg.ToLowerInvariant();
                         
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        // Use centralized auth error handler
+                        var (isLoggedInElsewhere, processedMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, errorMsg, "GetVehicleIssuesAsync");
+                        if (isLoggedInElsewhere)
                         {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"GetVehicleIssuesAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
-                        }
-                        
-                        // If it's a token/auth error, check with server first before showing error popup
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("invalid csrf") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"GetVehicleIssuesAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                // HandleLoggedInElsewhereAsync already called in CheckLoggedInElsewhereWithServerAsync
-                                return (false, null, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
-                            }
+                            return (false, null, processedMsg);
                         }
                         
                         // If CSRF token error, try fetching a new token and retrying once
                         if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
                         {
-                            LogMessage($"GetVehicleIssuesAsync: CSRF token error detected: {errorMsg}, fetching new token and retrying");
+                            LogMessage($"GetVehicleIssuesAsync: CSRF token error detected, fetching new token and retrying");
                             if (await FetchCSRFTokenAsync())
                             {
                                 LogMessage($"GetVehicleIssuesAsync: Fetched new CSRF token={_csrfToken}, retrying");
@@ -1635,26 +1622,22 @@ namespace HiatMeApp.Services
                                 
                                 if (retryResult?.Success == true)
                                 {
-                                    // Update token from retry response
                                     if (!string.IsNullOrEmpty(retryResult.CsrfToken))
                                     {
                                         _csrfToken = retryResult.CsrfToken;
                                         Preferences.Set("CSRFToken", _csrfToken);
-                                        LogMessage($"GetVehicleIssuesAsync: Updated CSRF token from retry: {_csrfToken}");
                                     }
                                     Console.WriteLine($"GetVehicleIssuesAsync: Successfully fetched {retryResult.Issues?.Count ?? 0} issues after retry");
                                     return (true, retryResult.Issues, "Issues fetched successfully.");
                                 }
                                 else
                                 {
-                                    // Check again for logged in elsewhere on retry failure
-                                    if (retryResult != null && retryResult.Message?.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) == true)
+                                    // Check for logged in elsewhere on retry failure
+                                    var (retryLoggedInElsewhere, retryMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, retryResult?.Message, "GetVehicleIssuesAsync");
+                                    if (retryLoggedInElsewhere)
                                     {
-                                        string actualMessage = retryResult.Message.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                                        _ = HandleLoggedInElsewhereAsync(actualMessage);
-                                        return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                                        return (false, null, retryMsg);
                                     }
-                                    
                                     LogMessage($"GetVehicleIssuesAsync: Retry also failed: {retryResult?.Message ?? "Unknown error"}");
                                     return (false, null, retryResult?.Message ?? "Failed to fetch issues after retry.");
                                 }
@@ -1665,6 +1648,8 @@ namespace HiatMeApp.Services
                                 return (false, null, "Failed to retrieve session token. Please try again.");
                             }
                         }
+                        
+                        return (false, null, processedMsg);
                     }
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
@@ -1770,10 +1755,16 @@ namespace HiatMeApp.Services
                     Console.WriteLine($"AddVehicleIssueAsync response: {json}");
                     LogMessage($"AddVehicleIssueAsync: Response JSON={json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "AddVehicleIssueAsync");
+                    if (isAuthError)
+                    {
+                        return (false, authErrorMsg);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("AddVehicleIssueAsync: Empty response received.");
-                        LogMessage("AddVehicleIssueAsync: Empty response received.");
                         return (false, "Empty response from server.");
                     }
 
@@ -1781,49 +1772,26 @@ namespace HiatMeApp.Services
                     if (result == null)
                     {
                         Console.WriteLine("AddVehicleIssueAsync: Deserialized response is null.");
-                        LogMessage("AddVehicleIssueAsync: Deserialized response is null.");
                         return (false, "Invalid response format from server.");
                     }
 
-                    // Check for errors - always check with server first for token errors
+                    // Check for errors
                     if (!result.Success)
                     {
                         string errorMsg = result.Message ?? "Unknown error";
                         string lowerError = errorMsg.ToLowerInvariant();
                         
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                        // Use centralized auth error handler
+                        var (isLoggedInElsewhere, processedMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, errorMsg, "AddVehicleIssueAsync");
+                        if (isLoggedInElsewhere)
                         {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"AddVehicleIssueAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
-                        }
-                        
-                        // If it's a token/auth error, check with server first before showing error popup
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("invalid csrf") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"AddVehicleIssueAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                // HandleLoggedInElsewhereAsync already called in CheckLoggedInElsewhereWithServerAsync
-                                return (false, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
-                            }
+                            return (false, processedMsg);
                         }
                         
                         // If CSRF token error, try fetching a new token and retrying once
                         if (lowerError.Contains("csrf token") || lowerError.Contains("invalid csrf") || lowerError.Contains("session token"))
                         {
-                            LogMessage($"AddVehicleIssueAsync: CSRF token error detected: {errorMsg}, fetching new token and retrying");
+                            LogMessage($"AddVehicleIssueAsync: CSRF token error detected, fetching new token and retrying");
                             if (await FetchCSRFTokenAsync())
                             {
                                 LogMessage($"AddVehicleIssueAsync: Fetched new CSRF token={_csrfToken}, retrying");
@@ -1838,26 +1806,22 @@ namespace HiatMeApp.Services
                                 
                                 if (retryResult?.Success == true)
                                 {
-                                    // Update token from retry response
                                     if (!string.IsNullOrEmpty(retryResult.CsrfToken))
                                     {
                                         _csrfToken = retryResult.CsrfToken;
                                         Preferences.Set("CSRFToken", _csrfToken);
-                                        LogMessage($"AddVehicleIssueAsync: Updated CSRF token from retry: {_csrfToken}");
                                     }
                                     Console.WriteLine($"AddVehicleIssueAsync: Successfully added issue after retry");
                                     return (true, retryResult.Message ?? "Issue added successfully.");
                                 }
                                 else
                                 {
-                                    // Check again for logged in elsewhere on retry failure
-                                    if (retryResult != null && retryResult.Message?.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase) == true)
+                                    // Check for logged in elsewhere on retry failure
+                                    var (retryLoggedInElsewhere, retryMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, retryResult?.Message, "AddVehicleIssueAsync");
+                                    if (retryLoggedInElsewhere)
                                     {
-                                        string actualMessage = retryResult.Message.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                                        _ = HandleLoggedInElsewhereAsync(actualMessage);
-                                        return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
+                                        return (false, retryMsg);
                                     }
-                                    
                                     LogMessage($"AddVehicleIssueAsync: Retry also failed: {retryResult?.Message ?? "Unknown error"}");
                                     return (false, retryResult?.Message ?? "Failed to add issue after retry.");
                                 }
@@ -1868,6 +1832,8 @@ namespace HiatMeApp.Services
                                 return (false, "Failed to retrieve session token. Please try again.");
                             }
                         }
+                        
+                        return (false, processedMsg);
                     }
 
                     if (!string.IsNullOrEmpty(result.CsrfToken))
@@ -2054,6 +2020,13 @@ namespace HiatMeApp.Services
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"UpdateProfileAsync response: {json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "UpdateProfileAsync");
+                    if (isAuthError)
+                    {
+                        return (false, null, authErrorMsg);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("UpdateProfileAsync: Empty response received.");
@@ -2077,10 +2050,18 @@ namespace HiatMeApp.Services
                         _csrfToken = result.CsrfToken;
                         Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"UpdateProfileAsync: Updated CSRF token: {_csrfToken}");
-                        LogMessage($"UpdateProfileAsync: Updated CSRF token: {_csrfToken}");
                     }
 
-                    if (result.Success && result.User != null)
+                    // Check for explicit failure BEFORE checking success
+                    if (!result.Success)
+                    {
+                        // Use centralized auth error handler for error messages
+                        var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to update profile.", "UpdateProfileAsync");
+                        return (false, null, errorMsg);
+                    }
+
+                    // At this point, result.Success is true - check if we have user data
+                    if (result.User != null)
                     {
                         var updatedUser = new Models.User
                         {
@@ -2099,39 +2080,9 @@ namespace HiatMeApp.Services
                     }
                     else
                     {
-                        string errorMsg = result.Message ?? "Failed to update profile.";
-                        string lowerError = errorMsg.ToLowerInvariant();
-                        Console.WriteLine($"UpdateProfileAsync failed: {errorMsg}");
-                        
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"UpdateProfileAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
-                        }
-                        
-                        // Check for token/auth errors and verify with server
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("invalid csrf") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"UpdateProfileAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                return (false, null, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
-                            }
-                        }
-                        
-                        return (false, null, errorMsg);
+                        // Success was true but no user data returned - treat as error
+                        Console.WriteLine($"UpdateProfileAsync: Success=true but no user data returned");
+                        return (false, null, result.Message ?? "Profile update failed - no user data returned.");
                     }
                 });
             }
@@ -2203,6 +2154,13 @@ namespace HiatMeApp.Services
                     var json = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"SubmitDayOffRequestAsync response: {json}");
 
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "SubmitDayOffRequestAsync");
+                    if (isAuthError)
+                    {
+                        return (false, authErrorMsg);
+                    }
+
                     if (string.IsNullOrWhiteSpace(json))
                     {
                         Console.WriteLine("SubmitDayOffRequestAsync: Empty response received.");
@@ -2221,7 +2179,6 @@ namespace HiatMeApp.Services
                         _csrfToken = result.CsrfToken;
                         Preferences.Set("CSRFToken", _csrfToken);
                         Console.WriteLine($"SubmitDayOffRequestAsync: Updated CSRF token: {_csrfToken}");
-                        LogMessage($"SubmitDayOffRequestAsync: Updated CSRF token: {_csrfToken}");
                     }
 
                     if (result.Success)
@@ -2231,38 +2188,8 @@ namespace HiatMeApp.Services
                     }
                     else
                     {
-                        string errorMsg = result.Message ?? "Failed to submit request.";
-                        string lowerError = errorMsg.ToLowerInvariant();
-                        Console.WriteLine($"SubmitDayOffRequestAsync failed: {errorMsg}");
-                        
-                        // If server explicitly says logged in elsewhere, handle it
-                        if (errorMsg.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string actualMessage = errorMsg.Substring("LOGGED_IN_ELSEWHERE:".Length);
-                            LogMessage($"SubmitDayOffRequestAsync: Server reported logged in elsewhere");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
-                            return (false, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
-                        }
-                        
-                        // Check for token/auth errors and verify with server
-                        bool isTokenError = lowerError.Contains("invalid token") || 
-                                          lowerError.Contains("expired") || 
-                                          lowerError.Contains("unauthorized") || 
-                                          lowerError.Contains("forbidden") ||
-                                          lowerError.Contains("invalid csrf") ||
-                                          lowerError.Contains("authentication token") ||
-                                          lowerError.Contains("unverified user");
-                        
-                        if (isTokenError)
-                        {
-                            LogMessage($"SubmitDayOffRequestAsync: Token/auth error detected, checking with server first");
-                            bool loggedInElsewhere = await CheckLoggedInElsewhereWithServerAsync(errorMsg);
-                            if (loggedInElsewhere)
-                            {
-                                return (false, "LOGGED_IN_ELSEWHERE:Session ended. You have been logged out because someone logged into your account from another device or browser.");
-                            }
-                        }
-                        
+                        // Use centralized auth error handler
+                        var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to submit request.", "SubmitDayOffRequestAsync");
                         return (false, errorMsg);
                     }
                 });
