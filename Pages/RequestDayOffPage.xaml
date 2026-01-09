@@ -16,109 +16,129 @@
     <Grid RowDefinitions="Auto,*,Auto">
         <controls:TopBar Grid.Row="0" />
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="18">
-                <Label Text="Request a Day Off"
+            <VerticalStackLayout Padding="20" Spacing="12">
+                
+                <!-- Page Title -->
+                <Label Text="Day Off Requests"
                        FontSize="26"
                        FontAttributes="Bold"
                        TextColor="White"
                        HorizontalOptions="Center"
-                       Margin="0,10,0,10" />
-                <BoxView HeightRequest="2"
-                         BackgroundColor="#007BFF"
-                         HorizontalOptions="FillAndExpand"
-                         Margin="0,0,0,20" />
-
-                <Label Text="Select Date" 
-                       FontSize="18"
-                       TextColor="#007BFF"
-                       Margin="0,0,0,5" />
-                <DatePicker Date="{Binding SelectedDate}"
-                            MinimumDate="{Binding MinimumDate}"
-                            BackgroundColor="#444"
-                            TextColor="White" />
-
-                <Label Text="Optional: pick a time range if you don't need the whole day off."
-                       FontSize="16"
-                       TextColor="#cccccc"
-                       HorizontalOptions="Center"
-                       Margin="0,10,0,10" />
-
-                <HorizontalStackLayout Spacing="15"
-                                       HorizontalOptions="Center">
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="Start Time"
-                               FontSize="16"
-                               TextColor="#007BFF"
-                               HorizontalOptions="Center" />
-                        <TimePicker Time="{Binding StartTime}"
-                                    Format="HH:mm"
-                                    BackgroundColor="#444"
-                                    TextColor="White" />
-                    </VerticalStackLayout>
-
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="End Time"
-                               FontSize="16"
-                               TextColor="#007BFF"
-                               HorizontalOptions="Center" />
-                        <TimePicker Time="{Binding EndTime}"
-                                    Format="HH:mm"
-                                    BackgroundColor="#444"
-                                    TextColor="White" />
-                    </VerticalStackLayout>
-                </HorizontalStackLayout>
-
-                <Label Text="Reason (optional)" 
-                       FontSize="18"
-                       TextColor="#007BFF"
                        Margin="0,10,0,5" />
-                <Border Stroke="#666666"
-                        StrokeThickness="1"
-                        StrokeShape="RoundRectangle 4,4,4,4"
-                        BackgroundColor="#444444"
-                        Padding="12,8">
-                    <Editor Placeholder="Enter reason for day off request..."
-                            AutoSize="TextChanges"
-                            Text="{Binding Reason}"
-                            BackgroundColor="Transparent"
-                            TextColor="White"
-                            PlaceholderColor="#AAAAAA"
-                            MinimumHeightRequest="100" />
-                </Border>
 
-                <ActivityIndicator IsRunning="{Binding IsBusy}"
-                                   IsVisible="{Binding IsBusy}"
-                                   Color="White"
-                                   HorizontalOptions="Center"
-                                   Margin="0,10,0,10" />
-
-                <Button Text="Submit Request"
-                        FontSize="18"
-                        Command="{Binding SubmitRequestCommand}"
-                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"
+                <!-- Toggle Button for Request Form -->
+                <Button Text="{Binding FormToggleButtonText}"
+                        FontSize="16"
+                        Command="{Binding ToggleFormCommand}"
                         BackgroundColor="#007bff"
                         TextColor="White"
-                        Margin="0,10,0,0" />
+                        Padding="20,12"
+                        HorizontalOptions="Center"
+                        Margin="0,0,0,10" />
+
+                <!-- Collapsible Request Form -->
+                <Frame BackgroundColor="#3a3a3a"
+                       BorderColor="#555555"
+                       CornerRadius="10"
+                       Padding="15"
+                       IsVisible="{Binding IsFormVisible}"
+                       Margin="0,0,0,10">
+                    <VerticalStackLayout Spacing="15">
+                        
+                        <Label Text="New Day Off Request"
+                               FontSize="20"
+                               FontAttributes="Bold"
+                               TextColor="#007BFF"
+                               HorizontalOptions="Center" />
+
+                        <Label Text="Select Date" 
+                               FontSize="16"
+                               TextColor="#87CEEB" />
+                        <DatePicker Date="{Binding SelectedDate}"
+                                    MinimumDate="{Binding MinimumDate}"
+                                    BackgroundColor="#444"
+                                    TextColor="White" />
+
+                        <Label Text="Optional: pick a time range if you don't need the whole day off."
+                               FontSize="14"
+                               TextColor="#AAAAAA"
+                               HorizontalOptions="Center" />
+
+                        <HorizontalStackLayout Spacing="15" HorizontalOptions="Center">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="Start Time"
+                                       FontSize="14"
+                                       TextColor="#87CEEB"
+                                       HorizontalOptions="Center" />
+                                <TimePicker Time="{Binding StartTime}"
+                                            Format="HH:mm"
+                                            BackgroundColor="#444"
+                                            TextColor="White" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="End Time"
+                                       FontSize="14"
+                                       TextColor="#87CEEB"
+                                       HorizontalOptions="Center" />
+                                <TimePicker Time="{Binding EndTime}"
+                                            Format="HH:mm"
+                                            BackgroundColor="#444"
+                                            TextColor="White" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+
+                        <Label Text="Reason (optional)" 
+                               FontSize="16"
+                               TextColor="#87CEEB" />
+                        <Border Stroke="#666666"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 4,4,4,4"
+                                BackgroundColor="#444444"
+                                Padding="10">
+                            <Editor Placeholder="Enter reason for day off request..."
+                                    AutoSize="TextChanges"
+                                    Text="{Binding Reason}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="White"
+                                    PlaceholderColor="#AAAAAA"
+                                    MinimumHeightRequest="80" />
+                        </Border>
+
+                        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                           IsVisible="{Binding IsBusy}"
+                                           Color="White"
+                                           HorizontalOptions="Center" />
+
+                        <Button Text="Submit Request"
+                                FontSize="16"
+                                Command="{Binding SubmitRequestCommand}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"
+                                BackgroundColor="#28a745"
+                                TextColor="White" />
+                    </VerticalStackLayout>
+                </Frame>
 
                 <!-- My Requests Section -->
-                <BoxView HeightRequest="2"
+                <BoxView HeightRequest="1"
                          BackgroundColor="#555555"
                          HorizontalOptions="FillAndExpand"
-                         Margin="0,30,0,10" />
+                         Margin="0,5,0,10" />
 
-                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,5">
                     <Label Text="My Requests"
-                           FontSize="22"
+                           FontSize="20"
                            FontAttributes="Bold"
                            TextColor="White"
                            VerticalOptions="Center" />
                     <Button Grid.Column="1"
-                            Text="↻ Refresh"
-                            FontSize="14"
+                            Text="↻"
+                            FontSize="18"
                             Command="{Binding LoadMyRequestsCommand}"
                             BackgroundColor="#6c757d"
                             TextColor="White"
                             Padding="12,6"
+                            WidthRequest="45"
                             IsEnabled="{Binding IsLoadingRequests, Converter={StaticResource InverseBooleanConverter}}" />
                 </Grid>
 
@@ -144,10 +164,16 @@
                        Padding="20"
                        IsVisible="{Binding HasRequests, Converter={StaticResource InverseBooleanConverter}}"
                        Margin="0,0,0,10">
-                    <Label Text="No requests yet. Submit your first day off request above!"
-                           TextColor="#AAAAAA"
-                           FontSize="14"
-                           HorizontalTextAlignment="Center" />
+                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="No requests yet."
+                               TextColor="#AAAAAA"
+                               FontSize="16"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="Tap 'New Request' above to submit your first day off request!"
+                               TextColor="#888888"
+                               FontSize="13"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
                 </Frame>
 
                 <!-- Requests List -->
@@ -218,5 +244,3 @@
         <controls:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>
-
-

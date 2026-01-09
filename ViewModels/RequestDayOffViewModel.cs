@@ -42,6 +42,25 @@ public partial class RequestDayOffViewModel : BaseViewModel
     [ObservableProperty]
     private string? _requestsErrorMessage;
 
+    [ObservableProperty]
+    private bool _isFormVisible = false; // Hidden by default so requests are visible first
+
+    /// <summary>
+    /// Text for the toggle button based on form visibility
+    /// </summary>
+    public string FormToggleButtonText => IsFormVisible ? "▲ Hide Request Form" : "▼ New Request";
+
+    partial void OnIsFormVisibleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(FormToggleButtonText));
+    }
+
+    [RelayCommand]
+    private void ToggleForm()
+    {
+        IsFormVisible = !IsFormVisible;
+    }
+
     public RequestDayOffViewModel()
     {
         Title = "Request Day Off";
