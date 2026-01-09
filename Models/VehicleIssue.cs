@@ -47,6 +47,15 @@ public class VehicleIssue
     [JsonProperty("repair_category")]
     public string? RepairCategory { get; set; }
 
+    [JsonProperty("reported_by")]
+    public int? ReportedBy { get; set; }
+
+    [JsonProperty("reporter_name")]
+    public string? ReporterName { get; set; }
+
+    // Display helper for reporter name
+    public string DisplayReporter => !string.IsNullOrEmpty(ReporterName) ? ReporterName : "Unknown";
+
     // Display helper for status badge color
     public Color StatusColor => Status?.ToLower() switch
     {
