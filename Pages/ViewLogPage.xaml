@@ -6,166 +6,168 @@
              Title="Developer Tools"
              BackgroundColor="#333333"
              Shell.NavBarIsVisible="False">
-    <ScrollView>
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto" Padding="0,0,0,0">
-            
-            <!-- Page Title -->
-            <Label Text="Developer Tools"
-                   FontSize="24"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   HorizontalOptions="Center"
-                   Margin="0,20,0,10"
-                   Grid.Row="0" />
-            
-            <!-- Debug Tools Section -->
-            <Frame Grid.Row="1" 
-                   BackgroundColor="#444444" 
-                   BorderColor="#555555"
-                   CornerRadius="10"
-                   Margin="20,10,20,10"
-                   Padding="15">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="🔧 Debug Tools" 
-                           FontSize="18" 
-                           FontAttributes="Bold" 
-                           TextColor="#87CEEB" />
-                    
-                    <!-- State Simulation -->
-                    <Label Text="App State Testing" 
-                           FontSize="14" 
-                           TextColor="#AAAAAA" 
-                           Margin="0,5,0,0" />
-                    <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
-                        <Button Text="🧪 Simulate Tombstone"
-                                Clicked="OnSimulateTombstoneClicked"
-                                BackgroundColor="#6c757d"
-                                TextColor="White"
-                                FontSize="12"
-                                Padding="12,8"
-                                Margin="0,0,8,8" />
-                        <Button Text="🔄 Force Revalidate"
-                                Clicked="OnForceRevalidateClicked"
-                                BackgroundColor="#17a2b8"
-                                TextColor="White"
-                                FontSize="12"
-                                Padding="12,8"
-                                Margin="0,0,8,8" />
-                        <Button Text="📋 Show State"
-                                Clicked="OnShowStateClicked"
-                                BackgroundColor="#28a745"
-                                TextColor="White"
-                                FontSize="12"
-                                Padding="12,8"
-                                Margin="0,0,8,8" />
-                    </FlexLayout>
-                    
-                    <!-- Auth Testing -->
-                    <Label Text="Authentication Testing" 
-                           FontSize="14" 
-                           TextColor="#AAAAAA" 
-                           Margin="0,10,0,0" />
-                    <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
-                        <Button Text="🔐 Check Session"
-                                Clicked="OnCheckSessionClicked"
-                                BackgroundColor="#007bff"
-                                TextColor="White"
-                                FontSize="12"
-                                Padding="12,8"
-                                Margin="0,0,8,8" />
-                        <Button Text="⚠️ Clear Auth (Logout)"
-                                Clicked="OnClearAuthClicked"
-                                BackgroundColor="#ffc107"
-                                TextColor="Black"
-                                FontSize="12"
-                                Padding="12,8"
-                                Margin="0,0,8,8" />
-                    </FlexLayout>
-                </VerticalStackLayout>
-            </Frame>
-            
-            <!-- Debug Output Section -->
-            <Frame Grid.Row="2" 
-                   BackgroundColor="#444444" 
-                   BorderColor="#555555"
-                   CornerRadius="10"
-                   Margin="20,0,20,10"
-                   Padding="15"
-                   x:Name="DebugOutputFrame"
-                   IsVisible="False">
-                <VerticalStackLayout>
-                    <Label Text="📊 Debug Output" 
-                           FontSize="16" 
-                           FontAttributes="Bold" 
-                           TextColor="#87CEEB" />
-                    <Editor x:Name="DebugOutput"
-                            IsReadOnly="True"
-                            BackgroundColor="#222"
-                            TextColor="#00FF00"
-                            FontFamily="Courier"
-                            FontSize="11"
-                            HeightRequest="150"
-                            Margin="0,10,0,0" />
-                </VerticalStackLayout>
-            </Frame>
-            
-            <!-- Log Section Header -->
-            <Frame Grid.Row="3" 
-                   BackgroundColor="#444444" 
-                   BorderColor="#555555"
-                   CornerRadius="10"
-                   Margin="20,0,20,10"
-                   Padding="15">
-                <VerticalStackLayout>
-                    <Grid ColumnDefinitions="*,Auto,Auto">
-                        <Label Text="📜 Application Logs" 
+    
+    <!-- Main layout: Content area + Fixed Navigation Bar -->
+    <Grid RowDefinitions="*,Auto">
+        
+        <!-- Scrollable Content Area -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="0,0,0,10" Spacing="10">
+                
+                <!-- Page Title -->
+                <Label Text="Developer Tools"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center"
+                       Margin="0,20,0,10" />
+                
+                <!-- Debug Tools Section -->
+                <Frame BackgroundColor="#444444" 
+                       BorderColor="#555555"
+                       CornerRadius="10"
+                       Margin="20,0,20,0"
+                       Padding="15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="🔧 Debug Tools" 
                                FontSize="18" 
                                FontAttributes="Bold" 
-                               TextColor="#87CEEB"
-                               VerticalOptions="Center" />
-                        <Button Grid.Column="1"
-                                Text="Copy"
-                                Clicked="OnCopyClicked"
-                                BackgroundColor="#007bff"
-                                TextColor="White"
-                                FontSize="12"
-                                Padding="15,8"
-                                Margin="0,0,8,0" />
-                        <Button Grid.Column="2"
-                                Text="Clear"
-                                Clicked="OnClearClicked"
-                                BackgroundColor="#dc3545"
-                                TextColor="White"
-                                FontSize="12"
-                                Padding="15,8" />
-                    </Grid>
-                    
-                    <!-- Log Content -->
-                    <Editor x:Name="LogEditor"
-                            IsReadOnly="True"
-                            BackgroundColor="#222"
-                            TextColor="White"
-                            FontFamily="Courier"
-                            FontSize="11"
-                            HeightRequest="300"
-                            Margin="0,10,0,0" />
-                </VerticalStackLayout>
-            </Frame>
-            
-            <!-- Status Label -->
-            <Label x:Name="StatusLabel"
-                   Grid.Row="4"
-                   Text=""
-                   FontSize="14"
-                   TextColor="#28a745"
-                   HorizontalOptions="Center"
-                   Margin="0,0,0,10" />
-            
-            <!-- Spacer for navigation bar -->
-            <BoxView Grid.Row="5" HeightRequest="20" Color="Transparent" />
-            
-            <!-- Navigation Bar -->
-            <local:NavigationBar Grid.Row="6" />
-        </Grid>
-    </ScrollView>
+                               TextColor="#87CEEB" />
+                        
+                        <!-- State Simulation -->
+                        <Label Text="App State Testing" 
+                               FontSize="14" 
+                               TextColor="#AAAAAA" 
+                               Margin="0,5,0,0" />
+                        <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                            <Button Text="🧪 Simulate Tombstone"
+                                    Clicked="OnSimulateTombstoneClicked"
+                                    BackgroundColor="#6c757d"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    Padding="12,8"
+                                    Margin="0,0,8,8" />
+                            <Button Text="🔄 Force Revalidate"
+                                    Clicked="OnForceRevalidateClicked"
+                                    BackgroundColor="#17a2b8"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    Padding="12,8"
+                                    Margin="0,0,8,8" />
+                            <Button Text="📋 Show State"
+                                    Clicked="OnShowStateClicked"
+                                    BackgroundColor="#28a745"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    Padding="12,8"
+                                    Margin="0,0,8,8" />
+                        </FlexLayout>
+                        
+                        <!-- Auth Testing -->
+                        <Label Text="Authentication Testing" 
+                               FontSize="14" 
+                               TextColor="#AAAAAA" 
+                               Margin="0,10,0,0" />
+                        <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                            <Button Text="🔐 Check Session"
+                                    Clicked="OnCheckSessionClicked"
+                                    BackgroundColor="#007bff"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    Padding="12,8"
+                                    Margin="0,0,8,8" />
+                            <Button Text="⚠️ Clear Auth (Logout)"
+                                    Clicked="OnClearAuthClicked"
+                                    BackgroundColor="#ffc107"
+                                    TextColor="Black"
+                                    FontSize="12"
+                                    Padding="12,8"
+                                    Margin="0,0,8,8" />
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </Frame>
+                
+                <!-- Debug Output Section -->
+                <Frame BackgroundColor="#444444" 
+                       BorderColor="#555555"
+                       CornerRadius="10"
+                       Margin="20,0,20,0"
+                       Padding="15"
+                       x:Name="DebugOutputFrame"
+                       IsVisible="False">
+                    <VerticalStackLayout>
+                        <Label Text="📊 Debug Output" 
+                               FontSize="16" 
+                               FontAttributes="Bold" 
+                               TextColor="#87CEEB" />
+                        <ScrollView HeightRequest="150" Margin="0,10,0,0">
+                            <Editor x:Name="DebugOutput"
+                                    IsReadOnly="True"
+                                    BackgroundColor="#222"
+                                    TextColor="#00FF00"
+                                    FontFamily="Courier"
+                                    FontSize="11"
+                                    AutoSize="TextChanges" />
+                        </ScrollView>
+                    </VerticalStackLayout>
+                </Frame>
+                
+                <!-- Log Section -->
+                <Frame BackgroundColor="#444444" 
+                       BorderColor="#555555"
+                       CornerRadius="10"
+                       Margin="20,0,20,0"
+                       Padding="15">
+                    <VerticalStackLayout>
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <Label Text="📜 Application Logs" 
+                                   FontSize="18" 
+                                   FontAttributes="Bold" 
+                                   TextColor="#87CEEB"
+                                   VerticalOptions="Center" />
+                            <Button Grid.Column="1"
+                                    Text="Copy"
+                                    Clicked="OnCopyClicked"
+                                    BackgroundColor="#007bff"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    Padding="15,8"
+                                    Margin="0,0,8,0" />
+                            <Button Grid.Column="2"
+                                    Text="Clear"
+                                    Clicked="OnClearClicked"
+                                    BackgroundColor="#dc3545"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    Padding="15,8" />
+                        </Grid>
+                        
+                        <!-- Log Content - Scrollable -->
+                        <ScrollView HeightRequest="300" Margin="0,10,0,0">
+                            <Editor x:Name="LogEditor"
+                                    IsReadOnly="True"
+                                    BackgroundColor="#222"
+                                    TextColor="White"
+                                    FontFamily="Courier"
+                                    FontSize="11"
+                                    AutoSize="TextChanges" />
+                        </ScrollView>
+                    </VerticalStackLayout>
+                </Frame>
+                
+                <!-- Status Label -->
+                <Label x:Name="StatusLabel"
+                       Text=""
+                       FontSize="14"
+                       TextColor="#28a745"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,10" />
+                
+            </VerticalStackLayout>
+        </ScrollView>
+        
+        <!-- Fixed Navigation Bar at Bottom -->
+        <local:NavigationBar Grid.Row="1" />
+        
+    </Grid>
 </ContentPage>
