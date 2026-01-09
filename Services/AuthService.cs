@@ -555,9 +555,7 @@ namespace HiatMeApp.Services
                         Console.WriteLine($"ValidateSessionAsync: Detected logged in elsewhere: {errorMsg}");
                         LogMessage($"ValidateSessionAsync: Detected logged in elsewhere: {errorMsg}");
                         
-                        // Handle the logout
-                        _ = HandleLoggedInElsewhereAsync(actualMessage);
-                        
+                        // Return the message - caller will handle the popup to avoid duplicates
                         return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
                     }
                     
@@ -572,7 +570,7 @@ namespace HiatMeApp.Services
                         {
                             string actualMessage = "Session ended. You have been logged out because someone logged into your account from another device or browser.";
                             LogMessage($"ValidateSessionAsync: Detected logged in elsewhere via IsLoggedInElsewhere check");
-                            _ = HandleLoggedInElsewhereAsync(actualMessage);
+                            // Return the message - caller will handle the popup to avoid duplicates
                             return (false, null, $"LOGGED_IN_ELSEWHERE:{actualMessage}");
                         }
                         
