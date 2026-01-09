@@ -1,10 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HiatMeApp.Helpers;
+using HiatMeApp.Models;
 using HiatMeApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
 using System;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace HiatMeApp.ViewModels;
@@ -28,12 +30,73 @@ public partial class RequestDayOffViewModel : BaseViewModel
     [ObservableProperty]
     private TimeSpan? _endTime;
 
+    [ObservableProperty]
+    private ObservableCollection<DayOffRequest> _myRequests = new();
+
+    [ObservableProperty]
+    private bool _isLoadingRequests;
+
+    [ObservableProperty]
+    private bool _hasRequests;
+
+    [ObservableProperty]
+    private string? _requestsErrorMessage;
+
     public RequestDayOffViewModel()
     {
         Title = "Request Day Off";
         _authService = App.Services.GetRequiredService<AuthService>();
         MinimumDate = DateTime.Today;
         SelectedDate = DateTime.Today.AddDays(1);
+    }
+
+    /// <summary>
+    /// Load the user's day off requests from the server
+    /// </summary>
+    [RelayCommand]
+    public async Task LoadMyRequestsAsync()
+    {
+        if (IsLoadingRequests) return;
+
+        try
+        {
+            IsLoadingRequests = true;
+            RequestsErrorMessage = null;
+            Console.WriteLine("LoadMyRequestsAsync: Loading requests...");
+
+            var (success, requests, message) = await _authService.GetMyDayOffRequestsAsync();
+
+            if (success && requests != null)
+            {
+                MyRequests.Clear();
+                foreach (var request in requests)
+                {
+                    MyRequests.Add(request);
+                }
+                HasRequests = MyRequests.Count > 0;
+                Console.WriteLine($"LoadMyRequestsAsync: Loaded {MyRequests.Count} requests");
+            }
+            else
+            {
+                Console.WriteLine($"LoadMyRequestsAsync: Failed - {message}");
+                // Don't show error popup if it's logged in elsewhere
+                if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    RequestsErrorMessage = message;
+                }
+                HasRequests = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"LoadMyRequestsAsync: Error - {ex.Message}");
+            RequestsErrorMessage = "Failed to load requests.";
+            HasRequests = false;
+        }
+        finally
+        {
+            IsLoadingRequests = false;
+        }
     }
 
     [RelayCommand]
@@ -63,6 +126,9 @@ public partial class RequestDayOffViewModel : BaseViewModel
                 EndTime = null;
                 OnPropertyChanged(nameof(StartTime));
                 OnPropertyChanged(nameof(EndTime));
+                
+                // Reload requests to show the new one
+                await LoadMyRequestsAsync();
             }
             else
             {

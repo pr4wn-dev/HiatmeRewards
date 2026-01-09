@@ -2206,6 +2206,109 @@ namespace HiatMeApp.Services
             }
         }
 
+        /// <summary>
+        /// Gets the current user's day off requests from the server
+        /// </summary>
+        public async Task<(bool Success, List<DayOffRequest>? Requests, string Message)> GetMyDayOffRequestsAsync()
+        {
+            Console.WriteLine("GetMyDayOffRequestsAsync: Starting");
+            if (string.IsNullOrEmpty(_csrfToken) && !await FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("GetMyDayOffRequestsAsync: Failed to retrieve CSRF token.");
+                return (false, null, "Failed to retrieve session token.");
+            }
+
+            var authToken = Preferences.Get("AuthToken", null);
+            if (string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("GetMyDayOffRequestsAsync: No auth_token found in Preferences.");
+                return (false, null, "No authentication token available. Please log in again.");
+            }
+
+            var data = new Dictionary<string, string>
+            {
+                { "action", "get_my_day_off_requests" },
+                { "auth_token", authToken }
+            };
+
+            var content = new FormUrlEncodedContent(data);
+
+            _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+            _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+            try
+            {
+                return await _genericRetryPolicy.ExecuteAsync(async () =>
+                {
+                    Console.WriteLine($"GetMyDayOffRequestsAsync: Sending POST request");
+                    var response = await _httpClient.PostAsync("/includes/hiatme_config.php", content);
+                    Console.WriteLine($"GetMyDayOffRequestsAsync: StatusCode={response.StatusCode}");
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"GetMyDayOffRequestsAsync response: {json}");
+
+                    // Use centralized auth error handler for HTTP status codes
+                    var (isAuthError, authErrorMsg) = await CheckAndHandleAuthErrorAsync(response.StatusCode, null, "GetMyDayOffRequestsAsync");
+                    if (isAuthError)
+                    {
+                        return (false, null, authErrorMsg);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        Console.WriteLine("GetMyDayOffRequestsAsync: Empty response received.");
+                        return (false, null, "Empty response from server.");
+                    }
+
+                    DayOffRequestsResponse? result = await Task.Run(() => JsonConvert.DeserializeObject<DayOffRequestsResponse>(json));
+                    if (result == null)
+                    {
+                        Console.WriteLine("GetMyDayOffRequestsAsync: Deserialized response is null.");
+                        return (false, null, "Invalid response format from server.");
+                    }
+
+                    if (!string.IsNullOrEmpty(result.CsrfToken))
+                    {
+                        _csrfToken = result.CsrfToken;
+                        Preferences.Set("CSRFToken", _csrfToken);
+                    }
+
+                    if (result.Success)
+                    {
+                        Console.WriteLine($"GetMyDayOffRequestsAsync: Retrieved {result.Requests?.Count ?? 0} requests");
+                        return (true, result.Requests, "Requests retrieved successfully.");
+                    }
+                    else
+                    {
+                        // Use centralized auth error handler
+                        var (isLoggedInElsewhere, errorMsg) = await CheckAndHandleAuthErrorAsync(System.Net.HttpStatusCode.OK, result.Message ?? "Failed to get requests.", "GetMyDayOffRequestsAsync");
+                        return (false, null, errorMsg);
+                    }
+                });
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"GetMyDayOffRequestsAsync: HTTP error: {ex.Message}");
+                return (false, null, $"Network error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetMyDayOffRequestsAsync: Unexpected error: {ex.Message}");
+                return (false, null, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        private class DayOffRequestsResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+            [JsonProperty("csrf_token")]
+            public string? CsrfToken { get; set; }
+            public List<DayOffRequest>? Requests { get; set; }
+        }
+
         private class UpdateProfileResponse
         {
             public bool Success { get; set; }

@@ -10,6 +10,7 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+            <converters:NotNullConverter x:Key="NotNullConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
     <Grid RowDefinitions="Auto,*,Auto">
@@ -98,6 +99,119 @@
                         BackgroundColor="#007bff"
                         TextColor="White"
                         Margin="0,10,0,0" />
+
+                <!-- My Requests Section -->
+                <BoxView HeightRequest="2"
+                         BackgroundColor="#555555"
+                         HorizontalOptions="FillAndExpand"
+                         Margin="0,30,0,10" />
+
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                    <Label Text="My Requests"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           VerticalOptions="Center" />
+                    <Button Grid.Column="1"
+                            Text="↻ Refresh"
+                            FontSize="14"
+                            Command="{Binding LoadMyRequestsCommand}"
+                            BackgroundColor="#6c757d"
+                            TextColor="White"
+                            Padding="12,6"
+                            IsEnabled="{Binding IsLoadingRequests, Converter={StaticResource InverseBooleanConverter}}" />
+                </Grid>
+
+                <!-- Loading indicator for requests -->
+                <ActivityIndicator IsRunning="{Binding IsLoadingRequests}"
+                                   IsVisible="{Binding IsLoadingRequests}"
+                                   Color="White"
+                                   HorizontalOptions="Center"
+                                   Margin="0,10,0,10" />
+
+                <!-- Error message -->
+                <Label Text="{Binding RequestsErrorMessage}"
+                       IsVisible="{Binding RequestsErrorMessage, Converter={StaticResource NotNullConverter}}"
+                       TextColor="#dc3545"
+                       FontSize="14"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,10" />
+
+                <!-- No requests message -->
+                <Frame BackgroundColor="#444444"
+                       BorderColor="#555555"
+                       CornerRadius="8"
+                       Padding="20"
+                       IsVisible="{Binding HasRequests, Converter={StaticResource InverseBooleanConverter}}"
+                       Margin="0,0,0,10">
+                    <Label Text="No requests yet. Submit your first day off request above!"
+                           TextColor="#AAAAAA"
+                           FontSize="14"
+                           HorizontalTextAlignment="Center" />
+                </Frame>
+
+                <!-- Requests List -->
+                <CollectionView ItemsSource="{Binding MyRequests}"
+                                IsVisible="{Binding HasRequests}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame BackgroundColor="#444444"
+                                   BorderColor="#555555"
+                                   CornerRadius="8"
+                                   Padding="15"
+                                   Margin="0,0,0,10">
+                                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                                    <!-- Date and Time -->
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0">
+                                        <Label Text="{Binding DisplayDate}"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="White" />
+                                        <Label Text="{Binding DisplayTimeRange}"
+                                               FontSize="14"
+                                               TextColor="#AAAAAA" />
+                                    </VerticalStackLayout>
+
+                                    <!-- Status Badge -->
+                                    <Frame Grid.Row="0" Grid.Column="1"
+                                           BackgroundColor="{Binding StatusColor}"
+                                           CornerRadius="12"
+                                           Padding="10,5"
+                                           VerticalOptions="Center"
+                                           HasShadow="False">
+                                        <Label Text="{Binding DisplayStatus}"
+                                               FontSize="12"
+                                               TextColor="White"
+                                               FontAttributes="Bold" />
+                                    </Frame>
+
+                                    <!-- Reason (if provided) -->
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                           Text="{Binding Reason, StringFormat='Reason: {0}'}"
+                                           IsVisible="{Binding Reason, Converter={StaticResource NotNullConverter}}"
+                                           FontSize="13"
+                                           TextColor="#CCCCCC"
+                                           Margin="0,8,0,0" />
+
+                                    <!-- Manager Response (if provided) -->
+                                    <Frame Grid.Row="2" Grid.ColumnSpan="2"
+                                           BackgroundColor="#333333"
+                                           BorderColor="Transparent"
+                                           CornerRadius="4"
+                                           Padding="10"
+                                           Margin="0,8,0,0"
+                                           IsVisible="{Binding ManagerReason, Converter={StaticResource NotNullConverter}}">
+                                        <Label Text="{Binding ManagerReason, StringFormat='Manager: {0}'}"
+                                               FontSize="13"
+                                               TextColor="#87CEEB"
+                                               FontAttributes="Italic" />
+                                    </Frame>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
             </VerticalStackLayout>
         </ScrollView>
 
