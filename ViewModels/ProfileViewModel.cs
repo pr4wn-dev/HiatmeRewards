@@ -289,6 +289,14 @@ public partial class ProfileViewModel : BaseViewModel
                 _originalEmail = updatedUser.Email; // Update original email in case it changed
                 _selectedImageFile = null; // Clear selected file
                 IsEditing = false;
+                
+                // Update the flyout menu header with new user info
+                if (Shell.Current?.BindingContext is AppShellViewModel shellVm)
+                {
+                    shellVm.UpdateMenuItems();
+                    Console.WriteLine($"SaveProfile: Updated AppShellViewModel menu items");
+                }
+                
                 await PageDialogService.DisplayAlertAsync("Success", message, "OK");
             }
             else
