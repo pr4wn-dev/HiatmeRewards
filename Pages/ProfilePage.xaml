@@ -15,138 +15,212 @@
     <Grid RowDefinitions="Auto,*,Auto">
         <local:TopBar Grid.Row="0" />
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="12">
-                <Label Text="Update Profile" 
+            <VerticalStackLayout Padding="20" Spacing="15">
+                <Label Text="Your Profile" 
                        FontSize="26" 
                        HorizontalOptions="Center" 
                        FontAttributes="Bold"
                        TextColor="White"
-                       Margin="0,10,0,10" />
+                       Margin="0,10,0,5" />
                 <BoxView HeightRequest="2"
                          BackgroundColor="#007BFF"
                          HorizontalOptions="FillAndExpand"
-                         Margin="0,0,0,12" />
+                         Margin="0,0,0,10" />
                 
-                <!-- Profile Picture -->
-                <VerticalStackLayout Spacing="8"
-                                     HorizontalOptions="Center"
-                                     Margin="0,0,0,6">
-                    <Image x:Name="ProfileImage"
-                           HeightRequest="120" 
-                           WidthRequest="120"
-                           Aspect="AspectFill"
-                           HorizontalOptions="Center" />
-                    <Button Text="Change Profile Picture" 
-                            FontSize="16"
-                            Command="{Binding PickImageCommand}"
-                            IsVisible="{Binding IsEditing}"
-                            BackgroundColor="Transparent"
-                            TextColor="#007BFF"
-                            HorizontalOptions="Center"
-                            Padding="15,4"
-                            Margin="0,0,0,0" />
-                </VerticalStackLayout>
+                <!-- Profile Picture Card -->
+                <Frame BackgroundColor="#3A3A3A"
+                       BorderColor="#555555"
+                       CornerRadius="12"
+                       Padding="20"
+                       Margin="0,0,0,5">
+                    <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                        <Frame BackgroundColor="#444444"
+                               CornerRadius="60"
+                               WidthRequest="120"
+                               HeightRequest="120"
+                               Padding="3"
+                               HasShadow="False"
+                               HorizontalOptions="Center">
+                            <Image x:Name="ProfileImage"
+                                   HeightRequest="114" 
+                                   WidthRequest="114"
+                                   Aspect="AspectFill"
+                                   HorizontalOptions="Center" />
+                        </Frame>
+                        <Button Text="📷 Change Photo" 
+                                FontSize="14"
+                                Command="{Binding PickImageCommand}"
+                                IsVisible="{Binding IsEditing}"
+                                BackgroundColor="#007BFF"
+                                TextColor="White"
+                                CornerRadius="8"
+                                Padding="15,10"
+                                HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Frame>
                 
-                <!-- User Information -->
-                <Frame Padding="18,12,18,18" 
-                       BorderColor="#333333" 
-                       BackgroundColor="#333333"
-                       CornerRadius="8"
-                       Margin="0,0,0,0">
-                    <VerticalStackLayout Spacing="12">
+                <!-- User Information Card -->
+                <Frame BackgroundColor="#3A3A3A"
+                       BorderColor="#555555"
+                       CornerRadius="12"
+                       Padding="20">
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Personal Information"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="#87CEEB" />
+                        
+                        <!-- Full Name -->
                         <VerticalStackLayout Spacing="6">
-                            <Label Text="Full Name" 
-                                   FontSize="18" 
-                                   FontAttributes="Bold"
-                                   TextColor="#007BFF"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Label Text="{Binding Name}" 
-                                   FontSize="18"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <!-- View Mode -->
+                            <Grid ColumnDefinitions="Auto,*"
+                                  IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}">
+                                <Label Grid.Column="0"
+                                       Text="Full Name"
+                                       FontSize="13"
+                                       TextColor="#888888"
+                                       WidthRequest="100" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Name}" 
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White" />
+                            </Grid>
+                            <!-- Edit Mode -->
                             <local:FloatingLabelEntry LabelText="Full Name"
                                                        Text="{Binding Name}"
                                                        IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
+                        <BoxView HeightRequest="1" 
+                                 BackgroundColor="#444444"
+                                 IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                        
+                        <!-- Email -->
                         <VerticalStackLayout Spacing="6">
-                            <Label Text="Email" 
-                                   FontSize="18" 
-                                   FontAttributes="Bold"
-                                   TextColor="#007BFF"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Label Text="{Binding Email}" 
-                                   FontSize="18"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <!-- View Mode -->
+                            <Grid ColumnDefinitions="Auto,*"
+                                  IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}">
+                                <Label Grid.Column="0"
+                                       Text="Email"
+                                       FontSize="13"
+                                       TextColor="#888888"
+                                       WidthRequest="100" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Email}" 
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White" />
+                            </Grid>
+                            <!-- Edit Mode -->
                             <local:FloatingLabelEntry LabelText="Email"
                                                        Text="{Binding Email}"
                                                        Keyboard="Email"
                                                        IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
+                        <BoxView HeightRequest="1" 
+                                 BackgroundColor="#444444"
+                                 IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                        
+                        <!-- Phone Number -->
                         <VerticalStackLayout Spacing="6">
-                            <Label Text="Phone Number" 
-                                   FontSize="18" 
-                                   FontAttributes="Bold"
-                                   TextColor="#007BFF"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
-                            <Label Text="{Binding Phone, TargetNullValue='Not provided'}" 
-                                   FontSize="18"
-                                   TextColor="White"
-                                   IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                            <!-- View Mode -->
+                            <Grid ColumnDefinitions="Auto,*"
+                                  IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}">
+                                <Label Grid.Column="0"
+                                       Text="Phone"
+                                       FontSize="13"
+                                       TextColor="#888888"
+                                       WidthRequest="100" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Phone, TargetNullValue='Not provided'}" 
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White" />
+                            </Grid>
+                            <!-- Edit Mode -->
                             <local:FloatingLabelEntry LabelText="Phone Number"
                                                        Text="{Binding Phone}"
                                                        Keyboard="Telephone"
                                                        IsVisible="{Binding IsEditing}" />
                         </VerticalStackLayout>
                         
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Role" 
-                                   FontSize="18" 
+                        <BoxView HeightRequest="1" 
+                                 BackgroundColor="#444444"
+                                 IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}" />
+                        
+                        <!-- Role (Non-editable) -->
+                        <Grid ColumnDefinitions="Auto,*,Auto"
+                              IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}">
+                            <Label Grid.Column="0"
+                                   Text="Role"
+                                   FontSize="13"
+                                   TextColor="#888888"
+                                   WidthRequest="100" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Role}" 
+                                   FontSize="16"
                                    FontAttributes="Bold"
-                                   TextColor="#007BFF" />
-                            <Label Text="{Binding Role}" 
-                                   FontSize="18"
                                    TextColor="White" />
-                        </VerticalStackLayout>
+                            <Frame Grid.Column="2"
+                                   BackgroundColor="#007BFF"
+                                   CornerRadius="12"
+                                   Padding="12,5"
+                                   HasShadow="False">
+                                <Label Text="{Binding Role}"
+                                       FontSize="11"
+                                       FontAttributes="Bold"
+                                       TextColor="White" />
+                            </Frame>
+                        </Grid>
                     </VerticalStackLayout>
                 </Frame>
                 
                 <!-- Action Buttons -->
-                <VerticalStackLayout Spacing="12" Margin="0,15,0,0">
-                    <Button Text="Edit" 
+                <VerticalStackLayout Spacing="12" Margin="0,10,0,0">
+                    <!-- Edit Button (View Mode) -->
+                    <Button Text="✏️ Edit Profile" 
                             FontSize="18"
                             Command="{Binding StartEditingCommand}"
                             IsVisible="{Binding IsEditing, Converter={StaticResource InverseBooleanConverter}}"
                             BackgroundColor="#007BFF"
                             TextColor="White"
+                            CornerRadius="8"
                             HeightRequest="50" />
                     
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <!-- Save/Cancel Buttons (Edit Mode) -->
+                    <Grid ColumnDefinitions="*,*" 
+                          ColumnSpacing="12"
+                          IsVisible="{Binding IsEditing}">
                         <Button Text="Cancel" 
-                                FontSize="18"
+                                FontSize="16"
                                 Command="{Binding CancelEditingCommand}"
-                                IsVisible="{Binding IsEditing}"
                                 Grid.Column="0"
                                 BackgroundColor="#6c757d"
                                 TextColor="White"
+                                CornerRadius="8"
                                 HeightRequest="50" />
                         
-                        <Button Text="Update Profile" 
-                                FontSize="18"
+                        <Button Text="💾 Save Changes" 
+                                FontSize="16"
                                 Command="{Binding SaveProfileCommand}"
-                                IsVisible="{Binding IsEditing}"
                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBooleanConverter}}"
                                 Grid.Column="1"
-                                BackgroundColor="#007BFF"
+                                BackgroundColor="#28a745"
                                 TextColor="White"
+                                CornerRadius="8"
                                 HeightRequest="50" />
                     </Grid>
+                    
+                    <!-- Loading Indicator -->
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}"
+                                       Color="#007BFF"
+                                       HorizontalOptions="Center" />
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
         <local:NavigationBar Grid.Row="2" />
     </Grid>
 </ContentPage>
-

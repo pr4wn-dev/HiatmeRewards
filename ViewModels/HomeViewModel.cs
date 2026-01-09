@@ -22,6 +22,18 @@ public partial class HomeViewModel : BaseViewModel
     [ObservableProperty]
     private Vehicle? _assignedVehicle;
 
+    [ObservableProperty]
+    private string? _userName;
+
+    [ObservableProperty]
+    private string? _userRole;
+
+    [ObservableProperty]
+    private string? _vehicleStatus;
+
+    [ObservableProperty]
+    private string _currentDate = DateTime.Now.ToString("dddd, MMMM d");
+
     public HomeViewModel()
     {
         Title = "Home";
@@ -31,6 +43,9 @@ public partial class HomeViewModel : BaseViewModel
             var user = JsonConvert.DeserializeObject<User>(userJson);
             App.CurrentUser = user;
             IsVehicleButtonVisible = user?.Role is "Driver" or "Manager" or "Owner";
+            UserName = user?.Name ?? "User";
+            UserRole = user?.Role ?? "User";
+            UpdateVehicleStatus();
             Console.WriteLine($"HomeViewModel: Initialized with IsVehicleButtonVisible={IsVehicleButtonVisible}, Role={user?.Role}, UserId={user?.UserId}, VehiclesCount={user?.Vehicles?.Count ?? 0}");
         }
         WeakReferenceMessenger.Default.Register<HomeViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
@@ -567,6 +582,72 @@ public partial class HomeViewModel : BaseViewModel
         {
             Console.WriteLine($"GoToViewLog: Error navigating to View Log: {ex.Message}");
             await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to View Log page.", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoToVehicle()
+    {
+        try
+        {
+            Console.WriteLine("GoToVehicle: Navigating to Vehicle page");
+            await Shell.Current.GoToAsync("//Vehicle");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToVehicle: Error navigating to Vehicle: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle page.", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoToIssues()
+    {
+        try
+        {
+            Console.WriteLine("GoToIssues: Navigating to Vehicle Issues page");
+            await Shell.Current.GoToAsync("//VehicleIssues");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle Issues page.", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoToFinishDay()
+    {
+        try
+        {
+            Console.WriteLine("GoToFinishDay: Navigating to Finish Day page");
+            await Shell.Current.GoToAsync("//FinishDay");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
+        }
+    }
+
+    private void UpdateVehicleStatus()
+    {
+        if (App.CurrentUser?.Vehicles != null && App.CurrentUser.Vehicles.Any())
+        {
+            var assigned = App.CurrentUser.Vehicles
+                .FirstOrDefault(v => v.CurrentUserId == App.CurrentUser.UserId);
+            if (assigned != null)
+            {
+                VehicleStatus = $"{assigned.Make} {assigned.Model}";
+            }
+            else
+            {
+                VehicleStatus = "Not Assigned";
+            }
+        }
+        else
+        {
+            VehicleStatus = "Not Assigned";
         }
     }
 }

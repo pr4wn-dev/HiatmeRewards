@@ -29,6 +29,12 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         _vehicleId = vehicleId;
     }
 
+    [RelayCommand]
+    public async Task Refresh()
+    {
+        await LoadIssuesAsync();
+    }
+
     public async Task LoadIssuesAsync()
     {
         try

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Maui.Graphics;
+using Newtonsoft.Json;
 
 namespace HiatMeApp.Models;
 
@@ -45,4 +46,13 @@ public class VehicleIssue
 
     [JsonProperty("repair_category")]
     public string? RepairCategory { get; set; }
+
+    // Display helper for status badge color
+    public Color StatusColor => Status?.ToLower() switch
+    {
+        "resolved" => Color.FromArgb("#28a745"),   // Green
+        "in progress" or "in_progress" => Color.FromArgb("#ffc107"), // Yellow
+        "pending" => Color.FromArgb("#17a2b8"),    // Blue
+        _ => Color.FromArgb("#dc3545")              // Red for open/unknown
+    };
 }
