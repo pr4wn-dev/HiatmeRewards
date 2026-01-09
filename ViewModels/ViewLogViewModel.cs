@@ -16,7 +16,7 @@ public partial class ViewLogViewModel : BaseViewModel
 
     public ViewLogViewModel()
     {
-        Title = "View Log";
+        Title = "Developer Tools";
         
         // Set visibility based on user role
         var userJson = Preferences.Get("UserData", string.Empty);
