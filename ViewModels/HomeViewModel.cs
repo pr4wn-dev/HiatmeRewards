@@ -187,35 +187,43 @@ public partial class HomeViewModel : BaseViewModel
                         else
                         {
                             Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to submit start miles: {submitMessage}");
-                            string errorMessage = submitMessage;
-                            if (submitMessage.Contains("Too many attempts"))
+                            // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                            if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                             {
-                                errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                string errorMessage = submitMessage;
+                                if (submitMessage.Contains("Too many attempts"))
+                                {
+                                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                }
+                                else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
+                                {
+                                    errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
+                                }
+                                else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
+                                {
+                                    errorMessage = "Session expired. Please close and reopen the app.";
+                                }
+                                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                             }
-                            else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
-                            {
-                                errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
-                            }
-                            else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
-                            {
-                                errorMessage = "Session expired. Please close and reopen the app.";
-                            }
-                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
                     }
                     else
                     {
                         Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to create new mileage record: {message}");
-                        string errorMessage = message;
-                        if (message.Contains("invalid") && message.Contains("unverified"))
+                        // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                        if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                         {
-                            errorMessage = "Authentication error. Please close and reopen the app, or log in again.";
+                            string errorMessage = message;
+                            if (message.Contains("invalid") && message.Contains("unverified"))
+                            {
+                                errorMessage = "Authentication error. Please close and reopen the app, or log in again.";
+                            }
+                            else if (message.Contains("Network error"))
+                            {
+                                errorMessage = "Network issue. Please check your connection and try again.";
+                            }
+                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
-                        else if (message.Contains("Network error"))
-                        {
-                            errorMessage = "Network issue. Please check your connection and try again.";
-                        }
-                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                     }
                     return;
                 }
@@ -263,21 +271,25 @@ public partial class HomeViewModel : BaseViewModel
                     else
                     {
                         Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to submit start miles: {submitMessage}");
-                        string errorMessage = submitMessage;
-                        if (submitMessage.Contains("Too many attempts"))
+                        // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                        if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                         {
-                            errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                            string errorMessage = submitMessage;
+                            if (submitMessage.Contains("Too many attempts"))
+                            {
+                                errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                            }
+                            else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
+                            {
+                                errorMessage = "Failed to submit starting miles. Please try again or reassign the vehicle.";
+                            }
+                            else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
+                            {
+                                // CSRF token error - show user-friendly message
+                                errorMessage = "Session expired. Please close and reopen the app.";
+                            }
+                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
-                        else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
-                        {
-                            errorMessage = "Failed to submit starting miles. Please try again or reassign the vehicle.";
-                        }
-                        else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
-                        {
-                            // CSRF token error - show user-friendly message
-                            errorMessage = "Session expired. Please close and reopen the app.";
-                        }
-                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                     }
                 }
                 else
@@ -344,16 +356,20 @@ public partial class HomeViewModel : BaseViewModel
                         else
                         {
                             Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to submit start miles: {submitMessage}");
-                            string errorMessage = submitMessage;
-                            if (submitMessage.Contains("Too many attempts"))
+                            // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                            if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                             {
-                                errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                string errorMessage = submitMessage;
+                                if (submitMessage.Contains("Too many attempts"))
+                                {
+                                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                }
+                                else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
+                                {
+                                    errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
+                                }
+                                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                             }
-                            else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
-                            {
-                                errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
-                            }
-                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
                     }
                     else if (incompleteRecords != null && incompleteRecords.Any())
@@ -407,12 +423,16 @@ public partial class HomeViewModel : BaseViewModel
                                 else
                                 {
                                     Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to submit start miles for mileage_id={record.MileageId}: {submitMessage}");
-                                    string errorMessage = submitMessage;
-                                    if (submitMessage.Contains("Too many attempts"))
+                                    // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                                    if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
-                                    }
+                                        string errorMessage = submitMessage;
+                                        if (submitMessage.Contains("Too many attempts"))
+                                        {
+                                            errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                        }
                                         await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
+                                    }
                                 }
                             }
                         }

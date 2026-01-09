@@ -370,20 +370,24 @@ public partial class VehicleViewModel : BaseViewModel
                     else
                     {
                         Console.WriteLine($"AssignVehicleByVin: Failed to submit start miles: {submitMessage}");
-                        string errorMessage = submitMessage;
-                        if (submitMessage.Contains("Too many attempts"))
+                        // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                        if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                         {
-                            errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                            string errorMessage = submitMessage;
+                            if (submitMessage.Contains("Too many attempts"))
+                            {
+                                errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                            }
+                            else if (submitMessage.Contains("Network error"))
+                            {
+                                errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
+                            }
+                            else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
+                            {
+                                errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
+                            }
+                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         }
-                        else if (submitMessage.Contains("Network error"))
-                        {
-                            errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
-                        }
-                        else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
-                        {
-                            errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
-                        }
-                        await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                         break;
                     }
                 }
@@ -417,16 +421,20 @@ public partial class VehicleViewModel : BaseViewModel
                             if (!submitSuccess)
                             {
                                 Console.WriteLine($"AssignVehicleByVin: Failed to submit start miles: {submitMessage}");
-                                string errorMessage = submitMessage;
-                                if (submitMessage.Contains("Too many attempts"))
+                                // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                                if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                    string errorMessage = submitMessage;
+                                    if (submitMessage.Contains("Too many attempts"))
+                                    {
+                                        errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                    }
+                                    else if (submitMessage.Contains("Network error"))
+                                    {
+                                        errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
+                                    }
+                                    await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                                 }
-                                else if (submitMessage.Contains("Network error"))
-                                {
-                                    errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
-                                }
-                                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                                 continue;
                             }
                             Console.WriteLine($"AssignVehicleByVin: Submitted start miles for mileage_id={returnedMileageId}, vehicle_id={record.VehicleId}");
@@ -455,16 +463,20 @@ public partial class VehicleViewModel : BaseViewModel
                             if (!submitSuccess)
                             {
                                 Console.WriteLine($"AssignVehicleByVin: Failed to submit end miles: {submitMessage}");
-                                string errorMessage = submitMessage;
-                                if (submitMessage.Contains("Too many attempts"))
+                                // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                                if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                    string errorMessage = submitMessage;
+                                    if (submitMessage.Contains("Too many attempts"))
+                                    {
+                                        errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                    }
+                                    else if (submitMessage.Contains("Network error"))
+                                    {
+                                        errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
+                                    }
+                                    await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                                 }
-                                else if (submitMessage.Contains("Network error"))
-                                {
-                                    errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
-                                }
-                                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                                 continue;
                             }
                             Console.WriteLine($"AssignVehicleByVin: Submitted end miles for mileage_id={returnedMileageId}, vehicle_id={record.VehicleId}");
@@ -513,20 +525,24 @@ public partial class VehicleViewModel : BaseViewModel
                         else
                         {
                             Console.WriteLine($"AssignVehicleByVin: Failed to submit start miles: {submitMessage}");
-                            string errorMessage = submitMessage;
-                            if (submitMessage.Contains("Too many attempts"))
+                            // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
+                            if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
                             {
-                                errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                string errorMessage = submitMessage;
+                                if (submitMessage.Contains("Too many attempts"))
+                                {
+                                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
+                                }
+                                else if (submitMessage.Contains("Network error"))
+                                {
+                                    errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
+                                }
+                                else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
+                                {
+                                    errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
+                                }
+                                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                             }
-                            else if (submitMessage.Contains("Network error"))
-                            {
-                                errorMessage = "Network issue submitting mileage. Please check your connection and try again.";
-                            }
-                            else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
-                            {
-                                errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
-                            }
-                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
                             break;
                         }
                     }
