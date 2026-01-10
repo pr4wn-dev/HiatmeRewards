@@ -79,7 +79,7 @@ public partial class VehicleIssuesViewModel : BaseViewModel
         try
         {
             Console.WriteLine("ReportIssueAsync: Button clicked, showing issue type popup");
-            string[] issueTypes = { "Brakes", "Tires", "Engine", "Transmission", "Suspension", "Electrical", "Custom" };
+            string[] issueTypes = { "Brakes", "Tires", "Engine", "Transmission", "Suspension", "Electrical", "Camera Issue", "SD Card Full", "Custom" };
             string? issueType = await PageDialogService.DisplayActionSheetAsync("Select Issue Type", "Cancel", null, issueTypes);
 
             if (string.IsNullOrEmpty(issueType) || issueType == "Cancel")

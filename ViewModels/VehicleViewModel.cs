@@ -767,4 +767,69 @@ public partial class VehicleViewModel : BaseViewModel
             await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to View Log page.", "OK");
         }
     }
+
+    [RelayCommand]
+    private async Task ReportCameraIssue()
+    {
+        try
+        {
+            if (Vehicle == null)
+            {
+                await PageDialogService.DisplayAlertAsync("No Vehicle", "Please assign a vehicle first.", "OK");
+                return;
+            }
+
+            Console.WriteLine("ReportCameraIssue: Showing camera issue type selection");
+            string[] cameraOptions = { "Camera Issue", "SD Card Full" };
+            string? selectedType = await PageDialogService.DisplayActionSheetAsync("Camera/Chip Issue", "Cancel", null, cameraOptions);
+
+            if (string.IsNullOrEmpty(selectedType) || selectedType == "Cancel")
+            {
+                Console.WriteLine("ReportCameraIssue: User cancelled issue type selection");
+                return;
+            }
+
+            string? description = await PageDialogService.DisplayPromptAsync(
+                "Describe Issue",
+                selectedType == "SD Card Full" 
+                    ? "Any additional details about the SD card? (optional)" 
+                    : "Describe the camera issue (optional):",
+                maxLength: 500,
+                keyboard: Keyboard.Text
+            );
+
+            if (description == null)
+            {
+                Console.WriteLine("ReportCameraIssue: User cancelled description input");
+                return;
+            }
+
+            IsBusy = true;
+            var authService = App.Services.GetRequiredService<AuthService>();
+            var (success, message) = await authService.AddVehicleIssueAsync(Vehicle.VehicleId, selectedType, description);
+
+            if (success)
+            {
+                Console.WriteLine($"ReportCameraIssue: Successfully reported {selectedType} for vehicle {Vehicle.VehicleId}");
+                await PageDialogService.DisplayAlertAsync("Success", $"{selectedType} reported successfully. A manager will be notified.", "OK");
+            }
+            else
+            {
+                Console.WriteLine($"ReportCameraIssue: Failed to report issue: {message}");
+                if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    await PageDialogService.DisplayAlertAsync("Error", message, "OK");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ReportCameraIssue: Error: {ex.Message}");
+            await PageDialogService.DisplayAlertAsync("Error", "Failed to report camera issue.", "OK");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 }

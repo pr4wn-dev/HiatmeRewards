@@ -178,6 +178,58 @@
                                 </Grid>
                             </VerticalStackLayout>
                         </Frame>
+
+                        <!-- Quick Actions -->
+                        <Grid ColumnDefinitions="*,*" 
+                              ColumnSpacing="10" 
+                              Padding="15,0,15,15">
+                            <Frame Grid.Column="0"
+                                   BackgroundColor="#444444"
+                                   BorderColor="#555555"
+                                   CornerRadius="10"
+                                   Padding="15">
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ReportCameraIssueCommand}" />
+                                </Frame.GestureRecognizers>
+                                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                                    <Label Text="📹"
+                                           FontSize="32"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="Camera/Chip"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="White"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="Report Issue"
+                                           FontSize="11"
+                                           TextColor="#AAAAAA"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Frame>
+                            <Frame Grid.Column="1"
+                                   BackgroundColor="#444444"
+                                   BorderColor="#555555"
+                                   CornerRadius="10"
+                                   Padding="15">
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding GoToIssuesCommand}" />
+                                </Frame.GestureRecognizers>
+                                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                                    <Label Text="⚠️"
+                                           FontSize="32"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="All Issues"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="White"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="View List"
+                                           FontSize="11"
+                                           TextColor="#AAAAAA"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </Frame>
+                        </Grid>
                     </VerticalStackLayout>
                 </Frame>
 
