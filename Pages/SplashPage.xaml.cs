@@ -103,6 +103,7 @@ public partial class SplashPage : ContentPage
                         // User logged in elsewhere - already handled by AuthService with popup
                         LogMessage($"SplashPage: User logged in elsewhere, clearing login state");
                         Console.WriteLine($"SplashPage: User logged in elsewhere, clearing login state");
+                        App.StopLocationTracking();
                         Preferences.Set("IsLoggedIn", false);
                         Preferences.Remove("AuthToken");
                         Preferences.Remove("UserData");
@@ -116,6 +117,7 @@ public partial class SplashPage : ContentPage
                         // Session is definitely expired/invalid - clear login state
                         LogMessage($"SplashPage: Session expired/invalid: {message}, clearing login state");
                         Console.WriteLine($"SplashPage: Session expired/invalid: {message}, clearing login state");
+                        App.StopLocationTracking();
                         Preferences.Set("IsLoggedIn", false);
                         Preferences.Remove("AuthToken");
                         Preferences.Remove("UserData");
@@ -281,6 +283,12 @@ public partial class SplashPage : ContentPage
                 await Shell.Current.GoToAsync(targetRoute);
                 LogMessage($"SplashPage: Navigation to {targetRoute} completed");
                 Console.WriteLine($"SplashPage: Navigation to {targetRoute} completed");
+                
+                // Start location tracking for eligible roles (Driver, Manager, Owner)
+                if (isLoggedIn)
+                {
+                    await App.StartLocationTrackingAsync();
+                }
             }
             catch (Exception navEx)
             {

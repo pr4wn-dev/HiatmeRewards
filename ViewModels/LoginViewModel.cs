@@ -106,6 +106,9 @@ public partial class LoginViewModel : BaseViewModel
                         Console.WriteLine("LoginAsync: Menu visibility updated");
                     }
                 });
+                
+                // Start location tracking for eligible roles (Driver, Manager, Owner)
+                await App.StartLocationTrackingAsync();
             }
         }
         catch (Exception ex)

@@ -39,6 +39,12 @@ public static class MauiProgram
             return new AuthService(httpClient);
         });
 
+        builder.Services.AddSingleton<LocationService>(serviceProvider =>
+        {
+            var httpClient = serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("HiatmeApi");
+            return new LocationService(httpClient);
+        });
+
         builder.Services.AddSingleton<IValueConverter, BoolToEyeIconConverter>();
         builder.Services.AddSingleton<IValueConverter, NotNullConverter>();
         builder.Services.AddTransient<LoginViewModel>();

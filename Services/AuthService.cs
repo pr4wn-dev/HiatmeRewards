@@ -343,6 +343,9 @@ namespace HiatMeApp.Services
                 LogMessage($"HandleLoggedInElsewhereAsync: User logged in elsewhere, clearing session and showing popup");
                 Console.WriteLine($"HandleLoggedInElsewhereAsync: User logged in elsewhere, clearing session");
                 
+                // Stop location tracking before clearing session
+                App.StopLocationTracking();
+                
                 // Clear login state
                 Preferences.Set("IsLoggedIn", false);
                 Preferences.Remove("AuthToken");

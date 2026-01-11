@@ -30,6 +30,70 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
     }
+    
+    /// <summary>
+    /// Start location tracking for eligible user roles (Driver, Manager, Owner).
+    /// Call this after successful login.
+    /// </summary>
+    public static async Task StartLocationTrackingAsync()
+    {
+        try
+        {
+            if (CurrentUser == null)
+            {
+                Console.WriteLine("App: Cannot start location tracking - no current user");
+                return;
+            }
+            
+            var locationService = Services.GetService<LocationService>();
+            if (locationService == null)
+            {
+                Console.WriteLine("App: LocationService not available");
+                return;
+            }
+            
+            await locationService.StartTrackingAsync(CurrentUser.Role ?? "Client");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"App: Error starting location tracking: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Stop location tracking. Call this when user logs out.
+    /// </summary>
+    public static void StopLocationTracking()
+    {
+        try
+        {
+            var locationService = Services.GetService<LocationService>();
+            locationService?.StopTracking();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"App: Error stopping location tracking: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Force an immediate location update (useful when resuming from background)
+    /// </summary>
+    public static async Task ForceLocationUpdateAsync()
+    {
+        try
+        {
+            var locationService = Services.GetService<LocationService>();
+            if (locationService?.IsTracking == true)
+            {
+                await locationService.ForceUpdateAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"App: Error forcing location update: {ex.Message}");
+        }
+    }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
@@ -107,6 +171,9 @@ public partial class App : Application
             {
                 Console.WriteLine("Window: User is logged in, revalidating session");
                 _ = RevalidateSessionAsync();
+                
+                // Force an immediate location update when resuming
+                _ = ForceLocationUpdateAsync();
             }
             
             _wasBackgrounded = false;
@@ -164,6 +231,9 @@ public partial class App : Application
                     {
                         CurrentUser = user;
                         Console.WriteLine($"RestoreAppState: Restored CurrentUser from preferences: {user.Email}");
+                        
+                        // Restart location tracking for eligible roles
+                        _ = StartLocationTrackingAsync();
                         
                         // Update the shell menu if needed
                         MainThread.BeginInvokeOnMainThread(() =>
@@ -255,6 +325,10 @@ public partial class App : Application
                 {
                     // Session is truly invalid/expired
                     Console.WriteLine("RevalidateSessionAsync: Session invalid, clearing login state");
+                    
+                    // Stop location tracking
+                    StopLocationTracking();
+                    
                     Preferences.Set("IsLoggedIn", false);
                     Preferences.Remove("AuthToken");
                     Preferences.Remove("UserData");
