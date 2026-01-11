@@ -234,6 +234,8 @@ namespace HiatMeApp.Services
 
                 var response = await _httpClient.PostAsync("/api/update_location.php", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
+                
+                Console.WriteLine($"LocationService: Response status={response.StatusCode}, body={responseContent}");
 
                 if (response.IsSuccessStatusCode)
                 {
