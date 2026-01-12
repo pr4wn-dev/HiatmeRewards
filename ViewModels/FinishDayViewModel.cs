@@ -99,6 +99,15 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
 
             IsBusy = true;
 
+            // Ensure we have a fresh CSRF token before submitting
+            Console.WriteLine("SubmitEndOfDay: Fetching fresh CSRF token before submitting");
+            if (!await _authService.FetchCSRFTokenAsync())
+            {
+                IsBusy = false;
+                await ShowAlertAsync("Finish Day", "Failed to retrieve session token. Please try again.");
+                return;
+            }
+
             var promptResult = await ShowPromptAsync("Ending Mileage", "Enter the ending mileage for your vehicle:");
 
             if (string.IsNullOrWhiteSpace(promptResult) || !double.TryParse(promptResult, out double endingMiles))
