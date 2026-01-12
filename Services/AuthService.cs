@@ -2386,6 +2386,64 @@ namespace HiatMeApp.Services
             public string? ProfilePicture { get; set; }
         }
         
+        /// <summary>
+        /// Saves the OneSignal player ID to the server for push notifications
+        /// </summary>
+        public async Task<(bool success, string message)> SaveOneSignalPlayerIdAsync(string playerId)
+        {
+            try
+            {
+                Console.WriteLine($"SaveOneSignalPlayerIdAsync: Saving player ID: {playerId}");
+                
+                // Ensure we have a valid auth token
+                var authToken = Preferences.Get("AuthToken", null);
+                if (string.IsNullOrEmpty(authToken))
+                {
+                    Console.WriteLine("SaveOneSignalPlayerIdAsync: No auth token found");
+                    return (false, "Not authenticated");
+                }
+                
+                // Fetch fresh CSRF token
+                if (!await FetchCSRFTokenAsync())
+                {
+                    Console.WriteLine("SaveOneSignalPlayerIdAsync: Failed to fetch CSRF token");
+                    return (false, "Failed to get session token");
+                }
+                
+                var data = new Dictionary<string, string>
+                {
+                    { "action", "save_onesignal_player_id" },
+                    { "player_id", playerId },
+                    { "auth_token", authToken },
+                    { "csrf_token", _csrfToken ?? "" }
+                };
+                
+                var content = new FormUrlEncodedContent(data);
+                var response = await _httpClient.PostAsync("/api/user_actions.php", content);
+                var json = await response.Content.ReadAsStringAsync();
+                
+                Console.WriteLine($"SaveOneSignalPlayerIdAsync: Response: {json}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = JsonConvert.DeserializeObject<dynamic>(json);
+                    if (result?.success == true)
+                    {
+                        Console.WriteLine("SaveOneSignalPlayerIdAsync: Player ID saved successfully");
+                        return (true, "Player ID saved");
+                    }
+                    return (false, result?.message?.ToString() ?? "Unknown error");
+                }
+                
+                return (false, $"HTTP {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveOneSignalPlayerIdAsync: Error: {ex.Message}");
+                return (false, ex.Message);
+            }
+        }
+        
         private void LogMessage(string message)
         {
             try

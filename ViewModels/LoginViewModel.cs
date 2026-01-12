@@ -109,6 +109,36 @@ public partial class LoginViewModel : BaseViewModel
                 
                 // Start location tracking for eligible roles (Driver, Manager, Owner)
                 await App.StartLocationTrackingAsync();
+                
+                // Save OneSignal player ID for push notifications (Android only)
+#if ANDROID
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Wait a moment for OneSignal to be fully initialized
+                        await Task.Delay(2000);
+                        
+                        var playerId = HiatmeApp.MainApplication.GetOneSignalPlayerId();
+                        if (!string.IsNullOrEmpty(playerId))
+                        {
+                            Console.WriteLine($"LoginAsync: Saving OneSignal player ID: {playerId}");
+                            var (saveSuccess, saveMessage) = await _authService.SaveOneSignalPlayerIdAsync(playerId);
+                            Console.WriteLine($"LoginAsync: Save player ID result: {saveSuccess}, {saveMessage}");
+                        }
+                        else
+                        {
+                            Console.WriteLine("LoginAsync: OneSignal player ID not available yet");
+                            // Request notification permission
+                            HiatmeApp.MainApplication.RequestNotificationPermission();
+                        }
+                    }
+                    catch (Exception osEx)
+                    {
+                        Console.WriteLine($"LoginAsync: OneSignal error: {osEx.Message}");
+                    }
+                });
+#endif
             }
         }
         catch (Exception ex)
