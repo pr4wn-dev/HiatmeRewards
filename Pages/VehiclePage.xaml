@@ -32,29 +32,6 @@
                        CornerRadius="12"
                        Margin="0,0,0,15">
                     <VerticalStackLayout Spacing="0">
-                        <!-- Vehicle Header -->
-                        <Frame BackgroundColor="{Binding VehicleHeaderColor}"
-                               CornerRadius="12"
-                               Padding="20"
-                               Margin="0"
-                               HasShadow="False">
-                            <Grid ColumnDefinitions="Auto,*">
-                                <Label Grid.Column="0"
-                                       Text="🚗"
-                                       FontSize="40"
-                                       VerticalOptions="Center" />
-                                <VerticalStackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
-                                    <Label Text="{Binding Vehicle.Make, TargetNullValue=''}" 
-                                           FontSize="24" 
-                                           FontAttributes="Bold"
-                                           TextColor="White" />
-                                    <Label Text="{Binding Vehicle.Model, TargetNullValue=''}" 
-                                           FontSize="18"
-                                           TextColor="#E0E0E0" />
-                                </VerticalStackLayout>
-                            </Grid>
-                        </Frame>
-
                         <!-- Vehicle Details -->
                         <VerticalStackLayout Padding="20" Spacing="12">
                             <!-- VIN Row -->
