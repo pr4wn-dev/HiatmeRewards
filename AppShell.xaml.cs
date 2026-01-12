@@ -44,53 +44,93 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("RequestDayOff", typeof(RequestDayOffPage));
         Console.WriteLine("AppShell: Initialized with routes");
         
-        // Create menu items programmatically with icons (will be added/removed based on login status)
+        // Create menu items programmatically with Material Icons
         _homeMenuItem = new MenuItem { 
             Text = "Home",
-            IconImageSource = new FontImageSource { Glyph = "🏠", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue88a", // home icon
+                Size = 22,
+                Color = Color.FromArgb("#3b82f6")
+            }
         };
         _homeMenuItem.Clicked += OnHomeClicked;
         
         _profileMenuItem = new MenuItem { 
             Text = "Profile",
-            IconImageSource = new FontImageSource { Glyph = "👤", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue7fd", // person icon
+                Size = 22,
+                Color = Color.FromArgb("#8b5cf6")
+            }
         };
         _profileMenuItem.Clicked += OnProfileClicked;
         
         _requestDayOffMenuItem = new MenuItem { 
             Text = "Request Day Off",
-            IconImageSource = new FontImageSource { Glyph = "📅", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue878", // event icon
+                Size = 22,
+                Color = Color.FromArgb("#8b5cf6")
+            }
         };
         _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
         
         _vehicleMenuItem = new MenuItem { 
             Text = "Vehicle",
-            IconImageSource = new FontImageSource { Glyph = "🚗", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue531", // directions_car icon
+                Size = 22,
+                Color = Color.FromArgb("#14b8a6")
+            }
         };
         _vehicleMenuItem.Clicked += OnVehicleClicked;
         
         _vehicleIssuesMenuItem = new MenuItem { 
             Text = "Vehicle Issues",
-            IconImageSource = new FontImageSource { Glyph = "⚠️", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue002", // warning icon
+                Size = 22,
+                Color = Color.FromArgb("#f97316")
+            }
         };
         _vehicleIssuesMenuItem.Clicked += OnVehicleIssuesClicked;
         
         _finishDayMenuItem = new MenuItem { 
             Text = "Finish Day",
-            IconImageSource = new FontImageSource { Glyph = "✅", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue86c", // check_circle icon
+                Size = 22,
+                Color = Color.FromArgb("#22c55e")
+            }
         };
         _finishDayMenuItem.Clicked += OnFinishDayClicked;
         
         // Single Login/Logout menu item that changes text
         _loginLogoutMenuItem = new MenuItem { 
             Text = "Login",
-            IconImageSource = new FontImageSource { Glyph = "🔓", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue8e8", // vpn_key icon
+                Size = 22,
+                Color = Color.FromArgb("#3b82f6")
+            }
         };
         _loginLogoutMenuItem.Clicked += OnLoginClicked;
         
         _registerMenuItem = new MenuItem { 
             Text = "Register",
-            IconImageSource = new FontImageSource { Glyph = "📝", Size = 20 }
+            IconImageSource = new FontImageSource { 
+                FontFamily = "MaterialIcons", 
+                Glyph = "\ue3c9", // edit icon
+                Size = 22,
+                Color = Color.FromArgb("#f59e0b")
+            }
         };
         _registerMenuItem.Clicked += OnRegisterClicked;
         
@@ -518,8 +558,10 @@ public partial class AppShell : Shell
             {
                 _loginLogoutMenuItem.Text = isLoggedIn ? "Logout" : "Login";
                 _loginLogoutMenuItem.IconImageSource = new FontImageSource { 
-                    Glyph = isLoggedIn ? "🚪" : "🔓", 
-                    Size = 20 
+                    FontFamily = "MaterialIcons",
+                    Glyph = isLoggedIn ? "\ue879" : "\ue8e8", // exit_to_app or vpn_key
+                    Size = 22,
+                    Color = isLoggedIn ? Color.FromArgb("#ef4444") : Color.FromArgb("#3b82f6")
                 };
             }
             

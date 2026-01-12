@@ -11,62 +11,6 @@
         <vm:AppShellViewModel />
     </Shell.BindingContext>
     
-    <!-- Custom ItemTemplate for styled menu items -->
-    <Shell.ItemTemplate>
-        <DataTemplate>
-            <Grid ColumnDefinitions="Auto,*,Auto" 
-                  Padding="16,14"
-                  ColumnSpacing="14"
-                  BackgroundColor="Transparent">
-                <VisualStateManager.VisualStateGroups>
-                    <VisualStateGroup x:Name="CommonStates">
-                        <VisualState x:Name="Normal">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="Transparent" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState x:Name="Selected">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="#1a3a5c" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateManager.VisualStateGroups>
-                
-                <!-- Icon container with accent background -->
-                <Frame Grid.Column="0"
-                       BackgroundColor="#1e3a5f"
-                       CornerRadius="10"
-                       WidthRequest="40"
-                       HeightRequest="40"
-                       Padding="0"
-                       HasShadow="False"
-                       VerticalOptions="Center">
-                    <Label Text="{Binding FlyoutIcon}"
-                           FontSize="16"
-                           TextColor="#3b82f6"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-                </Frame>
-                
-                <!-- Menu item text -->
-                <Label Grid.Column="1"
-                       Text="{Binding Title}"
-                       FontSize="15"
-                       FontAttributes="None"
-                       TextColor="#e2e8f0"
-                       VerticalOptions="Center" />
-                
-                <!-- Arrow indicator -->
-                <Label Grid.Column="2"
-                       Text="›"
-                       FontSize="18"
-                       TextColor="#475569"
-                       VerticalOptions="Center" />
-            </Grid>
-        </DataTemplate>
-    </Shell.ItemTemplate>
-    
     <!-- Custom MenuItemTemplate for styled menu items -->
     <Shell.MenuItemTemplate>
         <DataTemplate>
@@ -74,7 +18,7 @@
                   Padding="16,14"
                   ColumnSpacing="14"
                   BackgroundColor="Transparent">
-                <!-- Icon container -->
+                <!-- Icon container with colored circle -->
                 <Frame Grid.Column="0"
                        BackgroundColor="#1e3a5f"
                        CornerRadius="10"
@@ -83,9 +27,9 @@
                        Padding="0"
                        HasShadow="False"
                        VerticalOptions="Center">
-                    <Label Text="●"
-                           FontSize="14"
-                           TextColor="#3b82f6"
+                    <Image Source="{Binding IconImageSource}"
+                           WidthRequest="20"
+                           HeightRequest="20"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
                 </Frame>
@@ -182,8 +126,7 @@
                            LineBreakMode="TailTruncation"
                            MaxLines="1" />
                     <!-- Role badge -->
-                    <Frame BackgroundColor="#3b82f6"
-                           Opacity="0.2"
+                    <Frame BackgroundColor="#1e3a5f"
                            CornerRadius="8"
                            Padding="8,4"
                            HasShadow="False"
