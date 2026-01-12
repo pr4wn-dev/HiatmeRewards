@@ -36,5 +36,37 @@ namespace HiatMeApp.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Converts menu item text to its corresponding Font Awesome icon glyph
+    /// </summary>
+    public class MenuItemIconConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is string text)
+            {
+                return text switch
+                {
+                    "Home" => "\uf015",           // fa-home
+                    "Profile" => "\uf007",        // fa-user
+                    "Request Day Off" => "\uf073", // fa-calendar
+                    "Vehicle" => "\uf1b9",        // fa-car
+                    "Vehicle Issues" => "\uf071", // fa-exclamation-triangle
+                    "Finish Day" => "\uf058",     // fa-check-circle
+                    "Login" => "\uf2f6",          // fa-sign-in-alt
+                    "Logout" => "\uf2f5",         // fa-sign-out-alt
+                    "Register" => "\uf234",       // fa-user-plus
+                    _ => "\uf111"                 // fa-circle (default)
+                };
+            }
+            return "\uf111"; // fa-circle
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
 

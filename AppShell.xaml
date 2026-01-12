@@ -12,6 +12,7 @@
     <Shell.Resources>
         <ResourceDictionary>
             <converters:MenuItemColorConverter x:Key="MenuItemColorConverter" />
+            <converters:MenuItemIconConverter x:Key="MenuItemIconConverter" />
         </ResourceDictionary>
     </Shell.Resources>
     
@@ -19,14 +20,14 @@
         <vm:AppShellViewModel />
     </Shell.BindingContext>
     
-    <!-- Custom MenuItemTemplate for styled menu items -->
+    <!-- Custom MenuItemTemplate for styled menu items with Font Awesome icons -->
     <Shell.MenuItemTemplate>
         <DataTemplate>
             <Grid ColumnDefinitions="Auto,*,Auto" 
                   Padding="16,14"
                   ColumnSpacing="14"
                   BackgroundColor="Transparent">
-                <!-- Icon container with colored accent circle -->
+                <!-- Icon container with Font Awesome icon -->
                 <Frame Grid.Column="0"
                        BackgroundColor="#1e3a5f"
                        CornerRadius="10"
@@ -35,13 +36,11 @@
                        Padding="0"
                        HasShadow="False"
                        VerticalOptions="Center">
-                    <!-- Inner colored circle - color based on menu item -->
-                    <Frame BackgroundColor="{Binding Text, Converter={StaticResource MenuItemColorConverter}}"
-                           CornerRadius="6"
-                           WidthRequest="12"
-                           HeightRequest="12"
-                           Padding="0"
-                           HasShadow="False"
+                    <!-- Font Awesome icon -->
+                    <Label Text="{Binding Text, Converter={StaticResource MenuItemIconConverter}}"
+                           FontFamily="FontAwesome"
+                           FontSize="16"
+                           TextColor="{Binding Text, Converter={StaticResource MenuItemColorConverter}}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
                 </Frame>
