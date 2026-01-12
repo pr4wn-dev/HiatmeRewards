@@ -17,6 +17,9 @@ namespace HiatmeApp
             
             // Request battery optimization exemption for reliable notifications
             RequestBatteryOptimizationExemption();
+            
+            // Start foreground service to keep app alive for notifications (Samsung fix)
+            NotificationForegroundService.Start(this);
         }
         
         private void RequestBatteryOptimizationExemption()

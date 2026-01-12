@@ -10,6 +10,9 @@
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
 	<!-- Battery optimization exemption for reliable background notifications -->
 	<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+	<!-- Foreground service for reliable notifications on Samsung -->
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 	<!-- Location permissions for GPS tracking -->
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
