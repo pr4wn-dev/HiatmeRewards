@@ -165,13 +165,24 @@ public partial class HomeViewModel : BaseViewModel
 
                     var authService = App.Services.GetRequiredService<AuthService>();
                     
-                    // Ensure we have a fresh CSRF token before reassigning
-                    Console.WriteLine("CheckVehicleAssignmentAsync: Ensuring fresh CSRF token before reassigning vehicle");
-                    if (!await authService.FetchCSRFTokenAsync())
+                    // Validate the session first - the auth token might have become stale
+                    Console.WriteLine("CheckVehicleAssignmentAsync: Validating session before reassigning vehicle");
+                    var (sessionValid, validatedUser, sessionMessage) = await authService.ValidateSessionAsync();
+                    if (!sessionValid)
                     {
-                        Console.WriteLine("CheckVehicleAssignmentAsync: Failed to fetch CSRF token");
-                        await PageDialogService.DisplayAlertAsync("Error", "Failed to retrieve session token. Please try again.", "OK");
+                        Console.WriteLine($"CheckVehicleAssignmentAsync: Session validation failed - {sessionMessage}");
+                        await PageDialogService.DisplayAlertAsync("Session Expired", "Your session has expired. Please log in again.", "OK");
+                        Preferences.Set("IsLoggedIn", false);
+                        await Shell.Current.GoToAsync("//Login");
                         return;
+                    }
+                    Console.WriteLine("CheckVehicleAssignmentAsync: Session validated successfully");
+                    
+                    // Update current user with fresh data from server
+                    if (validatedUser != null)
+                    {
+                        App.CurrentUser = validatedUser;
+                        Preferences.Set("UserData", JsonConvert.SerializeObject(validatedUser));
                     }
                     
                     // Reassign vehicle to create a new mileage record
