@@ -24,6 +24,9 @@ public partial class AppShellViewModel : ObservableObject
     [ObservableProperty]
     private string? _profilePicture;
 
+    [ObservableProperty]
+    private string _userRole = "User";
+
     public AppShellViewModel()
     {
         UpdateMenuItems();
@@ -50,6 +53,7 @@ public partial class AppShellViewModel : ObservableObject
                     {
                         UserName = user.Name;
                         ProfilePicture = user.ProfilePicture;
+                        UserRole = user.Role ?? "User";
                     }
                 }
                 catch (Exception ex)
@@ -63,6 +67,7 @@ public partial class AppShellViewModel : ObservableObject
             UserEmail = "Not logged in";
             UserName = null;
             ProfilePicture = null;
+            UserRole = "Guest";
         }
         
         OnPropertyChanged(nameof(LoginMenuTitle));
@@ -70,6 +75,7 @@ public partial class AppShellViewModel : ObservableObject
         OnPropertyChanged(nameof(UserEmail));
         OnPropertyChanged(nameof(UserName));
         OnPropertyChanged(nameof(ProfilePicture));
+        OnPropertyChanged(nameof(UserRole));
         Console.WriteLine($"UpdateMenuItems: IsLoggedIn={isLoggedIn}, LoginMenuTitle={LoginMenuTitle}, HomeMenuRoute={HomeMenuRoute}, UserEmail={UserEmail}");
         // Menu items are now managed programmatically in AppShell, so no need to update text here
     }

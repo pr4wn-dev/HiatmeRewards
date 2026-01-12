@@ -233,9 +233,10 @@ public static class MenuStyler
                 var text = textView.Text;
                 if (!string.IsNullOrEmpty(text) && IsMenuItemText(text))
                 {
-                    textView.SetTextColor(global::Android.Graphics.Color.White);
-                    textView.TextSize = 20; // 20sp - larger font size
-                    textView.Typeface = global::Android.Graphics.Typeface.Default;
+                    // Apply website-matching text styling
+                    textView.SetTextColor(global::Android.Graphics.Color.ParseColor("#e2e8f0"));
+                    textView.TextSize = 16; // Slightly smaller, more refined
+                    textView.Typeface = global::Android.Graphics.Typeface.Create("sans-serif-medium", global::Android.Graphics.TypefaceStyle.Normal);
                     
                     // Get the parent container (usually a LinearLayout or similar)
                     var parent = textView.Parent as AViewGroup;
@@ -259,10 +260,10 @@ public static class MenuStyler
                             string? currentRoute = GetCurrentRoute(shell);
                             bool isSelected = IsMenuItemSelected(text, currentRoute);
                             
-                            // Only add indicator if selected (removal already done at top level)
+                            // Apply selection indicator if selected
                             if (isSelected)
                             {
-                                AddSelectionIndicator(rootContainer);
+                                AddSelectionIndicator(rootContainer, text);
                             }
                         }
                     }
@@ -381,7 +382,7 @@ public static class MenuStyler
         }
     }
 
-    private static void AddSelectionIndicator(AViewGroup parent)
+    private static void AddSelectionIndicator(AViewGroup parent, string menuText = "")
     {
         try
         {
@@ -392,23 +393,27 @@ public static class MenuStyler
                 parent.Tag = null;
             }
             
-            // Convert 14dp to pixels
+            // Convert 4dp to pixels (thinner accent bar like website)
             var displayMetrics = Platform.CurrentActivity.Resources?.DisplayMetrics;
             float density = displayMetrics != null ? displayMetrics.Density : 2.0f;
-            int widthPx = (int)(14 * density);
+            int widthPx = (int)(4 * density);
             
             // Get parent dimensions
             int parentWidth = parent.Width;
             
-            // Use LayerDrawable to create a transparent background with a blue left bar
-            var color = global::Android.Graphics.Color.ParseColor("#007bff");
-            var transparentBg = new global::Android.Graphics.Drawables.ColorDrawable(global::Android.Graphics.Color.Transparent);
-            var leftBar = new global::Android.Graphics.Drawables.ColorDrawable(color);
+            // Get color based on menu item (matching website color scheme)
+            string colorHex = GetMenuItemColor(menuText);
+            var accentColor = global::Android.Graphics.Color.ParseColor(colorHex);
             
-            var layers = new global::Android.Graphics.Drawables.Drawable[] { transparentBg, leftBar };
+            // Create a subtle background highlight with the accent color
+            var bgColor = global::Android.Graphics.Color.ParseColor("#1a3a5c"); // Subtle blue tint
+            var background = new global::Android.Graphics.Drawables.ColorDrawable(bgColor);
+            var leftBar = new global::Android.Graphics.Drawables.ColorDrawable(accentColor);
+            
+            var layers = new global::Android.Graphics.Drawables.Drawable[] { background, leftBar };
             var layerList = new global::Android.Graphics.Drawables.LayerDrawable(layers);
             
-            // Set the left bar to be 14dp wide on the left side
+            // Set the left bar to be 4dp wide on the left side
             layerList.SetLayerWidth(1, widthPx);
             layerList.SetLayerGravity(1, global::Android.Views.GravityFlags.Left | global::Android.Views.GravityFlags.FillVertical);
             layerList.SetLayerInsetLeft(1, 0);
@@ -426,6 +431,24 @@ public static class MenuStyler
         {
             System.Diagnostics.Debug.WriteLine($"MenuStyler: Error adding indicator: {ex.Message}");
         }
+    }
+    
+    private static string GetMenuItemColor(string menuText)
+    {
+        // Return accent colors matching website menu-item-* classes
+        return menuText switch
+        {
+            "Home" => "#3b82f6",           // Blue
+            "Profile" => "#8b5cf6",        // Purple
+            "Request Day Off" => "#8b5cf6", // Purple
+            "Vehicle" => "#14b8a6",        // Teal
+            "Vehicle Issues" => "#f97316", // Orange
+            "Finish Day" => "#22c55e",     // Green
+            "Login" => "#3b82f6",          // Blue
+            "Logout" => "#ef4444",         // Red
+            "Register" => "#f59e0b",       // Gold
+            _ => "#3b82f6"                 // Default blue
+        };
     }
 
     private static string? GetCurrentRoute(Shell shell)

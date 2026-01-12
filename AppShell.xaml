@@ -4,54 +4,197 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:HiatMeApp"
-    xmlns:vm="clr-namespace:HiatMeApp.ViewModels">
+    xmlns:vm="clr-namespace:HiatMeApp.ViewModels"
+    FlyoutBehavior="Flyout"
+    FlyoutBackgroundColor="#1a1a1a">
     <Shell.BindingContext>
         <vm:AppShellViewModel />
     </Shell.BindingContext>
-    <!-- Custom Flyout Header with Avatar Box (matching website design) -->
+    
+    <!-- Custom ItemTemplate for styled menu items -->
+    <Shell.ItemTemplate>
+        <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*,Auto" 
+                  Padding="16,14"
+                  ColumnSpacing="14"
+                  BackgroundColor="Transparent">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="Transparent" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="Selected">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="#1a3a5c" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+                
+                <!-- Icon container with accent background -->
+                <Frame Grid.Column="0"
+                       BackgroundColor="#1e3a5f"
+                       CornerRadius="10"
+                       WidthRequest="40"
+                       HeightRequest="40"
+                       Padding="0"
+                       HasShadow="False"
+                       VerticalOptions="Center">
+                    <Label Text="{Binding FlyoutIcon}"
+                           FontSize="16"
+                           TextColor="#3b82f6"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Frame>
+                
+                <!-- Menu item text -->
+                <Label Grid.Column="1"
+                       Text="{Binding Title}"
+                       FontSize="15"
+                       FontAttributes="None"
+                       TextColor="#e2e8f0"
+                       VerticalOptions="Center" />
+                
+                <!-- Arrow indicator -->
+                <Label Grid.Column="2"
+                       Text="›"
+                       FontSize="18"
+                       TextColor="#475569"
+                       VerticalOptions="Center" />
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+    
+    <!-- Custom MenuItemTemplate for styled menu items -->
+    <Shell.MenuItemTemplate>
+        <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*,Auto" 
+                  Padding="16,14"
+                  ColumnSpacing="14"
+                  BackgroundColor="Transparent">
+                <!-- Icon container -->
+                <Frame Grid.Column="0"
+                       BackgroundColor="#1e3a5f"
+                       CornerRadius="10"
+                       WidthRequest="40"
+                       HeightRequest="40"
+                       Padding="0"
+                       HasShadow="False"
+                       VerticalOptions="Center">
+                    <Label Text="●"
+                           FontSize="14"
+                           TextColor="#3b82f6"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Frame>
+                
+                <!-- Menu item text -->
+                <Label Grid.Column="1"
+                       Text="{Binding Text}"
+                       FontSize="15"
+                       TextColor="#e2e8f0"
+                       VerticalOptions="Center" />
+                
+                <!-- Arrow -->
+                <Label Grid.Column="2"
+                       Text="›"
+                       FontSize="18"
+                       TextColor="#475569"
+                       VerticalOptions="Center" />
+            </Grid>
+        </DataTemplate>
+    </Shell.MenuItemTemplate>
+    
+    <!-- Custom styled FlyoutHeader matching website menu design -->
     <Shell.FlyoutHeader>
-        <Grid BackgroundColor="{StaticResource WebsiteDark}" 
-              HeightRequest="160">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="14"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <Grid BackgroundColor="#1a1a1a" 
+              HeightRequest="140"
+              Padding="0">
+            <!-- Gradient overlay background -->
+            <BoxView BackgroundColor="#1a1a1a" />
+            <BoxView BackgroundColor="#3b82f6" 
+                     Opacity="0.12"
+                     HorizontalOptions="Fill"
+                     VerticalOptions="Fill" />
             
             <!-- Blue accent bar on left -->
-            <BoxView Grid.Column="0" 
-                     BackgroundColor="{StaticResource WebsiteAccent}" />
+            <BoxView BackgroundColor="#3b82f6" 
+                     WidthRequest="4"
+                     HorizontalOptions="Start"
+                     VerticalOptions="Fill" />
+            
+            <!-- Bottom border -->
+            <BoxView BackgroundColor="#3b82f6"
+                     Opacity="0.3"
+                     HeightRequest="1"
+                     VerticalOptions="End"
+                     HorizontalOptions="Fill" />
             
             <!-- Avatar Content -->
-            <Grid Grid.Column="1" 
-                  Padding="16,24,16,16"
-                  VerticalOptions="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <Grid Padding="20,16,16,16"
+                  VerticalOptions="Center"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="16">
                 
-                <!-- Profile Picture (Square) -->
-                <!-- The image source will be set programmatically in UpdateFlyoutAvatar -->
-                <Image x:Name="FlyoutAvatarImage"
-                       Grid.Column="0"
-                       Aspect="AspectFill"
-                       HeightRequest="80"
-                       WidthRequest="80"
-                       HorizontalOptions="Start"
-                       Margin="0,0,12,0" />
+                <!-- Profile Picture with border and status indicator -->
+                <Grid Grid.Column="0" 
+                      WidthRequest="68" 
+                      HeightRequest="68">
+                    <!-- Avatar frame -->
+                    <Frame BackgroundColor="#2d2d2d"
+                           BorderColor="#3b82f6"
+                           CornerRadius="16"
+                           Padding="2"
+                           HasShadow="True">
+                        <Image x:Name="FlyoutAvatarImage"
+                               Aspect="AspectFill"
+                               HeightRequest="60"
+                               WidthRequest="60" />
+                    </Frame>
+                    <!-- Online status indicator -->
+                    <Frame BackgroundColor="#22c55e"
+                           CornerRadius="7"
+                           WidthRequest="14"
+                           HeightRequest="14"
+                           BorderColor="#1a1a1a"
+                           Padding="0"
+                           HasShadow="False"
+                           HorizontalOptions="End"
+                           VerticalOptions="End"
+                           Margin="0,0,2,2" />
+                </Grid>
                 
-                <!-- User Name and Email (in blue) -->
+                <!-- User Info -->
                 <VerticalStackLayout Grid.Column="1" 
                                      Spacing="4"
                                      VerticalOptions="Center">
                     <Label Text="{Binding UserName, TargetNullValue='Guest'}"
-                           FontSize="20"
-                           TextColor="#87CEEB"
-                           HorizontalOptions="Start" />
-                    <Label Text="{Binding UserEmail, TargetNullValue='Guest@localhost'}"
                            FontSize="18"
-                           TextColor="#87CEEB"
-                           HorizontalOptions="Start" />
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           LineBreakMode="TailTruncation"
+                           MaxLines="1" />
+                    <Label Text="{Binding UserEmail, TargetNullValue='guest@hiatme.com'}"
+                           FontSize="13"
+                           TextColor="#94a3b8"
+                           LineBreakMode="TailTruncation"
+                           MaxLines="1" />
+                    <!-- Role badge -->
+                    <Frame BackgroundColor="#3b82f6"
+                           Opacity="0.2"
+                           CornerRadius="8"
+                           Padding="8,4"
+                           HasShadow="False"
+                           HorizontalOptions="Start"
+                           Margin="0,4,0,0">
+                        <Label Text="{Binding UserRole, TargetNullValue='User'}"
+                               FontSize="11"
+                               FontAttributes="Bold"
+                               TextColor="#3b82f6"
+                               TextTransform="Uppercase" />
+                    </Frame>
                 </VerticalStackLayout>
             </Grid>
         </Grid>
@@ -91,13 +234,21 @@
                   Route="ViewLog"
                   FlyoutItemIsVisible="False" />
     <!-- MenuItems - all menu items are created programmatically and managed dynamically based on login status -->
-    <!-- Footer with Copyright -->
+    
+    <!-- Styled Footer matching website -->
     <Shell.FlyoutFooter>
-        <Grid BackgroundColor="{StaticResource WebsiteDark}"
-              Padding="16,12">
-            <Label Text="© 2025 Hiatme. All rights reserved."
-                   FontSize="14"
-                   TextColor="White"
+        <Grid BackgroundColor="#1a1a1a"
+              Padding="20,16"
+              HeightRequest="60">
+            <!-- Top border -->
+            <BoxView BackgroundColor="#ffffff"
+                     Opacity="0.05"
+                     HeightRequest="1"
+                     VerticalOptions="Start"
+                     HorizontalOptions="Fill" />
+            <Label Text="© 2026 Hiatme. All rights reserved."
+                   FontSize="12"
+                   TextColor="#64748b"
                    HorizontalOptions="Center"
                    VerticalOptions="Center" />
         </Grid>

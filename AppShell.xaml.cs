@@ -44,30 +44,54 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("RequestDayOff", typeof(RequestDayOffPage));
         Console.WriteLine("AppShell: Initialized with routes");
         
-        // Create menu items programmatically (will be added/removed based on login status)
-        _homeMenuItem = new MenuItem { Text = "Home" };
+        // Create menu items programmatically with icons (will be added/removed based on login status)
+        _homeMenuItem = new MenuItem { 
+            Text = "Home",
+            IconImageSource = new FontImageSource { Glyph = "🏠", Size = 20 }
+        };
         _homeMenuItem.Clicked += OnHomeClicked;
         
-        _profileMenuItem = new MenuItem { Text = "Profile" };
+        _profileMenuItem = new MenuItem { 
+            Text = "Profile",
+            IconImageSource = new FontImageSource { Glyph = "👤", Size = 20 }
+        };
         _profileMenuItem.Clicked += OnProfileClicked;
         
-        _requestDayOffMenuItem = new MenuItem { Text = "Request Day Off" };
+        _requestDayOffMenuItem = new MenuItem { 
+            Text = "Request Day Off",
+            IconImageSource = new FontImageSource { Glyph = "📅", Size = 20 }
+        };
         _requestDayOffMenuItem.Clicked += OnRequestDayOffClicked;
         
-        _vehicleMenuItem = new MenuItem { Text = "Vehicle" };
+        _vehicleMenuItem = new MenuItem { 
+            Text = "Vehicle",
+            IconImageSource = new FontImageSource { Glyph = "🚗", Size = 20 }
+        };
         _vehicleMenuItem.Clicked += OnVehicleClicked;
         
-        _vehicleIssuesMenuItem = new MenuItem { Text = "Vehicle Issues" };
+        _vehicleIssuesMenuItem = new MenuItem { 
+            Text = "Vehicle Issues",
+            IconImageSource = new FontImageSource { Glyph = "⚠️", Size = 20 }
+        };
         _vehicleIssuesMenuItem.Clicked += OnVehicleIssuesClicked;
         
-        _finishDayMenuItem = new MenuItem { Text = "Finish Day" };
+        _finishDayMenuItem = new MenuItem { 
+            Text = "Finish Day",
+            IconImageSource = new FontImageSource { Glyph = "✅", Size = 20 }
+        };
         _finishDayMenuItem.Clicked += OnFinishDayClicked;
         
         // Single Login/Logout menu item that changes text
-        _loginLogoutMenuItem = new MenuItem { Text = "Login" };
+        _loginLogoutMenuItem = new MenuItem { 
+            Text = "Login",
+            IconImageSource = new FontImageSource { Glyph = "🔓", Size = 20 }
+        };
         _loginLogoutMenuItem.Clicked += OnLoginClicked;
         
-        _registerMenuItem = new MenuItem { Text = "Register" };
+        _registerMenuItem = new MenuItem { 
+            Text = "Register",
+            IconImageSource = new FontImageSource { Glyph = "📝", Size = 20 }
+        };
         _registerMenuItem.Clicked += OnRegisterClicked;
         
         Loaded += async (s, e) =>
@@ -489,10 +513,14 @@ public partial class AppShell : Shell
             
             Console.WriteLine($"UpdateMenuVisibility: After removal. Items.Count={Items.Count}");
             
-            // Update Login/Logout text
+            // Update Login/Logout text and icon
             if (_loginLogoutMenuItem != null)
             {
                 _loginLogoutMenuItem.Text = isLoggedIn ? "Logout" : "Login";
+                _loginLogoutMenuItem.IconImageSource = new FontImageSource { 
+                    Glyph = isLoggedIn ? "🚪" : "🔓", 
+                    Size = 20 
+                };
             }
             
             // Now add items in the correct order based on login status
