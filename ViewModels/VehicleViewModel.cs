@@ -421,6 +421,88 @@ public partial class VehicleViewModel : BaseViewModel
 
             var authService = App.Services.GetRequiredService<AuthService>();
             
+            // Check if user has an incomplete mileage record on their current vehicle
+            // They must complete it (enter ending miles) before switching to a new vehicle
+            var currentVehicle = App.CurrentUser?.Vehicles?
+                .FirstOrDefault(v => v.CurrentUserId == App.CurrentUser.UserId && 
+                                     v.MileageRecord != null && 
+                                     v.MileageRecord.StartMiles != null && 
+                                     v.MileageRecord.EndingMiles == null);
+            
+            if (currentVehicle != null)
+            {
+                Console.WriteLine($"AssignVehicleByVin: User has incomplete mileage record on vehicle {currentVehicle.VehicleId} (VIN ending: {currentVehicle.LastSixVin})");
+                
+                // If they're trying to assign the same vehicle, that's fine - skip the ending miles prompt
+                if (currentVehicle.LastSixVin?.ToUpper() == vinSuffix?.ToUpper())
+                {
+                    Console.WriteLine("AssignVehicleByVin: Same vehicle - no need for ending miles");
+                    await PageDialogService.DisplayAlertAsync("Already Assigned", 
+                        $"You're already assigned to this vehicle (VIN ending: {currentVehicle.LastSixVin}) with an active mileage record.", "OK");
+                    return;
+                }
+                
+                // Prompt for ending miles on current vehicle before switching
+                bool wantToFinish = await PageDialogService.DisplayAlertAsync(
+                    "Complete Current Record",
+                    $"You have an open mileage record on your current vehicle ({currentVehicle.Make} {currentVehicle.Model}, VIN ending: {currentVehicle.LastSixVin}).\n\nYou must enter ending miles before switching to a new vehicle.",
+                    "Enter Ending Miles",
+                    "Cancel"
+                );
+                
+                if (!wantToFinish)
+                {
+                    Console.WriteLine("AssignVehicleByVin: User cancelled - needs to complete current mileage first");
+                    return;
+                }
+                
+                // Prompt for ending miles
+                string? endMilesInput = await PageDialogService.DisplayPromptAsync(
+                    "Ending Miles",
+                    $"Enter the ending miles for {currentVehicle.Make} {currentVehicle.Model}:",
+                    maxLength: 8,
+                    keyboard: Keyboard.Numeric
+                );
+                
+                if (string.IsNullOrEmpty(endMilesInput) || !double.TryParse(endMilesInput, out double endMiles) || endMiles < 0 || endMiles > 999999.99)
+                {
+                    Console.WriteLine("AssignVehicleByVin: Invalid ending miles input");
+                    await PageDialogService.DisplayAlertAsync("Error", "Invalid ending miles. Please try again.", "OK");
+                    return;
+                }
+                
+                // Validate ending miles is greater than start miles
+                if (currentVehicle.MileageRecord?.StartMiles != null && endMiles <= currentVehicle.MileageRecord.StartMiles)
+                {
+                    Console.WriteLine($"AssignVehicleByVin: Ending miles ({endMiles}) must be greater than start miles ({currentVehicle.MileageRecord.StartMiles})");
+                    await PageDialogService.DisplayAlertAsync("Error", 
+                        $"Ending miles ({endMiles}) must be greater than starting miles ({currentVehicle.MileageRecord.StartMiles}).", "OK");
+                    return;
+                }
+                
+                // Submit ending miles for current vehicle
+                Console.WriteLine($"AssignVehicleByVin: Submitting ending miles {endMiles} for vehicle {currentVehicle.VehicleId}");
+                var (endSuccess, endMessage, _) = await authService.SubmitEndMileageAsync(currentVehicle.VehicleId, endMiles);
+                
+                if (!endSuccess)
+                {
+                    Console.WriteLine($"AssignVehicleByVin: Failed to submit ending miles: {endMessage}");
+                    await PageDialogService.DisplayAlertAsync("Error", $"Failed to submit ending miles: {endMessage}", "OK");
+                    return;
+                }
+                
+                Console.WriteLine("AssignVehicleByVin: Successfully submitted ending miles, proceeding with new vehicle assignment");
+                await PageDialogService.DisplayAlertAsync("Success", "Ending miles recorded. Now assigning new vehicle...", "OK");
+                
+                // Update local data
+                if (currentVehicle.MileageRecord != null)
+                {
+                    currentVehicle.MileageRecord.EndingMiles = (float)endMiles;
+                    currentVehicle.MileageRecord.EndingMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
+            }
+            
             // Log the auth token we're about to use
             var currentAuthToken = Preferences.Get("AuthToken", null);
             Console.WriteLine($"AssignVehicleByVin: Current AuthToken from Preferences={(string.IsNullOrEmpty(currentAuthToken) ? "NULL" : currentAuthToken.Substring(0, Math.Min(20, currentAuthToken.Length)) + "...")}");
