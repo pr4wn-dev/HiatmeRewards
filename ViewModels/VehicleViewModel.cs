@@ -308,17 +308,45 @@ public partial class VehicleViewModel : BaseViewModel
             if (IsBusy) return;
             IsBusy = true;
 
-            string? vinSuffix = await PageDialogService.DisplayPromptAsync(
-                "Assign Vehicle",
-                "Enter the last 6 digits of the vehicle's VIN:",
-                maxLength: 6,
-                keyboard: Keyboard.Text
-            );
-
+            // Check if there's a pre-filled VIN suffix from the home page confirmation flow
+            string? prefilledVin = Preferences.Get("PrefilledVinSuffix", null);
+            string? vinSuffix = null;
+            
+            if (!string.IsNullOrEmpty(prefilledVin))
+            {
+                // Clear the prefilled value immediately so it doesn't persist
+                Preferences.Remove("PrefilledVinSuffix");
+                Console.WriteLine($"AssignVehicleByVin: Found prefilled VIN suffix: {prefilledVin}");
+                
+                // Confirm with user that they want to continue with this vehicle
+                bool confirm = await PageDialogService.DisplayAlertAsync(
+                    "Continue with Vehicle",
+                    $"You're continuing with your previously assigned vehicle (VIN ending: {prefilledVin}).\n\nTap 'Continue' to start a new mileage record, or 'Change' to use a different vehicle.",
+                    "Continue",
+                    "Change"
+                );
+                
+                if (confirm)
+                {
+                    vinSuffix = prefilledVin;
+                }
+            }
+            
+            // If no prefilled VIN or user chose to change, prompt for input
             if (string.IsNullOrEmpty(vinSuffix))
             {
-                Console.WriteLine("AssignVehicleByVin: User cancelled VIN input.");
-                return;
+                vinSuffix = await PageDialogService.DisplayPromptAsync(
+                    "Assign Vehicle",
+                    "Enter the last 6 digits of the vehicle's VIN:",
+                    maxLength: 6,
+                    keyboard: Keyboard.Text
+                );
+
+                if (string.IsNullOrEmpty(vinSuffix))
+                {
+                    Console.WriteLine("AssignVehicleByVin: User cancelled VIN input.");
+                    return;
+                }
             }
 
             var authService = App.Services.GetRequiredService<AuthService>();

@@ -119,20 +119,19 @@ public partial class HomeViewModel : BaseViewModel
                 // Only ask for confirmation if mileage record is complete (they finished their day)
                 if (shouldConfirm && mileageIsComplete)
                 {
+                    string vinSuffix = AssignedVehicle.LastSixVin ?? string.Empty;
                     bool isStillInVehicle = await PageDialogService.DisplayAlertAsync(
                         "Vehicle Confirmation",
-                        $"Is this your current vehicle: {AssignedVehicle.Make} {AssignedVehicle.Model} (VIN ending {AssignedVehicle.LastSixVin})?",
+                        $"Is this your current vehicle: {AssignedVehicle.Make} {AssignedVehicle.Model} (VIN ending {vinSuffix})?",
                         "Yes",
                         "No"
                     );
 
-                    // If user clicks "No", they don't have this vehicle - clear assignment
                     if (!isStillInVehicle)
                     {
                         Console.WriteLine("CheckVehicleAssignmentAsync: User denied vehicle confirmation");
                         
-                        // Remove this vehicle from current user assignment (set CurrentUserId to null or remove from list)
-                        // We'll update the vehicle list to remove this assignment
+                        // Remove this vehicle from current user assignment
                         var updatedVehicles = App.CurrentUser.Vehicles
                             .Where(v => !(v.VehicleId == AssignedVehicle.VehicleId && v.CurrentUserId == App.CurrentUser.UserId))
                             .ToList();
@@ -145,137 +144,35 @@ public partial class HomeViewModel : BaseViewModel
                         await Shell.Current.GoToAsync("Vehicle");
                         return;
                     }
-                    // User clicked "Yes" - continue to create new mileage record below
+                    
+                    // User clicked "Yes" - navigate to Vehicle page with VIN pre-filled
+                    // This ensures proper authentication flow through the VehicleViewModel
+                    Console.WriteLine($"CheckVehicleAssignmentAsync: User confirmed same vehicle, navigating to Vehicle page with VIN suffix: {vinSuffix}");
+                    if (!string.IsNullOrEmpty(vinSuffix))
+                    {
+                        // Pass the VIN suffix to auto-fill on the Vehicle page
+                        Preferences.Set("PrefilledVinSuffix", vinSuffix);
+                    }
+                    await Shell.Current.GoToAsync("Vehicle");
+                    return;
                 }
 
                 // Check if mileage record has both start and ending miles - need to create new record
+                // Navigate to Vehicle page where the VehicleViewModel handles authentication properly
                 if (AssignedVehicle.MileageRecord != null && 
                     AssignedVehicle.MileageRecord.StartMiles != null && 
                     AssignedVehicle.MileageRecord.EndingMiles != null)
                 {
-                    Console.WriteLine($"CheckVehicleAssignmentAsync: Mileage record is complete (both start and ending miles filled), creating new mileage record for vehicle_id={AssignedVehicle.VehicleId}");
+                    Console.WriteLine($"CheckVehicleAssignmentAsync: Mileage record is complete (both start and ending miles filled), navigating to Vehicle page for vehicle_id={AssignedVehicle.VehicleId}");
                     string vinSuffix = AssignedVehicle.LastSixVin ?? string.Empty;
-                    if (string.IsNullOrEmpty(vinSuffix))
-                    {
-                        Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or empty VIN suffix.");
-                        await PageDialogService.DisplayAlertAsync("Error", "Vehicle VIN is invalid.", "OK");
-                        await Shell.Current.GoToAsync("Vehicle");
-                        return;
-                    }
-
-                    var authService = App.Services.GetRequiredService<AuthService>();
                     
-                    // Validate the session first - the auth token might have become stale
-                    Console.WriteLine("CheckVehicleAssignmentAsync: Validating session before reassigning vehicle");
-                    var (sessionValid, validatedUser, sessionMessage) = await authService.ValidateSessionAsync();
-                    if (!sessionValid)
+                    // Set the prefilled VIN so the Vehicle page can use it
+                    if (!string.IsNullOrEmpty(vinSuffix))
                     {
-                        Console.WriteLine($"CheckVehicleAssignmentAsync: Session validation failed - {sessionMessage}");
-                        await PageDialogService.DisplayAlertAsync("Session Expired", "Your session has expired. Please log in again.", "OK");
-                        Preferences.Set("IsLoggedIn", false);
-                        await Shell.Current.GoToAsync("//Login");
-                        return;
-                    }
-                    Console.WriteLine("CheckVehicleAssignmentAsync: Session validated successfully");
-                    
-                    // Update current user with fresh data from server
-                    if (validatedUser != null)
-                    {
-                        App.CurrentUser = validatedUser;
-                        Preferences.Set("UserData", JsonConvert.SerializeObject(validatedUser));
+                        Preferences.Set("PrefilledVinSuffix", vinSuffix);
                     }
                     
-                    // Reassign vehicle to create a new mileage record
-                    (bool success, Vehicle? newVehicle, string message, List<MileageRecord>? incompleteRecords, int? mileageId) = await authService.AssignVehicleAsync(vinSuffix, allowIncompleteEndingMiles: true);
-
-                    if (success && newVehicle != null && mileageId.HasValue)
-                    {
-                        Console.WriteLine($"CheckVehicleAssignmentAsync: Created new mileage record, VIN={newVehicle.Vin}, VehicleId={newVehicle.VehicleId}, MileageId={mileageId}");
-                        var updatedVehicles = App.CurrentUser.Vehicles
-                            .Where(v => v.VehicleId != newVehicle.VehicleId)
-                            .ToList();
-                        updatedVehicles.Add(newVehicle);
-                        App.CurrentUser.Vehicles = updatedVehicles;
-                        AssignedVehicle = newVehicle;
-                        Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
-                        OnPropertyChanged(nameof(AssignedVehicle));
-                        WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
-
-                        // Prompt for starting miles for the new mileage record
-                        string? startMilesInput = await PageDialogService.DisplayPromptAsync(
-                            "New Mileage Entry",
-                            $"Please enter the starting miles for {newVehicle.Make} {newVehicle.Model} (VIN ending {newVehicle.LastSixVin}):",
-                            maxLength: 8,
-                            keyboard: Keyboard.Numeric
-                        );
-
-                        if (string.IsNullOrEmpty(startMilesInput) || !double.TryParse(startMilesInput, out double startMiles) || startMiles < 0 || startMiles > 999999.99)
-                        {
-                            Console.WriteLine("CheckVehicleAssignmentAsync: Invalid or cancelled start miles input.");
-                            await PageDialogService.DisplayAlertAsync("Error", "Invalid starting miles. Please try again.", "OK");
-                            return;
-                        }
-
-                        (bool submitSuccess, string submitMessage, int? returnedMileageId) = await authService.SubmitStartMileageAsync(mileageId.Value, startMiles);
-                        if (submitSuccess)
-                        {
-                            Console.WriteLine($"CheckVehicleAssignmentAsync: Successfully submitted start miles for new mileage record, mileage_id={returnedMileageId}, vehicle_id={newVehicle.VehicleId}");
-                            await PageDialogService.DisplayAlertAsync("Success", "New mileage record created and starting miles submitted successfully.", "OK");
-                            newVehicle.MileageRecord = new MileageRecord
-                            {
-                                MileageId = returnedMileageId ?? 0,
-                                VehicleId = newVehicle.VehicleId,
-                                UserId = App.CurrentUser.UserId,
-                                StartMiles = (float?)startMiles,
-                                StartMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                            };
-                            App.CurrentUser.Vehicles = updatedVehicles;
-                            AssignedVehicle = newVehicle;
-                            Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
-                            OnPropertyChanged(nameof(AssignedVehicle));
-                            WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
-                        }
-                        else
-                        {
-                            Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to submit start miles: {submitMessage}");
-                            // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
-                            if (!submitMessage.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
-                            {
-                                string errorMessage = submitMessage;
-                                if (submitMessage.Contains("Too many attempts"))
-                                {
-                                    errorMessage = "Rate limit exceeded. Please wait 15 minutes and try again.";
-                                }
-                                else if (submitMessage.Contains("Invalid mileage ID") || submitMessage.Contains("Mileage record not owned"))
-                                {
-                                    errorMessage = "Failed to submit starting miles. Please try assigning the vehicle again.";
-                                }
-                                else if (submitMessage.Contains("CSRF token") || submitMessage.Contains("Invalid CSRF") || submitMessage.Contains("csrf") || submitMessage.Contains("session token"))
-                                {
-                                    errorMessage = "Session expired. Please close and reopen the app.";
-                                }
-                                await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"CheckVehicleAssignmentAsync: Failed to create new mileage record: {message}");
-                        // Don't show another popup if it's a "logged in elsewhere" error - that popup was already shown
-                        if (!message.StartsWith("LOGGED_IN_ELSEWHERE:", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string errorMessage = message;
-                            if (message.Contains("invalid") && message.Contains("unverified"))
-                            {
-                                errorMessage = "Authentication error. Please close and reopen the app, or log in again.";
-                            }
-                            else if (message.Contains("Network error"))
-                            {
-                                errorMessage = "Network issue. Please check your connection and try again.";
-                            }
-                            await PageDialogService.DisplayAlertAsync("Error", errorMessage, "OK");
-                        }
-                    }
+                    await Shell.Current.GoToAsync("Vehicle");
                     return;
                 }
 

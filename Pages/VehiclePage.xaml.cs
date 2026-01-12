@@ -160,6 +160,18 @@ public partial class VehiclePage : ContentPage
                             }
                         }
                     }
+                    
+                    // Check if there's a prefilled VIN - automatically trigger the assign flow
+                    string? prefilledVin = Preferences.Get("PrefilledVinSuffix", null);
+                    if (!string.IsNullOrEmpty(prefilledVin))
+                    {
+                        Console.WriteLine($"VehiclePage: Found prefilled VIN suffix, triggering AssignVehicleByVinCommand");
+                        // Trigger the assign command which will use the prefilled VIN
+                        if (vm.AssignVehicleByVinCommand?.CanExecute(null) == true)
+                        {
+                            vm.AssignVehicleByVinCommand.Execute(null);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
