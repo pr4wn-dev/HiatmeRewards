@@ -42,7 +42,7 @@ namespace HiatmeApp
             var builder = new NotificationCompat.Builder(this, ChannelId)
                 .SetContentTitle("Hiatme")
                 .SetContentText("Ready for notifications")
-                .SetSmallIcon(Resource.Mipmap.appicon)
+                .SetSmallIcon(Android.Resource.Drawable.IcDialogInfo)
                 .SetOngoing(true)
                 .SetPriority(NotificationCompat.PriorityLow);
 
