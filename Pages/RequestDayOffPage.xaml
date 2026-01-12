@@ -16,16 +16,13 @@
     <Grid RowDefinitions="Auto,*,Auto">
         <controls:TopBar Grid.Row="0" />
         <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="12">
+            <VerticalStackLayout Spacing="12">
+                <controls:PageHeader Title="Day Off Requests"
+                                     Subtitle="Submit and view time off requests"
+                                     Icon="📅"
+                                     AccentColor="#8b5cf6" />
                 
-                <!-- Page Title -->
-                <Label Text="Day Off Requests"
-                       FontSize="26"
-                       FontAttributes="Bold"
-                       TextColor="White"
-                       HorizontalOptions="Center"
-                       Margin="0,10,0,5" />
-
+                <VerticalStackLayout Padding="20,0,20,20" Spacing="12">
                 <!-- Toggle Button for Request Form -->
                 <Button Text="{Binding FormToggleButtonText}"
                         FontSize="16"
@@ -237,7 +234,7 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
-
+                </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
 
