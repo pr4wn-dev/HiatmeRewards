@@ -141,11 +141,11 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
             // Update the local vehicle data with the ending miles
             if (App.CurrentUser?.Vehicles != null)
             {
-                var vehicle = App.CurrentUser.Vehicles.FirstOrDefault(v => v.VehicleId == _vehicleId.Value);
-                if (vehicle?.MileageRecord != null)
+                var updatedVehicle = App.CurrentUser.Vehicles.FirstOrDefault(v => v.VehicleId == _vehicleId.Value);
+                if (updatedVehicle?.MileageRecord != null)
                 {
-                    vehicle.MileageRecord.EndingMiles = (float)endingMiles;
-                    vehicle.MileageRecord.EndingMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    updatedVehicle.MileageRecord.EndingMiles = (float)endingMiles;
+                    updatedVehicle.MileageRecord.EndingMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                     Console.WriteLine($"SubmitEndOfDay: Updated local vehicle data - VehicleId={_vehicleId.Value}, EndingMiles={endingMiles}");
                     
                     // Save updated user data to Preferences
