@@ -162,11 +162,21 @@ public partial class VehiclePage : ContentPage
                     }
                     
                     // Check if there's a prefilled VIN - automatically trigger the assign flow
+                    // Only do this if we actually came from the confirmation flow (ShouldConfirmVehicle was just processed)
+                    // Don't auto-trigger if user is just viewing their completed vehicle info
                     string? prefilledVin = Preferences.Get("PrefilledVinSuffix", null);
                     if (!string.IsNullOrEmpty(prefilledVin))
                     {
-                        Console.WriteLine($"VehiclePage: Found prefilled VIN suffix, triggering AssignVehicleByVinCommand");
+                        // Clear it immediately to prevent re-triggering on subsequent visits
+                        Preferences.Remove("PrefilledVinSuffix");
+                        
+                        Console.WriteLine($"VehiclePage: Found prefilled VIN suffix: {prefilledVin}, triggering AssignVehicleByVinCommand");
+                        // Small delay to ensure the page is fully loaded
+                        await Task.Delay(300);
+                        
                         // Trigger the assign command which will use the prefilled VIN
+                        // Re-set the prefilled VIN since AssignVehicleByVin will look for it
+                        Preferences.Set("PrefilledVinSuffix", prefilledVin);
                         if (vm.AssignVehicleByVinCommand?.CanExecute(null) == true)
                         {
                             vm.AssignVehicleByVinCommand.Execute(null);

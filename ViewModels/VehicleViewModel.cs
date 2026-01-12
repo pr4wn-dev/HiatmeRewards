@@ -421,9 +421,14 @@ public partial class VehicleViewModel : BaseViewModel
 
             var authService = App.Services.GetRequiredService<AuthService>();
             
-            // Validate session and get fresh CSRF token before making API call
-            Console.WriteLine("AssignVehicleByVin: Validating session before API call");
+            // Log the auth token we're about to use
+            var currentAuthToken = Preferences.Get("AuthToken", null);
+            Console.WriteLine($"AssignVehicleByVin: Current AuthToken from Preferences={(string.IsNullOrEmpty(currentAuthToken) ? "NULL" : currentAuthToken.Substring(0, Math.Min(20, currentAuthToken.Length)) + "...")}");
+            
+            // Validate session first to ensure auth token is still valid on the server
+            Console.WriteLine("AssignVehicleByVin: Validating session before assignment");
             var (sessionValid, validatedUser, sessionMessage) = await authService.ValidateSessionAsync();
+            
             if (!sessionValid)
             {
                 Console.WriteLine($"AssignVehicleByVin: Session validation failed - {sessionMessage}");
@@ -433,27 +438,29 @@ public partial class VehicleViewModel : BaseViewModel
                 return;
             }
             
-            // Update current user with fresh data
+            Console.WriteLine("AssignVehicleByVin: Session validated successfully");
+            
+            // Update App.CurrentUser with fresh data from server
             if (validatedUser != null)
             {
                 App.CurrentUser = validatedUser;
                 Preferences.Set("UserData", JsonConvert.SerializeObject(validatedUser));
+                Console.WriteLine($"AssignVehicleByVin: Updated App.CurrentUser from server, VehiclesCount={validatedUser.Vehicles?.Count ?? 0}");
             }
             
-            // Fetch fresh CSRF token right before the API call
-            Console.WriteLine("AssignVehicleByVin: Fetching fresh CSRF token");
-            if (!await authService.FetchCSRFTokenAsync())
-            {
-                Console.WriteLine("AssignVehicleByVin: Failed to fetch CSRF token");
-                await PageDialogService.DisplayAlertAsync("Error", "Failed to retrieve session token. Please try again.", "OK");
-                return;
-            }
+            // After validation, the CSRF token should be fresh - no need to fetch again
+            // ValidateSessionAsync updates _csrfToken from the response
+            
+            // Log the auth token after validation (should be the same)
+            var postValidationToken = Preferences.Get("AuthToken", null);
+            Console.WriteLine($"AssignVehicleByVin: AuthToken after validation={(string.IsNullOrEmpty(postValidationToken) ? "NULL" : postValidationToken.Substring(0, Math.Min(20, postValidationToken.Length)) + "...")}");
             
             bool assignmentSuccessful = false;
 
             while (!assignmentSuccessful)
             {
-                (bool success, Vehicle? newVehicle, string message, List<MileageRecord>? incompleteRecords, int? mileageId) = await authService.AssignVehicleAsync(vinSuffix);
+                // Use allowIncompleteEndingMiles: true to allow creating new mileage record when previous is complete
+                (bool success, Vehicle? newVehicle, string message, List<MileageRecord>? incompleteRecords, int? mileageId) = await authService.AssignVehicleAsync(vinSuffix, allowIncompleteEndingMiles: true);
 
                 if (success && newVehicle != null && mileageId.HasValue)
                 {
