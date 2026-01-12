@@ -20,42 +20,33 @@
         <vm:AppShellViewModel />
     </Shell.BindingContext>
     
-    <!-- Custom MenuItemTemplate for styled menu items with Font Awesome icons -->
+    <!-- Clean modern menu without icons - colored left accent -->
     <Shell.MenuItemTemplate>
         <DataTemplate>
-            <Grid ColumnDefinitions="Auto,*,Auto" 
-                  Padding="16,14"
-                  ColumnSpacing="14"
-                  BackgroundColor="Transparent">
-                <!-- Icon container with Font Awesome icon -->
-                <Frame Grid.Column="0"
-                       BackgroundColor="#1e3a5f"
-                       CornerRadius="10"
-                       WidthRequest="40"
-                       HeightRequest="40"
-                       Padding="0"
-                       HasShadow="False"
-                       VerticalOptions="Center">
-                    <!-- Font Awesome icon -->
-                    <Label Text="{Binding Text, Converter={StaticResource MenuItemIconConverter}}"
-                           FontFamily="FontAwesome"
-                           FontSize="16"
-                           TextColor="{Binding Text, Converter={StaticResource MenuItemColorConverter}}"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-                </Frame>
+            <Grid ColumnDefinitions="4,*,Auto" 
+                  Padding="0,0,16,0"
+                  BackgroundColor="Transparent"
+                  HeightRequest="56">
+                <!-- Colored accent bar on left -->
+                <BoxView Grid.Column="0"
+                         BackgroundColor="{Binding Text, Converter={StaticResource MenuItemColorConverter}}"
+                         WidthRequest="4"
+                         VerticalOptions="Fill"
+                         HorizontalOptions="Start" />
                 
                 <!-- Menu item text -->
                 <Label Grid.Column="1"
                        Text="{Binding Text}"
-                       FontSize="15"
+                       FontSize="16"
+                       FontAttributes="None"
                        TextColor="#e2e8f0"
-                       VerticalOptions="Center" />
+                       VerticalOptions="Center"
+                       Margin="16,0,0,0" />
                 
                 <!-- Arrow -->
                 <Label Grid.Column="2"
                        Text="›"
-                       FontSize="20"
+                       FontSize="22"
                        TextColor="#475569"
                        VerticalOptions="Center" />
             </Grid>
