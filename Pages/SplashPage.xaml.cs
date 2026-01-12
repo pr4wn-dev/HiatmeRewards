@@ -65,6 +65,40 @@ public partial class SplashPage : ContentPage
                     LogMessage($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     Console.WriteLine($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     isLoggedIn = true;
+                    
+                    // Save OneSignal player ID for push notifications (Android only)
+#if ANDROID
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            // Try up to 5 times with increasing delays
+                            string? playerId = null;
+                            for (int attempt = 1; attempt <= 5; attempt++)
+                            {
+                                await Task.Delay(attempt * 1000);
+                                playerId = HiatmeApp.MainApplication.GetOneSignalPlayerId();
+                                Console.WriteLine($"SplashPage: OneSignal attempt {attempt}, Player ID: {playerId ?? "null"}");
+                                if (!string.IsNullOrEmpty(playerId)) break;
+                            }
+                            
+                            if (!string.IsNullOrEmpty(playerId))
+                            {
+                                Console.WriteLine($"SplashPage: Saving OneSignal player ID: {playerId}");
+                                var (saveSuccess, saveMessage) = await authService.SaveOneSignalPlayerIdAsync(playerId);
+                                Console.WriteLine($"SplashPage: Save player ID result: {saveSuccess}, {saveMessage}");
+                            }
+                            else
+                            {
+                                Console.WriteLine("SplashPage: OneSignal player ID not available, subscription observer will handle it");
+                            }
+                        }
+                        catch (Exception osEx)
+                        {
+                            Console.WriteLine($"SplashPage: OneSignal error: {osEx.Message}");
+                        }
+                    });
+#endif
                 }
                 else
                 {
