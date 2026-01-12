@@ -7,6 +7,7 @@ using HiatMeApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Dispatching;
+using Microsoft.Maui.Storage;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -124,7 +125,7 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
                 return;
             }
 
-            var (success, message, _) = await _authService.SubmitEndMileageAsync(_vehicleId.Value, endingMiles);
+            var (success, message, mileageId) = await _authService.SubmitEndMileageAsync(_vehicleId.Value, endingMiles);
 
             if (!success)
             {
@@ -136,6 +137,24 @@ public partial class FinishDayViewModel : BaseViewModel, IDisposable
                 }
                 return;
             }
+
+            // Update the local vehicle data with the ending miles
+            if (App.CurrentUser?.Vehicles != null)
+            {
+                var vehicle = App.CurrentUser.Vehicles.FirstOrDefault(v => v.VehicleId == _vehicleId.Value);
+                if (vehicle?.MileageRecord != null)
+                {
+                    vehicle.MileageRecord.EndingMiles = (float)endingMiles;
+                    vehicle.MileageRecord.EndingMilesDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    Console.WriteLine($"SubmitEndOfDay: Updated local vehicle data - VehicleId={_vehicleId.Value}, EndingMiles={endingMiles}");
+                    
+                    // Save updated user data to Preferences
+                    Preferences.Set("UserData", Newtonsoft.Json.JsonConvert.SerializeObject(App.CurrentUser));
+                }
+            }
+            
+            // Send message to refresh vehicle pages
+            WeakReferenceMessenger.Default.Send(new RefreshVehiclePageMessage("day_completed"));
 
             await ShowAlertAsync("Finish Day", "Ending mileage submitted successfully.");
             await Shell.Current.GoToAsync($"//Home?refresh={Guid.NewGuid()}");
