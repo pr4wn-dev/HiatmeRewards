@@ -35,6 +35,18 @@ public partial class VehicleViewModel : BaseViewModel
     
     [ObservableProperty]
     private bool _isLoading = true;
+    
+    [ObservableProperty]
+    private bool _isMileageComplete = false;
+    
+    [ObservableProperty]
+    private string _vehicleStatusTitle = "Your Vehicle";
+    
+    [ObservableProperty]
+    private string? _vehicleStatusSubtitle = null;
+    
+    [ObservableProperty]
+    private Color _vehicleHeaderColor = Color.FromArgb("#007BFF");
 
     public VehicleViewModel()
     {
@@ -212,6 +224,9 @@ public partial class VehicleViewModel : BaseViewModel
                         OnPropertyChanged(nameof(Vehicle.MileageRecord.EndingMiles));
                     }
                     
+                    // Update vehicle status based on mileage record state
+                    UpdateVehicleStatusDisplay();
+                    
                     NoVehicleMessageVisible = Vehicle == null;
                     IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                     IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
@@ -281,6 +296,61 @@ public partial class VehicleViewModel : BaseViewModel
         catch (Exception ex)
         {
             Console.WriteLine($"UpdateVehicle: Exception occurred: {ex.Message}, StackTrace: {ex.StackTrace}");
+        }
+    }
+    
+    private void UpdateVehicleStatusDisplay()
+    {
+        try
+        {
+            if (Vehicle == null)
+            {
+                VehicleStatusTitle = "No Vehicle";
+                VehicleStatusSubtitle = null;
+                IsMileageComplete = false;
+                VehicleHeaderColor = Color.FromArgb("#6c757d"); // Gray
+                return;
+            }
+            
+            bool hasMileageRecord = Vehicle.MileageRecord != null;
+            bool hasStartMiles = hasMileageRecord && Vehicle.MileageRecord.StartMiles != null;
+            bool hasEndMiles = hasMileageRecord && Vehicle.MileageRecord.EndingMiles != null;
+            
+            IsMileageComplete = hasStartMiles && hasEndMiles;
+            
+            if (IsMileageComplete)
+            {
+                // Mileage record is complete - this is a "previous" vehicle (day finished)
+                VehicleStatusTitle = "Previous Vehicle";
+                VehicleStatusSubtitle = "Day completed - assign to start new record";
+                VehicleHeaderColor = Color.FromArgb("#6c757d"); // Gray to indicate inactive
+                Console.WriteLine($"UpdateVehicleStatusDisplay: Vehicle {Vehicle.VehicleId} - Mileage complete, showing as Previous Vehicle");
+            }
+            else if (hasStartMiles && !hasEndMiles)
+            {
+                // Open mileage record - currently active
+                VehicleStatusTitle = "Your Vehicle";
+                VehicleStatusSubtitle = "Currently in use";
+                VehicleHeaderColor = Color.FromArgb("#28a745"); // Green for active
+                Console.WriteLine($"UpdateVehicleStatusDisplay: Vehicle {Vehicle.VehicleId} - Active (open mileage record)");
+            }
+            else
+            {
+                // No mileage record or no start miles
+                VehicleStatusTitle = "Your Vehicle";
+                VehicleStatusSubtitle = "Needs starting miles";
+                VehicleHeaderColor = Color.FromArgb("#007BFF"); // Blue default
+                Console.WriteLine($"UpdateVehicleStatusDisplay: Vehicle {Vehicle.VehicleId} - Assigned but needs start miles");
+            }
+            
+            OnPropertyChanged(nameof(IsMileageComplete));
+            OnPropertyChanged(nameof(VehicleStatusTitle));
+            OnPropertyChanged(nameof(VehicleStatusSubtitle));
+            OnPropertyChanged(nameof(VehicleHeaderColor));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"UpdateVehicleStatusDisplay: Exception: {ex.Message}");
         }
     }
 
