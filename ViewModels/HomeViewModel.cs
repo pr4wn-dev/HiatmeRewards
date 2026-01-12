@@ -88,9 +88,36 @@ public partial class HomeViewModel : BaseViewModel
                     OnPropertyChanged(nameof(AssignedVehicle));
                 }
 
-                // Only show vehicle confirmation if we just logged in
+                // Only show vehicle confirmation if:
+                // 1. We just logged in (ShouldConfirmVehicle flag is set)
+                // 2. The mileage record is COMPLETE (has both start AND ending miles)
+                // This means they finished their day and we need to ask if they want to continue with same vehicle
                 bool shouldConfirm = Preferences.Get("ShouldConfirmVehicle", false);
+                bool hasMileageRecord = AssignedVehicle.MileageRecord != null;
+                bool mileageIsComplete = hasMileageRecord && 
+                    AssignedVehicle.MileageRecord.StartMiles != null && 
+                    AssignedVehicle.MileageRecord.EndingMiles != null;
+                bool hasOpenMileageRecord = hasMileageRecord && 
+                    AssignedVehicle.MileageRecord.StartMiles != null && 
+                    AssignedVehicle.MileageRecord.EndingMiles == null;
+                
+                Console.WriteLine($"CheckVehicleAssignmentAsync: shouldConfirm={shouldConfirm}, hasMileageRecord={hasMileageRecord}, mileageIsComplete={mileageIsComplete}, hasOpenMileageRecord={hasOpenMileageRecord}");
+                
+                // Clear the flag now - we'll handle confirmation logic below
                 if (shouldConfirm)
+                {
+                    Preferences.Set("ShouldConfirmVehicle", false);
+                }
+                
+                // If there's an open mileage record (start miles but no end miles), driver is still in vehicle - no confirmation needed
+                if (hasOpenMileageRecord)
+                {
+                    Console.WriteLine($"CheckVehicleAssignmentAsync: Open mileage record found for vehicle_id={AssignedVehicle.VehicleId}, mileage_id={AssignedVehicle.MileageRecord.MileageId} - no confirmation needed");
+                    return;
+                }
+                
+                // Only ask for confirmation if mileage record is complete (they finished their day)
+                if (shouldConfirm && mileageIsComplete)
                 {
                     bool isStillInVehicle = await PageDialogService.DisplayAlertAsync(
                         "Vehicle Confirmation",
@@ -115,12 +142,10 @@ public partial class HomeViewModel : BaseViewModel
                         OnPropertyChanged(nameof(AssignedVehicle));
                         Preferences.Set("UserData", JsonConvert.SerializeObject(App.CurrentUser));
                         Console.WriteLine("CheckVehicleAssignmentAsync: Vehicle assignment cleared, navigating to Vehicle page.");
-                        Preferences.Set("ShouldConfirmVehicle", false); // Clear flag after confirmation
                         await Shell.Current.GoToAsync("Vehicle");
                         return;
                     }
-                    // Clear the flag after showing confirmation once (user clicked "Yes")
-                    Preferences.Set("ShouldConfirmVehicle", false);
+                    // User clicked "Yes" - continue to create new mileage record below
                 }
 
                 // Check if mileage record has both start and ending miles - need to create new record
@@ -243,12 +268,8 @@ public partial class HomeViewModel : BaseViewModel
                     return;
                 }
 
-                if (AssignedVehicle.MileageRecord != null && AssignedVehicle.MileageRecord.StartMiles != null && AssignedVehicle.MileageRecord.EndingMiles == null)
-                {
-                    Console.WriteLine($"CheckVehicleAssignmentAsync: Open mileage record found for vehicle_id={AssignedVehicle.VehicleId}, mileage_id={AssignedVehicle.MileageRecord.MileageId}");
-                    return;
-                }
-
+                // Note: Open mileage record check (start miles but no end miles) is now handled earlier in the flow
+                
                 if (AssignedVehicle.MileageRecord != null && AssignedVehicle.MileageRecord.StartMiles == null && AssignedVehicle.MileageRecord.MileageId != 0)
                 {
                     Console.WriteLine($"CheckVehicleAssignmentAsync: Prompting for start miles for vehicle_id={AssignedVehicle.VehicleId}, mileage_id={AssignedVehicle.MileageRecord.MileageId}");
