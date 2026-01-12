@@ -20,34 +20,14 @@
         <vm:AppShellViewModel />
     </Shell.BindingContext>
     
-    <!-- Clean modern menu without icons - colored left accent -->
+    <!-- Simple clean menu - just text -->
     <Shell.MenuItemTemplate>
         <DataTemplate>
-            <Grid ColumnDefinitions="4,*,Auto" 
-                  Padding="0,0,16,0"
-                  BackgroundColor="Transparent"
-                  HeightRequest="56">
-                <!-- Colored accent bar on left -->
-                <BoxView Grid.Column="0"
-                         BackgroundColor="{Binding Text, Converter={StaticResource MenuItemColorConverter}}"
-                         WidthRequest="4"
-                         VerticalOptions="Fill"
-                         HorizontalOptions="Start" />
-                
-                <!-- Menu item text -->
-                <Label Grid.Column="1"
-                       Text="{Binding Text}"
+            <Grid Padding="20,16"
+                  BackgroundColor="Transparent">
+                <Label Text="{Binding Text}"
                        FontSize="16"
-                       FontAttributes="None"
                        TextColor="#e2e8f0"
-                       VerticalOptions="Center"
-                       Margin="16,0,0,0" />
-                
-                <!-- Arrow -->
-                <Label Grid.Column="2"
-                       Text="›"
-                       FontSize="22"
-                       TextColor="#475569"
                        VerticalOptions="Center" />
             </Grid>
         </DataTemplate>
