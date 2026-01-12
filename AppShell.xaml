@@ -5,8 +5,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:HiatMeApp"
     xmlns:vm="clr-namespace:HiatMeApp.ViewModels"
+    xmlns:converters="clr-namespace:HiatMeApp.Converters"
     FlyoutBehavior="Flyout"
     FlyoutBackgroundColor="#1a1a1a">
+    
+    <Shell.Resources>
+        <ResourceDictionary>
+            <converters:MenuItemColorConverter x:Key="MenuItemColorConverter" />
+        </ResourceDictionary>
+    </Shell.Resources>
+    
     <Shell.BindingContext>
         <vm:AppShellViewModel />
     </Shell.BindingContext>
@@ -18,7 +26,7 @@
                   Padding="16,14"
                   ColumnSpacing="14"
                   BackgroundColor="Transparent">
-                <!-- Icon container with colored circle -->
+                <!-- Icon container with colored accent circle -->
                 <Frame Grid.Column="0"
                        BackgroundColor="#1e3a5f"
                        CornerRadius="10"
@@ -27,9 +35,13 @@
                        Padding="0"
                        HasShadow="False"
                        VerticalOptions="Center">
-                    <Image Source="{Binding IconImageSource}"
-                           WidthRequest="20"
-                           HeightRequest="20"
+                    <!-- Inner colored circle - color based on menu item -->
+                    <Frame BackgroundColor="{Binding Text, Converter={StaticResource MenuItemColorConverter}}"
+                           CornerRadius="6"
+                           WidthRequest="12"
+                           HeightRequest="12"
+                           Padding="0"
+                           HasShadow="False"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
                 </Frame>
@@ -44,7 +56,7 @@
                 <!-- Arrow -->
                 <Label Grid.Column="2"
                        Text="›"
-                       FontSize="18"
+                       FontSize="20"
                        TextColor="#475569"
                        VerticalOptions="Center" />
             </Grid>
