@@ -157,22 +157,15 @@ public partial class HomeViewModel : BaseViewModel
                     return;
                 }
 
-                // Check if mileage record has both start and ending miles - need to create new record
-                // Navigate to Vehicle page where the VehicleViewModel handles authentication properly
+                // If mileage is complete but we're not in the confirmation flow (shouldConfirm was false),
+                // just stay on Home page. User can navigate to Vehicle page manually to see "Previous Vehicle" status.
+                // Don't auto-navigate or auto-assign - only do that when user explicitly confirms after login.
                 if (AssignedVehicle.MileageRecord != null && 
                     AssignedVehicle.MileageRecord.StartMiles != null && 
                     AssignedVehicle.MileageRecord.EndingMiles != null)
                 {
-                    Console.WriteLine($"CheckVehicleAssignmentAsync: Mileage record is complete (both start and ending miles filled), navigating to Vehicle page for vehicle_id={AssignedVehicle.VehicleId}");
-                    string vinSuffix = AssignedVehicle.LastSixVin ?? string.Empty;
-                    
-                    // Set the prefilled VIN so the Vehicle page can use it
-                    if (!string.IsNullOrEmpty(vinSuffix))
-                    {
-                        Preferences.Set("PrefilledVinSuffix", vinSuffix);
-                    }
-                    
-                    await Shell.Current.GoToAsync("Vehicle");
+                    Console.WriteLine($"CheckVehicleAssignmentAsync: Mileage record is complete for vehicle_id={AssignedVehicle.VehicleId}, staying on Home page (no auto-navigate)");
+                    // Just stay on home - user finished their day, they can navigate manually if needed
                     return;
                 }
 
