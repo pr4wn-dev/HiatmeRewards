@@ -82,11 +82,11 @@ namespace HiatmeApp
             try
             {
                 // Get auth service from the app
-                var authService = App.Services?.GetService<HiatMeApp.Services.IAuthService>();
+                var authService = App.Services?.GetService<HiatMeApp.Services.AuthService>();
                 if (authService != null)
                 {
-                    var (success, message) = await authService.SaveOneSignalPlayerIdAsync(playerId);
-                    System.Diagnostics.Debug.WriteLine($"OneSignal: Save player ID result: {success}, {message}");
+                    var result = await authService.SaveOneSignalPlayerIdAsync(playerId);
+                    System.Diagnostics.Debug.WriteLine($"OneSignal: Save player ID result: {result.success}, {result.message}");
                 }
             }
             catch (Exception ex)
