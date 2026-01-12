@@ -420,6 +420,35 @@ public partial class VehicleViewModel : BaseViewModel
             }
 
             var authService = App.Services.GetRequiredService<AuthService>();
+            
+            // Validate session and get fresh CSRF token before making API call
+            Console.WriteLine("AssignVehicleByVin: Validating session before API call");
+            var (sessionValid, validatedUser, sessionMessage) = await authService.ValidateSessionAsync();
+            if (!sessionValid)
+            {
+                Console.WriteLine($"AssignVehicleByVin: Session validation failed - {sessionMessage}");
+                await PageDialogService.DisplayAlertAsync("Session Expired", "Your session has expired. Please log in again.", "OK");
+                Preferences.Set("IsLoggedIn", false);
+                await Shell.Current.GoToAsync("//Login");
+                return;
+            }
+            
+            // Update current user with fresh data
+            if (validatedUser != null)
+            {
+                App.CurrentUser = validatedUser;
+                Preferences.Set("UserData", JsonConvert.SerializeObject(validatedUser));
+            }
+            
+            // Fetch fresh CSRF token right before the API call
+            Console.WriteLine("AssignVehicleByVin: Fetching fresh CSRF token");
+            if (!await authService.FetchCSRFTokenAsync())
+            {
+                Console.WriteLine("AssignVehicleByVin: Failed to fetch CSRF token");
+                await PageDialogService.DisplayAlertAsync("Error", "Failed to retrieve session token. Please try again.", "OK");
+                return;
+            }
+            
             bool assignmentSuccessful = false;
 
             while (!assignmentSuccessful)
