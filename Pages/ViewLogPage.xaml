@@ -22,12 +22,14 @@
                        HorizontalOptions="Center"
                        Margin="0,20,0,10" />
                 
-                <!-- Debug Tools Section -->
+                <!-- Debug Tools Section - Hidden in production builds -->
                 <Frame BackgroundColor="#444444" 
                        BorderColor="#555555"
                        CornerRadius="10"
                        Margin="20,0,20,0"
-                       Padding="15">
+                       Padding="15"
+                       x:Name="DebugToolsFrame"
+                       IsVisible="False">
                     <VerticalStackLayout Spacing="10">
                         <Label Text="🔧 Debug Tools" 
                                FontSize="18" 
