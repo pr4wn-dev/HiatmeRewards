@@ -59,6 +59,9 @@ public partial class SplashPage : ContentPage
                     App.CurrentUser = user;
                     // Ensure IsLoggedIn is set to true
                     Preferences.Set("IsLoggedIn", true);
+                    // Set flag to trigger vehicle confirmation check on Home page
+                    // This ensures driver is asked if they're still in the same vehicle after app restart
+                    Preferences.Set("ShouldConfirmVehicle", true);
                     LogMessage($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     Console.WriteLine($"SplashPage: Session validated and restored, Email={user.Email}, Role={user.Role}");
                     isLoggedIn = true;
