@@ -1139,12 +1139,14 @@ namespace HiatMeApp.Services
             var data = new Dictionary<string, string>
             {
                 { "action", allowIncompleteEndingMiles ? "assign_vehicle_by_vin_allow_incomplete" : "assign_vehicle_by_vin" },
-                { "vin_suffix", vinSuffix }
+                { "vin_suffix", vinSuffix },
+                { "auth_token", authToken }  // Send in POST body for consistent auth (Apache may not forward Authorization header)
             };
             var content = new FormUrlEncodedContent(data);
 
             _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
             _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            // Also send in Authorization header as backup
             _httpClient.DefaultRequestHeaders.Remove("Authorization");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
 
@@ -1294,12 +1296,14 @@ namespace HiatMeApp.Services
                 { "action", "submit_start_mileage" },
                 { "mileage_id", mileageId.ToString() },
                 { "start_miles", startMiles.ToString(System.Globalization.CultureInfo.InvariantCulture) },
-                { "start_miles_datetime", startMilesDatetime }
+                { "start_miles_datetime", startMilesDatetime },
+                { "auth_token", authToken }  // Send in POST body for consistent auth (Apache may not forward Authorization header)
             };
             var content = new FormUrlEncodedContent(data);
 
             _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
             _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            // Also send in Authorization header as backup
             _httpClient.DefaultRequestHeaders.Remove("Authorization");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
 
@@ -1438,12 +1442,14 @@ namespace HiatMeApp.Services
                 { "action", "submit_end_mileage" },
                 { "vehicle_id", vehicleId.ToString() },
                 { "ending_miles", endingMiles.ToString(System.Globalization.CultureInfo.InvariantCulture) },
-                { "ending_miles_datetime", endingMilesDatetime }
+                { "ending_miles_datetime", endingMilesDatetime },
+                { "auth_token", authToken }  // Send in POST body for consistent auth (Apache may not forward Authorization header)
             };
             var content = new FormUrlEncodedContent(data);
 
             _httpClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
             _httpClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            // Also send in Authorization header as backup
             _httpClient.DefaultRequestHeaders.Remove("Authorization");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
 
