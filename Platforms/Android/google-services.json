@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "82679744220",
+    "project_id": "hiatme-85fd8",
+    "storage_bucket": "hiatme-85fd8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:82679744220:android:2eebdc2da11b0a3e09d619",
+        "android_client_info": {
+          "package_name": "com.companyname.hiatmeapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvTEfEiTBX8WnbU1uBNxs0SUV7Uy6lHjk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
