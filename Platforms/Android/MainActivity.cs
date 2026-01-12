@@ -13,6 +13,9 @@ namespace HiatmeApp
     {
         protected override void OnCreate(Bundle? savedInstanceState)
         {
+            // Show splash screen for 3 seconds so users can see the awesome honey badger
+            System.Threading.Thread.Sleep(3000);
+            
             base.OnCreate(savedInstanceState);
             
             // Request battery optimization exemption for reliable notifications
