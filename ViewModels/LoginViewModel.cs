@@ -116,10 +116,23 @@ public partial class LoginViewModel : BaseViewModel
                 {
                     try
                     {
-                        // Wait a moment for OneSignal to be fully initialized
-                        await Task.Delay(2000);
+                        // Wait for OneSignal to initialize and try multiple times
+                        string? playerId = null;
                         
-                        var playerId = HiatmeApp.MainApplication.GetOneSignalPlayerId();
+                        // Try up to 5 times with increasing delays
+                        for (int attempt = 1; attempt <= 5; attempt++)
+                        {
+                            await Task.Delay(attempt * 1000); // 1s, 2s, 3s, 4s, 5s
+                            
+                            playerId = HiatmeApp.MainApplication.GetOneSignalPlayerId();
+                            Console.WriteLine($"LoginAsync: OneSignal attempt {attempt}, Player ID: {playerId ?? "null"}");
+                            
+                            if (!string.IsNullOrEmpty(playerId))
+                            {
+                                break;
+                            }
+                        }
+                        
                         if (!string.IsNullOrEmpty(playerId))
                         {
                             Console.WriteLine($"LoginAsync: Saving OneSignal player ID: {playerId}");
@@ -128,8 +141,8 @@ public partial class LoginViewModel : BaseViewModel
                         }
                         else
                         {
-                            Console.WriteLine("LoginAsync: OneSignal player ID not available yet");
-                            // Request notification permission
+                            Console.WriteLine("LoginAsync: OneSignal player ID not available after 5 attempts");
+                            // Request notification permission - the subscription observer will save when ready
                             HiatmeApp.MainApplication.RequestNotificationPermission();
                         }
                     }
