@@ -497,9 +497,10 @@ public partial class VehicleViewModel : BaseViewModel
                         UpdateVehicle(newVehicle);
                         WeakReferenceMessenger.Default.Send(new VehicleAssignedMessage(newVehicle));
                         assignmentSuccessful = true;
-                        // Send refresh message
+                        // Send refresh message - no need to navigate since we're already on the Vehicle page
                         WeakReferenceMessenger.Default.Send(new RefreshVehiclePageMessage("force"));
-                        await Shell.Current.GoToAsync($"Vehicle?refresh={Guid.NewGuid()}");
+                        // Just reload the vehicles to refresh the UI
+                        await LoadVehiclesAsync();
                     }
                     else
                     {
