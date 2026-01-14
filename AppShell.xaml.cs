@@ -297,44 +297,6 @@ public partial class AppShell : Shell
         }
     }
 
-    private async void OnTestLoginClicked(object sender, EventArgs e)
-    {
-        Console.WriteLine("AppShell: OnTestLoginClicked triggered");
-        try
-        {
-            if (Preferences.Get("IsLoggedIn", false))
-            {
-                Preferences.Clear();
-                Console.WriteLine("AppShell: Preferences cleared on test logout");
-                if (BindingContext is AppShellViewModel vm)
-                {
-                    vm.UpdateMenuItems();
-                }
-            }
-            await Shell.Current.GoToAsync("//Login");
-            Console.WriteLine("AppShell: Test navigated to Login");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"AppShell: OnTestLoginClicked error: {ex.Message}");
-        }
-    }
-
-    private async void OnTestHomeClicked(object sender, EventArgs e)
-    {
-        Console.WriteLine("AppShell: OnTestHomeClicked triggered");
-        try
-        {
-            var route = Preferences.Get("IsLoggedIn", false) ? "//Home" : "//Login";
-            await Shell.Current.GoToAsync(route);
-            Console.WriteLine($"AppShell: Test navigated to {route}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"AppShell: OnTestHomeClicked error: {ex.Message}");
-        }
-    }
-
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AppShellViewModel.ProfilePicture) && sender is AppShellViewModel vm)

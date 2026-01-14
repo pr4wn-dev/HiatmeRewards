@@ -15,10 +15,20 @@
     <ApplicationVersion>1</ApplicationVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <!-- Android Signing Configuration for Release builds -->
+  <!-- Signing will only be enabled if passwords are provided via .csproj.user or environment variables -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' And '$(AndroidSigningStorePass)' != '' And '$(AndroidSigningKeyPass)' != ''">
+    <AndroidKeyStore>True</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(USERPROFILE)\.android\keystores\hiatme-upload.keystore</AndroidSigningKeyStore>
+    <AndroidSigningKeyAlias>hiatme-upload</AndroidSigningKeyAlias>
+    <!-- Passwords should be set in HiatmeApp.csproj.user or via environment variables for security -->
   </PropertyGroup>
 
   <!-- Google Services for FCM Push Notifications (Android) -->
@@ -34,7 +44,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Polly" Version="8.6.2" />
-    <PackageReference Include="OneSignalSDK.DotNet" Version="5.2.2" />
+    <PackageReference Include="OneSignalSDK.DotNet" Version="5.2.2" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'" />
     <PackageReference Include="Xamarin.GooglePlayServices.Base" Version="118.5.0.1" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'" />
   </ItemGroup>
 
