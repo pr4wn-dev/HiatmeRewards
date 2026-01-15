@@ -37,7 +37,7 @@ namespace HiatmeApp
         public override void OnCreate()
         {
             base.OnCreate();
-            _httpClient = new HttpClient { BaseAddress = new Uri("https://hiatme.com") };
+            _httpClient = new HttpClient { BaseAddress = new System.Uri("https://hiatme.com") };
             _handler = new Handler(Looper.MainLooper!);
             Console.WriteLine("LocationForegroundService: Created");
         }
