@@ -1,88 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="456" height="456" viewBox="0 0 456 456" version="1.1" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <!-- Honey badger stripe gradient - silver to white -->
-        <linearGradient id="stripeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#ffffff"/>
-            <stop offset="50%" style="stop-color:#e8e8e8"/>
-            <stop offset="100%" style="stop-color:#d0d0d0"/>
-        </linearGradient>
-        <!-- Body dark gradient -->
-        <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#4a4a4a"/>
-            <stop offset="100%" style="stop-color:#2a2a2a"/>
-        </linearGradient>
-        <!-- Eye glow -->
-        <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" style="stop-color:#ffcc00"/>
-            <stop offset="70%" style="stop-color:#ff9500"/>
-            <stop offset="100%" style="stop-color:#cc6600"/>
-        </radialGradient>
-    </defs>
-    
-    <!-- Honey Badger Face - Stylized and Fierce -->
-    
-    <!-- Main head shape - dark body -->
-    <ellipse cx="228" cy="260" rx="140" ry="130" fill="url(#bodyGradient)" />
-    
-    <!-- Characteristic white/silver stripe on top of head -->
-    <path d="M 228 80 
-             Q 140 100, 100 180 
-             Q 90 220, 100 260
-             L 130 240
-             Q 145 180, 180 140
-             Q 228 100, 276 140
-             Q 311 180, 326 240
-             L 356 260
-             Q 366 220, 356 180
-             Q 316 100, 228 80 Z" 
-          fill="url(#stripeGradient)" />
-    
-    <!-- Left ear -->
-    <ellipse cx="120" cy="150" rx="35" ry="45" fill="url(#bodyGradient)" />
-    <ellipse cx="120" cy="145" rx="20" ry="28" fill="#3d3d3d" />
-    
-    <!-- Right ear -->
-    <ellipse cx="336" cy="150" rx="35" ry="45" fill="url(#bodyGradient)" />
-    <ellipse cx="336" cy="145" rx="20" ry="28" fill="#3d3d3d" />
-    
-    <!-- Snout area - slightly lighter -->
-    <ellipse cx="228" cy="310" rx="70" ry="55" fill="#3a3a3a" />
-    
-    <!-- Nose - black and shiny -->
-    <ellipse cx="228" cy="295" rx="28" ry="22" fill="#1a1a1a" />
-    <ellipse cx="220" cy="290" rx="8" ry="6" fill="#444" opacity="0.6" />
-    
-    <!-- Fierce eyes with golden glow -->
-    <!-- Left eye -->
-    <ellipse cx="170" cy="230" rx="32" ry="28" fill="#1a1a1a" />
-    <ellipse cx="170" cy="230" rx="22" ry="20" fill="url(#eyeGlow)" />
-    <ellipse cx="170" cy="230" rx="12" ry="12" fill="#1a1a1a" />
-    <ellipse cx="165" cy="225" rx="5" ry="4" fill="#fff" opacity="0.9" />
-    
-    <!-- Right eye -->
-    <ellipse cx="286" cy="230" rx="32" ry="28" fill="#1a1a1a" />
-    <ellipse cx="286" cy="230" rx="22" ry="20" fill="url(#eyeGlow)" />
-    <ellipse cx="286" cy="230" rx="12" ry="12" fill="#1a1a1a" />
-    <ellipse cx="281" cy="225" rx="5" ry="4" fill="#fff" opacity="0.9" />
-    
-    <!-- Angry eyebrow lines for fierce look -->
-    <path d="M 140 200 Q 165 210, 195 205" stroke="#1a1a1a" stroke-width="8" fill="none" stroke-linecap="round"/>
-    <path d="M 316 200 Q 291 210, 261 205" stroke="#1a1a1a" stroke-width="8" fill="none" stroke-linecap="round"/>
-    
-    <!-- Mouth - slight snarl -->
-    <path d="M 180 340 Q 205 355, 228 350 Q 251 355, 276 340" 
-          stroke="#1a1a1a" stroke-width="5" fill="none" stroke-linecap="round"/>
-    
-    <!-- Small fangs showing -->
-    <path d="M 195 343 L 200 360 L 208 345" fill="#f0f0f0" />
-    <path d="M 261 343 L 256 360 L 248 345" fill="#f0f0f0" />
-    
-    <!-- Whisker dots -->
-    <circle cx="165" cy="310" r="4" fill="#2a2a2a" />
-    <circle cx="150" cy="320" r="4" fill="#2a2a2a" />
-    <circle cx="155" cy="335" r="4" fill="#2a2a2a" />
-    <circle cx="291" cy="310" r="4" fill="#2a2a2a" />
-    <circle cx="306" cy="320" r="4" fill="#2a2a2a" />
-    <circle cx="301" cy="335" r="4" fill="#2a2a2a" />
+<svg width="512" height="512" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <!-- Dog Paw Print Icon - Foreground -->
+    <g transform="translate(256, 256)">
+        <!-- Main pad (large center pad) -->
+        <ellipse cx="0" cy="50" rx="65" ry="52" fill="#ffffff" />
+        
+        <!-- Top toe pads -->
+        <!-- Left outer toe -->
+        <ellipse cx="-70" cy="-28" rx="30" ry="36" fill="#ffffff" transform="rotate(-15, -70, -28)" />
+        
+        <!-- Left inner toe -->
+        <ellipse cx="-26" cy="-52" rx="28" ry="34" fill="#ffffff" transform="rotate(-5, -26, -52)" />
+        
+        <!-- Right inner toe -->
+        <ellipse cx="26" cy="-52" rx="28" ry="34" fill="#ffffff" transform="rotate(5, 26, -52)" />
+        
+        <!-- Right outer toe -->
+        <ellipse cx="70" cy="-28" rx="30" ry="36" fill="#ffffff" transform="rotate(15, 70, -28)" />
+    </g>
 </svg>

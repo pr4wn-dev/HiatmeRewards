@@ -2,21 +2,68 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="HiatMeApp.SplashPage"
-             BackgroundColor="#333333"
+             BackgroundColor="#1e3a5f"
              Shell.NavBarIsVisible="False">
     <Grid>
         <VerticalStackLayout HorizontalOptions="Center"
                            VerticalOptions="Center"
-                           Spacing="20">
-            <ActivityIndicator IsRunning="True"
-                              Color="#007BFF"
-                              WidthRequest="50"
-                              HeightRequest="50" />
-            <Label Text="Loading..."
-                   FontSize="18"
+                           Spacing="30">
+            
+            <!-- Paw Print using Path -->
+            <Grid WidthRequest="180" HeightRequest="180" HorizontalOptions="Center">
+                <!-- Main pad -->
+                <Ellipse Fill="#3b82f6" 
+                         WidthRequest="90" HeightRequest="70"
+                         HorizontalOptions="Center" VerticalOptions="End"
+                         Margin="0,0,0,10" />
+                
+                <!-- Toe pads - using a Grid to position them -->
+                <Ellipse Fill="#3b82f6" 
+                         WidthRequest="40" HeightRequest="50"
+                         HorizontalOptions="Start" VerticalOptions="Start"
+                         Margin="10,30,0,0" 
+                         Rotation="-15"/>
+                
+                <Ellipse Fill="#3b82f6" 
+                         WidthRequest="38" HeightRequest="48"
+                         HorizontalOptions="Center" VerticalOptions="Start"
+                         Margin="-45,10,0,0"
+                         Rotation="-5"/>
+                
+                <Ellipse Fill="#3b82f6" 
+                         WidthRequest="38" HeightRequest="48"
+                         HorizontalOptions="Center" VerticalOptions="Start"
+                         Margin="45,10,0,0"
+                         Rotation="5"/>
+                
+                <Ellipse Fill="#3b82f6" 
+                         WidthRequest="40" HeightRequest="50"
+                         HorizontalOptions="End" VerticalOptions="Start"
+                         Margin="0,30,10,0"
+                         Rotation="15"/>
+            </Grid>
+            
+            <!-- HIATME text -->
+            <Label Text="HIATME"
+                   FontSize="56"
+                   FontAttributes="Bold"
                    TextColor="White"
-                   HorizontalOptions="Center" />
+                   HorizontalOptions="Center"
+                   CharacterSpacing="4" />
+            
+            <!-- Powered by AI -->
+            <Label Text="POWERED BY AI"
+                   FontSize="18"
+                   TextColor="#60a5fa"
+                   HorizontalOptions="Center"
+                   CharacterSpacing="3" />
+            
+            <!-- Loading indicator -->
+            <ActivityIndicator IsRunning="True"
+                              Color="#60a5fa"
+                              WidthRequest="40"
+                              HeightRequest="40"
+                              Margin="0,20,0,0" />
         </VerticalStackLayout>
     </Grid>
 </ContentPage>
-
