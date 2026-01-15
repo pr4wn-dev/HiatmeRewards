@@ -25,12 +25,6 @@ public partial class VehicleViewModel : BaseViewModel
     private bool _noVehicleMessageVisible = true;
 
     [ObservableProperty]
-    private bool _isVehicleButtonVisible = false;
-
-    [ObservableProperty]
-    private bool _isIssuesButtonVisible = false;
-
-    [ObservableProperty]
     private ObservableCollection<Vehicle> _vehicles = new();
     
     [ObservableProperty]
@@ -48,7 +42,7 @@ public partial class VehicleViewModel : BaseViewModel
     [ObservableProperty]
     private Color _vehicleHeaderColor = Color.FromArgb("#007BFF");
 
-    public VehicleViewModel()
+    public VehicleViewModel() : base()
     {
         Title = "Vehicle";
         Vehicles = new ObservableCollection<Vehicle>();
@@ -76,8 +70,6 @@ public partial class VehicleViewModel : BaseViewModel
             }
         }
         
-        IsVehicleButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
-        IsIssuesButtonVisible = App.CurrentUser?.Role is "Driver" or "Manager" or "Owner";
         Console.WriteLine($"VehicleViewModel: Initialized with Vehicle={(Vehicle != null ? $"VIN ending {Vehicle.LastSixVin}" : "none")}, VehiclesCount={Vehicles.Count}, IsVehicleButtonVisible={IsVehicleButtonVisible}, IsIssuesButtonVisible={IsIssuesButtonVisible}, IsBusy={IsBusy}, CurrentUserId={App.CurrentUser?.UserId ?? 0}");
         
         // Don't load vehicles in constructor - let OnAppearing handle it to avoid timing issues
@@ -228,8 +220,6 @@ public partial class VehicleViewModel : BaseViewModel
                     UpdateVehicleStatusDisplay();
                     
                     NoVehicleMessageVisible = Vehicle == null;
-                    IsVehicleButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
-                    IsIssuesButtonVisible = App.CurrentUser.Role is "Driver" or "Manager" or "Owner";
                     
                     Console.WriteLine($"LoadVehiclesAsync: Set Vehicle property, VehicleId={Vehicle?.VehicleId}, HasMileageRecord={Vehicle?.MileageRecord != null}, StartMiles={Vehicle?.MileageRecord?.StartMiles}");
                 });
@@ -877,111 +867,6 @@ public partial class VehicleViewModel : BaseViewModel
         finally
         {
             IsBusy = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToHome()
-    {
-        try
-        {
-            Console.WriteLine("GoToHome: Navigating to Home");
-            await Shell.Current.GoToAsync($"//Home?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToHome: Error navigating to Home: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Home page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToVehicle()
-    {
-        try
-        {
-            Console.WriteLine("GoToVehicle: Navigating to Vehicle");
-            await Shell.Current.GoToAsync($"//Vehicle?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToVehicle: Error navigating to Vehicle: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToIssues()
-    {
-        try
-        {
-            Console.WriteLine("GoToIssues: Navigating to Vehicle Issues");
-            await Shell.Current.GoToAsync($"//VehicleIssues?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle Issues page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToFinishDay()
-    {
-        try
-        {
-            Console.WriteLine("GoToFinishDay: Navigating to Finish Day");
-            await Shell.Current.GoToAsync($"//FinishDay?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToProfile()
-    {
-        try
-        {
-            Console.WriteLine("GoToProfile: Navigating to Profile");
-            await Shell.Current.GoToAsync($"//Profile?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToProfile: Error navigating to Profile: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Profile page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToRequestDayOff()
-    {
-        try
-        {
-            Console.WriteLine("GoToRequestDayOff: Navigating to Request Day Off");
-            await Shell.Current.GoToAsync($"//RequestDayOff?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToRequestDayOff: Error navigating to Request Day Off: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Request Day Off page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToViewLog()
-    {
-        try
-        {
-            Console.WriteLine("GoToViewLog: Navigating to View Log");
-            await Shell.Current.GoToAsync("//ViewLog");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToViewLog: Error navigating to View Log: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to View Log page.", "OK");
         }
     }
 

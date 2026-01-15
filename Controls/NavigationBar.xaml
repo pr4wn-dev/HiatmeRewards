@@ -1,8 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:HiatMeApp.Converters"
              x:Class="HiatMeApp.Controls.NavigationBar">
     <ContentView.Resources>
+        <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
         <Style x:Key="NavButtonStyle" TargetType="Button">
             <Setter Property="BackgroundColor" Value="#444444" />
             <Setter Property="TextColor" Value="White" />
@@ -80,8 +82,9 @@
                         Command="{Binding GoToProfileCommand}"
                         ToolTipProperties.Text="Profile" />
                 
-                <!-- Request Day Off -->
+                <!-- Request Day Off (hidden for Clients) -->
                 <Button Text="&#xE916;" Style="{StaticResource NavButtonStyle}"
+                        IsVisible="{Binding IsClient, Converter={StaticResource InverseBooleanConverter}}"
                         Command="{Binding GoToRequestDayOffCommand}"
                         ToolTipProperties.Text="Request Day Off" />
                 
@@ -97,8 +100,9 @@
                         Command="{Binding GoToIssuesCommand}"
                         ToolTipProperties.Text="Vehicle Issues" />
                 
-                <!-- Finish Day -->
+                <!-- Finish Day (hidden for Clients) -->
                 <Button Text="&#xE8AF;" Style="{StaticResource NavButtonStyle}" 
+                        IsVisible="{Binding IsClient, Converter={StaticResource InverseBooleanConverter}}"
                         Command="{Binding GoToFinishDayCommand}"
                         ToolTipProperties.Text="Finish Day" />
                 

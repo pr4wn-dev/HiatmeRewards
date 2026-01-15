@@ -457,15 +457,20 @@ public partial class AppShell : Shell
                 _loginLogoutMenuItem.Text = isLoggedIn ? "Logout" : "Login";
             }
             
-            // Now add items in the correct order based on login status
+            // Now add items in the correct order based on login status and role
             try
             {
-                Console.WriteLine($"UpdateMenuVisibility: About to add items. isLoggedIn={isLoggedIn}");
+                string userRole = Preferences.Get("UserRole", string.Empty);
+                bool isClient = userRole.Equals("Client", StringComparison.OrdinalIgnoreCase);
+                Console.WriteLine($"UpdateMenuVisibility: About to add items. isLoggedIn={isLoggedIn}, userRole={userRole}, isClient={isClient}");
                 Console.WriteLine($"UpdateMenuVisibility: Menu item null checks - Home={_homeMenuItem == null}, Profile={_profileMenuItem == null}, RequestDayOff={_requestDayOffMenuItem == null}, Vehicle={_vehicleMenuItem == null}, VehicleIssues={_vehicleIssuesMenuItem == null}, FinishDay={_finishDayMenuItem == null}, LoginLogout={_loginLogoutMenuItem == null}, Register={_registerMenuItem == null}");
                 
                 if (isLoggedIn)
                 {
-                    // When logged in: Home, Profile, Request Day Off, Vehicle, Vehicle Issues, Finish Day, Logout
+                    // When logged in: Show menu items based on role
+                    // Client: Home, Profile, Logout only
+                    // Other roles: Full menu
+                    
                     if (_homeMenuItem != null)
                     {
                         try
@@ -502,76 +507,84 @@ public partial class AppShell : Shell
                         Console.WriteLine("UpdateMenuVisibility: ✗ Profile menu item is NULL");
                     }
                     
-                    if (_requestDayOffMenuItem != null)
+                    // Only show these menu items for non-Client roles
+                    if (!isClient)
                     {
-                        try
+                        if (_requestDayOffMenuItem != null)
                         {
-                            Items.Add(_requestDayOffMenuItem);
-                            _addedMenuItems.Add(_requestDayOffMenuItem);
-                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Request Day Off");
+                            try
+                            {
+                                Items.Add(_requestDayOffMenuItem);
+                                _addedMenuItems.Add(_requestDayOffMenuItem);
+                                Console.WriteLine("UpdateMenuVisibility: ✓ Added Request Day Off");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Request Day Off: {ex.Message}");
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Request Day Off: {ex.Message}");
+                            Console.WriteLine("UpdateMenuVisibility: ✗ Request Day Off menu item is NULL");
+                        }
+                        
+                        if (_vehicleMenuItem != null)
+                        {
+                            try
+                            {
+                                Items.Add(_vehicleMenuItem);
+                                _addedMenuItems.Add(_vehicleMenuItem);
+                                Console.WriteLine("UpdateMenuVisibility: ✓ Added Vehicle");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Vehicle: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("UpdateMenuVisibility: ✗ Vehicle menu item is NULL");
+                        }
+                        
+                        if (_vehicleIssuesMenuItem != null)
+                        {
+                            try
+                            {
+                                Items.Add(_vehicleIssuesMenuItem);
+                                _addedMenuItems.Add(_vehicleIssuesMenuItem);
+                                Console.WriteLine("UpdateMenuVisibility: ✓ Added Vehicle Issues");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Vehicle Issues: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("UpdateMenuVisibility: ✗ Vehicle Issues menu item is NULL");
+                        }
+                        
+                        if (_finishDayMenuItem != null)
+                        {
+                            try
+                            {
+                                Items.Add(_finishDayMenuItem);
+                                _addedMenuItems.Add(_finishDayMenuItem);
+                                Console.WriteLine("UpdateMenuVisibility: ✓ Added Finish Day");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Finish Day: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("UpdateMenuVisibility: ✗ Finish Day menu item is NULL");
                         }
                     }
                     else
                     {
-                        Console.WriteLine("UpdateMenuVisibility: ✗ Request Day Off menu item is NULL");
-                    }
-                    
-                    if (_vehicleMenuItem != null)
-                    {
-                        try
-                        {
-                            Items.Add(_vehicleMenuItem);
-                            _addedMenuItems.Add(_vehicleMenuItem);
-                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Vehicle");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Vehicle: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("UpdateMenuVisibility: ✗ Vehicle menu item is NULL");
-                    }
-                    
-                    if (_vehicleIssuesMenuItem != null)
-                    {
-                        try
-                        {
-                            Items.Add(_vehicleIssuesMenuItem);
-                            _addedMenuItems.Add(_vehicleIssuesMenuItem);
-                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Vehicle Issues");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Vehicle Issues: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("UpdateMenuVisibility: ✗ Vehicle Issues menu item is NULL");
-                    }
-                    
-                    if (_finishDayMenuItem != null)
-                    {
-                        try
-                        {
-                            Items.Add(_finishDayMenuItem);
-                            _addedMenuItems.Add(_finishDayMenuItem);
-                            Console.WriteLine("UpdateMenuVisibility: ✓ Added Finish Day");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"UpdateMenuVisibility: ✗ Failed to add Finish Day: {ex.Message}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("UpdateMenuVisibility: ✗ Finish Day menu item is NULL");
+                        Console.WriteLine("UpdateMenuVisibility: Client role - skipping Vehicle, Issues, Day Off, Finish Day menu items");
                     }
                     
                     if (_loginLogoutMenuItem != null)

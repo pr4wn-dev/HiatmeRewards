@@ -17,9 +17,6 @@ namespace HiatMeApp.ViewModels;
 public partial class HomeViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private bool _isVehicleButtonVisible;
-
-    [ObservableProperty]
     private Vehicle? _assignedVehicle;
 
     [ObservableProperty]
@@ -34,7 +31,7 @@ public partial class HomeViewModel : BaseViewModel
     [ObservableProperty]
     private string _currentDate = DateTime.Now.ToString("dddd, MMMM d");
 
-    public HomeViewModel()
+    public HomeViewModel() : base()
     {
         Title = "Home";
         var userJson = Preferences.Get("UserData", string.Empty);
@@ -42,19 +39,27 @@ public partial class HomeViewModel : BaseViewModel
         {
             var user = JsonConvert.DeserializeObject<User>(userJson);
             App.CurrentUser = user;
-            IsVehicleButtonVisible = user?.Role is "Driver" or "Manager" or "Owner";
             UserName = user?.Name ?? "User";
             UserRole = user?.Role ?? "User";
             UpdateVehicleStatus();
-            Console.WriteLine($"HomeViewModel: Initialized with IsVehicleButtonVisible={IsVehicleButtonVisible}, Role={user?.Role}, UserId={user?.UserId}, VehiclesCount={user?.Vehicles?.Count ?? 0}");
+            Console.WriteLine($"HomeViewModel: Initialized with IsVehicleButtonVisible={IsVehicleButtonVisible}, IsClient={IsClient}, Role={user?.Role}, UserId={user?.UserId}, VehiclesCount={user?.Vehicles?.Count ?? 0}");
         }
-        WeakReferenceMessenger.Default.Register<HomeViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
+        
+        // Only register for vehicle messages and check assignments if not a Client
+        if (!IsClient)
         {
-            Console.WriteLine($"HomeViewModel: Received VehicleAssigned message, VIN ending={message.Value.LastSixVin}");
-            recipient.AssignedVehicle = message.Value;
-            recipient.OnPropertyChanged(nameof(AssignedVehicle));
-        });
-        CheckVehicleAssignmentAsync();
+            WeakReferenceMessenger.Default.Register<HomeViewModel, VehicleAssignedMessage>(this, (recipient, message) =>
+            {
+                Console.WriteLine($"HomeViewModel: Received VehicleAssigned message, VIN ending={message.Value.LastSixVin}");
+                recipient.AssignedVehicle = message.Value;
+                recipient.OnPropertyChanged(nameof(AssignedVehicle));
+            });
+            CheckVehicleAssignmentAsync();
+        }
+        else
+        {
+            Console.WriteLine("HomeViewModel: Client role detected - skipping vehicle assignment check");
+        }
     }
 
     private async void CheckVehicleAssignmentAsync()
@@ -399,111 +404,6 @@ public partial class HomeViewModel : BaseViewModel
         {
             Console.WriteLine($"CheckVehicleAssignmentAsync: Error: {ex.Message}, StackTrace: {ex.StackTrace}");
             await PageDialogService.DisplayAlertAsync("Error", "Failed to check vehicle.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToHome()
-    {
-        try
-        {
-            Console.WriteLine("GoToHome: Navigating to Home");
-            await Shell.Current.GoToAsync($"//Home?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToHome: Error navigating to Home: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Home page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToVehicle()
-    {
-        try
-        {
-            Console.WriteLine("GoToVehicle: Navigating to Vehicle");
-            await Shell.Current.GoToAsync($"//Vehicle?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToVehicle: Error navigating to Vehicle: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToIssues()
-    {
-        try
-        {
-            Console.WriteLine("GoToIssues: Navigating to Vehicle Issues");
-            await Shell.Current.GoToAsync($"//VehicleIssues?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToIssues: Error navigating to Vehicle Issues: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Vehicle Issues page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToFinishDay()
-    {
-        try
-        {
-            Console.WriteLine("GoToFinishDay: Navigating to Finish Day");
-            await Shell.Current.GoToAsync($"//FinishDay?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToFinishDay: Error navigating to Finish Day: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Finish Day page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToProfile()
-    {
-        try
-        {
-            Console.WriteLine("GoToProfile: Navigating to Profile");
-            await Shell.Current.GoToAsync($"//Profile?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToProfile: Error navigating to Profile: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Profile page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToRequestDayOff()
-    {
-        try
-        {
-            Console.WriteLine("GoToRequestDayOff: Navigating to Request Day Off");
-            await Shell.Current.GoToAsync($"//RequestDayOff?refresh={Guid.NewGuid()}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToRequestDayOff: Error navigating to Request Day Off: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to Request Day Off page.", "OK");
-        }
-    }
-
-    [RelayCommand]
-    private async Task GoToViewLog()
-    {
-        try
-        {
-            Console.WriteLine("GoToViewLog: Navigating to View Log");
-            await Shell.Current.GoToAsync("//ViewLog");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"GoToViewLog: Error navigating to View Log: {ex.Message}");
-            await PageDialogService.DisplayAlertAsync("Error", "Failed to navigate to View Log page.", "OK");
         }
     }
 
