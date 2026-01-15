@@ -4,46 +4,37 @@
              x:Class="HiatMeApp.SplashPage"
              BackgroundColor="#1e3a5f"
              Shell.NavBarIsVisible="False">
-    <Grid VerticalOptions="Center" HorizontalOptions="Center">
-        <VerticalStackLayout HorizontalOptions="Center"
-                             VerticalOptions="Center"
-                             Spacing="25">
-            
-            <!-- Paw Print using Path - proper dog paw shape, black -->
-            <Grid WidthRequest="160" HeightRequest="160" HorizontalOptions="Center">
-                <Path Fill="#000000"
-                      HorizontalOptions="Center"
-                      VerticalOptions="Center"
-                      Aspect="Uniform"
-                      WidthRequest="140"
-                      HeightRequest="140"
-                      Data="M 80 170 C 20 170 -5 130 5 95 C 15 65 45 50 80 50 C 115 50 145 65 155 95 C 165 130 140 170 80 170 Z
-                            M 25 35 C 25 55 35 72 50 72 C 65 72 75 55 75 35 C 75 15 65 0 50 0 C 35 0 25 15 25 35 Z
-                            M 55 15 C 55 35 65 52 80 52 C 95 52 105 35 105 15 C 105 -5 95 -20 80 -20 C 65 -20 55 -5 55 15 Z
-                            M 85 35 C 85 55 95 72 110 72 C 125 72 135 55 135 35 C 135 15 125 0 110 0 C 95 0 85 15 85 35 Z
-                            M 115 15 C 115 35 125 52 140 52 C 155 52 165 35 165 15 C 165 -5 155 -20 140 -20 C 125 -20 115 -5 115 15 Z" />
-            </Grid>
-            
-            <!-- HIATME text -->
-            <Label Text="HIATME"
-                   FontSize="52"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   HorizontalOptions="Center"
-                   CharacterSpacing="4" />
-            
-            <!-- Powered by AI -->
-            <Label Text="POWERED BY AI"
-                   FontSize="16"
-                   TextColor="#60a5fa"
-                   HorizontalOptions="Center"
-                   CharacterSpacing="3" />
-            
-            <!-- Loading indicator -->
-            <ActivityIndicator IsRunning="True"
-                               Color="#60a5fa"
-                               WidthRequest="36"
-                               HeightRequest="36" />
-        </VerticalStackLayout>
-    </Grid>
+    <VerticalStackLayout HorizontalOptions="Center"
+                         VerticalOptions="Center"
+                         Spacing="25">
+        
+        <!-- Font Awesome Paw Icon - black, large -->
+        <Path Fill="#000000"
+              HorizontalOptions="Center"
+              WidthRequest="150"
+              HeightRequest="150"
+              Aspect="Uniform"
+              Data="M226.5 92.9c14.3 42.9-.3 86.2-32.6 96.8s-70.1-15.6-84.4-58.5s.3-86.2 32.6-96.8s70.1 15.6 84.4 58.5zM100.4 198.6c18.9 32.4 14.3 70.1-10.2 84.1s-59.7-.9-78.5-33.3S-2.7 179.3 21.8 165.3s59.7 .9 78.5 33.3zM69.2 401.2C121.6 259.9 214.7 224 256 224s134.4 35.9 186.8 177.2c3.6 9.7 5.2 20.1 5.2 30.5v1.6c0 25.8-20.9 46.7-46.7 46.7c-11.5 0-22.9-1.4-34-4.2l-88-22c-15.3-3.8-31.3-3.8-46.6 0l-88 22c-11.1 2.8-22.5 4.2-34 4.2C84.9 480 64 459.1 64 433.3v-1.6c0-10.4 1.6-20.8 5.2-30.5zM421.8 282.7c-24.5-14-29.1-51.7-10.2-84.1s54-47.3 78.5-33.3s29.1 51.7 10.2 84.1s-54 47.3-78.5 33.3zM310.1 189.7c-32.3-10.6-46.9-53.9-32.6-96.8s52.1-69.1 84.4-58.5s46.9 53.9 32.6 96.8s-52.1 69.1-84.4 58.5z" />
+        
+        <!-- HIATME text -->
+        <Label Text="HIATME"
+               FontSize="52"
+               FontAttributes="Bold"
+               TextColor="White"
+               HorizontalOptions="Center"
+               CharacterSpacing="4" />
+        
+        <!-- Powered by AI -->
+        <Label Text="POWERED BY AI"
+               FontSize="16"
+               TextColor="#60a5fa"
+               HorizontalOptions="Center"
+               CharacterSpacing="3" />
+        
+        <!-- Loading indicator -->
+        <ActivityIndicator IsRunning="True"
+                           Color="#60a5fa"
+                           WidthRequest="36"
+                           HeightRequest="36" />
+    </VerticalStackLayout>
 </ContentPage>
