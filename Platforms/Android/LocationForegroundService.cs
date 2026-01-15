@@ -2,6 +2,8 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using Android.Locations;
+using Android.Provider;
+using Android.Net;
 using AndroidX.Core.App;
 using Microsoft.Maui.Devices.Sensors;
 using Microsoft.Maui.Storage;
@@ -63,6 +65,10 @@ namespace HiatmeApp
             StartLocationUpdates();
             _isRunning = true;
             IsRunning = true;
+            
+            // Request battery optimization exemption if not already granted
+            // This will show a system dialog to the user
+            RequestBatteryOptimizationExemption(this);
             
             Console.WriteLine("LocationForegroundService: Started");
             return StartCommandResult.Sticky;
@@ -357,6 +363,63 @@ namespace HiatmeApp
             context.StopService(intent);
             IsRunning = false;
             Console.WriteLine("LocationForegroundService: Stop requested");
+        }
+
+        /// <summary>
+        /// Check if the app is exempt from battery optimization
+        /// </summary>
+        public static bool IsIgnoringBatteryOptimizations(Context context)
+        {
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+            {
+                var powerManager = (PowerManager?)context.GetSystemService(PowerService);
+                if (powerManager != null && context.PackageName != null)
+                {
+                    return powerManager.IsIgnoringBatteryOptimizations(context.PackageName);
+                }
+            }
+            return true; // Older versions don't have this restriction
+        }
+
+        /// <summary>
+        /// Request battery optimization exemption from the user.
+        /// This will show a system dialog asking the user to allow unrestricted battery usage.
+        /// </summary>
+        public static void RequestBatteryOptimizationExemption(Context context)
+        {
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+            {
+                if (!IsIgnoringBatteryOptimizations(context))
+                {
+                    Console.WriteLine("LocationForegroundService: Requesting battery optimization exemption");
+                    try
+                    {
+                        var intent = new Intent(Settings.ActionRequestIgnoreBatteryOptimizations);
+                        intent.SetData(Android.Net.Uri.Parse($"package:{context.PackageName}"));
+                        intent.AddFlags(ActivityFlags.NewTask);
+                        context.StartActivity(intent);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"LocationForegroundService: Failed to request battery exemption: {ex.Message}");
+                        // Fallback: open battery optimization settings
+                        try
+                        {
+                            var fallbackIntent = new Intent(Settings.ActionIgnoreBatteryOptimizationSettings);
+                            fallbackIntent.AddFlags(ActivityFlags.NewTask);
+                            context.StartActivity(fallbackIntent);
+                        }
+                        catch (Exception ex2)
+                        {
+                            Console.WriteLine($"LocationForegroundService: Fallback also failed: {ex2.Message}");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("LocationForegroundService: Already exempt from battery optimization");
+                }
+            }
         }
     }
 }
