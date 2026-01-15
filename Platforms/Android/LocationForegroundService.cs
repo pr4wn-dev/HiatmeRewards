@@ -9,7 +9,11 @@ using System.Net.Http;
 
 namespace HiatmeApp
 {
-    [Service(ForegroundServiceType = Android.Content.PM.ForegroundService.TypeLocation)]
+    [Service(
+        ForegroundServiceType = Android.Content.PM.ForegroundService.TypeLocation,
+        Exported = false,
+        Name = "com.hiatme.app.LocationForegroundService"
+    )]
     public class LocationForegroundService : Service, ILocationListener
     {
         private const int NotificationId = 8888;
@@ -84,6 +88,26 @@ namespace HiatmeApp
             _httpClient?.Dispose();
             Console.WriteLine("LocationForegroundService: Destroyed");
             base.OnDestroy();
+        }
+
+        public override void OnTaskRemoved(Intent? rootIntent)
+        {
+            Console.WriteLine("LocationForegroundService: Task removed - restarting service");
+            
+            // Restart the service when app is swiped away
+            var restartIntent = new Intent(ApplicationContext, typeof(LocationForegroundService));
+            restartIntent.SetPackage(PackageName);
+            
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+            {
+                ApplicationContext?.StartForegroundService(restartIntent);
+            }
+            else
+            {
+                ApplicationContext?.StartService(restartIntent);
+            }
+            
+            base.OnTaskRemoved(rootIntent);
         }
         
         private async Task SendOfflineStatusAsync(string reason)
