@@ -5,11 +5,17 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if ANDROID
+using Android.Content;
+using HiatmeApp;
+#endif
+
 namespace HiatMeApp.Services
 {
     /// <summary>
     /// Handles GPS location tracking and sends updates to the server.
     /// Only tracks for Driver, Manager, and Owner roles.
+    /// On Android, uses a foreground service for persistent tracking.
     /// </summary>
     public class LocationService
     {
@@ -62,14 +68,73 @@ namespace HiatMeApp.Services
                 return;
             }
 
+#if ANDROID
+            // On Android, request background location permission for persistent tracking
+            await RequestBackgroundLocationPermissionAsync();
+            
+            // Start the foreground service for persistent tracking
+            try
+            {
+                var context = Android.App.Application.Context;
+                LocationForegroundService.Start(context);
+                _isTracking = true;
+                Console.WriteLine($"LocationService: Started foreground service for role '{role}'");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LocationService: Error starting foreground service: {ex.Message}");
+                // Fall back to regular tracking
+                StartFallbackTracking();
+            }
+#else
+            // On other platforms, use the regular tracking loop
+            StartFallbackTracking();
+#endif
+            
+            Console.WriteLine($"LocationService: Tracking started for role '{role}'");
+        }
+
+        private void StartFallbackTracking()
+        {
             _isTracking = true;
             _trackingCts = new CancellationTokenSource();
-            
-            Console.WriteLine($"LocationService: Starting tracking for role '{role}'");
-
-            // Start the tracking loop in background
             _ = Task.Run(() => TrackingLoopAsync(_trackingCts.Token));
+            Console.WriteLine("LocationService: Started fallback tracking loop");
         }
+
+#if ANDROID
+        private async Task RequestBackgroundLocationPermissionAsync()
+        {
+            try
+            {
+                // Check if we already have background location permission
+                var status = await Permissions.CheckStatusAsync<Permissions.LocationAlways>();
+                if (status == PermissionStatus.Granted)
+                {
+                    Console.WriteLine("LocationService: Background location permission already granted");
+                    return;
+                }
+
+                // Show explanation before requesting
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Application.Current?.MainPage?.DisplayAlert(
+                        "Background Location",
+                        "To track your location while the app is in the background or screen is locked, please allow 'Allow all the time' on the next screen.",
+                        "OK"
+                    );
+                });
+
+                // Request background location permission
+                status = await Permissions.RequestAsync<Permissions.LocationAlways>();
+                Console.WriteLine($"LocationService: Background location permission: {status}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LocationService: Error requesting background location: {ex.Message}");
+            }
+        }
+#endif
 
         /// <summary>
         /// Stop tracking location
@@ -83,6 +148,19 @@ namespace HiatMeApp.Services
             }
 
             Console.WriteLine("LocationService: Stopping tracking");
+
+#if ANDROID
+            try
+            {
+                var context = Android.App.Application.Context;
+                LocationForegroundService.Stop(context);
+                Console.WriteLine("LocationService: Stopped foreground service");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LocationService: Error stopping foreground service: {ex.Message}");
+            }
+#endif
             
             _trackingCts?.Cancel();
             _trackingCts?.Dispose();

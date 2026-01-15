@@ -13,6 +13,8 @@
 	<!-- Foreground service for reliable notifications on Samsung -->
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+	<!-- Foreground service for location tracking (Android 14+) -->
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 	<!-- Location permissions for GPS tracking -->
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
