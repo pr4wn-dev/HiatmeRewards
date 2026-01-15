@@ -106,9 +106,9 @@
                         Command="{Binding GoToFinishDayCommand}"
                         ToolTipProperties.Text="Finish Day" />
                 
-                <!-- Developer Tools (hidden for Clients) -->
+                <!-- Developer Tools (Managers and Owners only) -->
                 <Button Text="&#xE8B8;" Style="{StaticResource NavButtonStyle}" 
-                        IsVisible="{Binding IsClient, Converter={StaticResource InverseBooleanConverter}}"
+                        IsVisible="{Binding IsManagerOrOwner}"
                         Command="{Binding GoToViewLogCommand}"
                         ToolTipProperties.Text="Developer Tools" />
             </HorizontalStackLayout>

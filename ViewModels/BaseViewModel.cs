@@ -23,6 +23,9 @@ public partial class BaseViewModel : ObservableObject
     [ObservableProperty]
     private bool _isIssuesButtonVisible;
 
+    [ObservableProperty]
+    private bool _isManagerOrOwner;
+
     public BaseViewModel()
     {
         // Initialize role-based visibility from stored user data
@@ -42,6 +45,7 @@ public partial class BaseViewModel : ObservableObject
                     IsClient = user.Role?.Equals("Client", StringComparison.OrdinalIgnoreCase) == true;
                     IsVehicleButtonVisible = user.Role is "Driver" or "Manager" or "Owner";
                     IsIssuesButtonVisible = user.Role is "Driver" or "Manager" or "Owner";
+                    IsManagerOrOwner = user.Role is "Manager" or "Owner";
                 }
             }
             catch (Exception ex)
