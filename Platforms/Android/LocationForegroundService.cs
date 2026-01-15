@@ -67,11 +67,57 @@ namespace HiatmeApp
         public override void OnDestroy()
         {
             StopLocationUpdates();
+            
+            // Notify server that we're going offline before destroying
+            try
+            {
+                Console.WriteLine("LocationForegroundService: Sending offline status before destroy");
+                _ = SendOfflineStatusAsync("App closed");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LocationForegroundService: Failed to send offline status: {ex.Message}");
+            }
+            
             _isRunning = false;
             IsRunning = false;
             _httpClient?.Dispose();
             Console.WriteLine("LocationForegroundService: Destroyed");
             base.OnDestroy();
+        }
+        
+        private async Task SendOfflineStatusAsync(string reason)
+        {
+            try
+            {
+                var authToken = Preferences.Get("AuthToken", string.Empty);
+                if (string.IsNullOrEmpty(authToken))
+                {
+                    Console.WriteLine("LocationForegroundService: No auth token for offline status");
+                    return;
+                }
+
+                if (_httpClient == null) return;
+
+                var content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    { "auth_token", authToken },
+                    { "is_online", "0" },
+                    { "reason", reason }
+                });
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                var response = await _httpClient.PostAsync("/api/set_driver_status.php", content, cts.Token);
+                Console.WriteLine($"LocationForegroundService: Offline status sent - {response.StatusCode}");
+            }
+            catch (TaskCanceledException)
+            {
+                Console.WriteLine("LocationForegroundService: Offline status request timed out");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LocationForegroundService: Error sending offline status: {ex.Message}");
+            }
         }
 
         private void CreateNotificationChannel()

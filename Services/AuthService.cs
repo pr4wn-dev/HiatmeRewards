@@ -2479,5 +2479,76 @@ namespace HiatMeApp.Services
                 System.Diagnostics.Debug.WriteLine($"AUTH LOG ERROR: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Sets the driver's online/offline status on the server.
+        /// Called when app opens, closes, or user logs out.
+        /// </summary>
+        /// <param name="isOnline">True if online, false if offline</param>
+        /// <param name="reason">Reason for going offline (e.g., "Logged out", "App closed")</param>
+        /// <returns>Success status and message</returns>
+        public async Task<(bool Success, string Message)> SetDriverStatusAsync(bool isOnline, string? reason = null)
+        {
+            try
+            {
+                Console.WriteLine($"SetDriverStatusAsync: Setting status isOnline={isOnline}, reason={reason ?? "null"}");
+                
+                var authToken = Preferences.Get("AuthToken", null);
+                if (string.IsNullOrEmpty(authToken))
+                {
+                    Console.WriteLine("SetDriverStatusAsync: No auth token found");
+                    return (false, "Not authenticated");
+                }
+                
+                var data = new Dictionary<string, string>
+                {
+                    { "auth_token", authToken },
+                    { "is_online", isOnline ? "1" : "0" }
+                };
+                
+                if (!string.IsNullOrEmpty(reason))
+                {
+                    data.Add("reason", reason);
+                }
+                
+                var content = new FormUrlEncodedContent(data);
+                
+                // Use a short timeout since this is called on app close
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var response = await _httpClient.PostAsync("/api/set_driver_status.php", content, cts.Token);
+                var json = await response.Content.ReadAsStringAsync();
+                
+                Console.WriteLine($"SetDriverStatusAsync: Response: {json}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = JsonConvert.DeserializeObject<SetStatusResponse>(json);
+                    if (result?.Success == true)
+                    {
+                        Console.WriteLine($"SetDriverStatusAsync: Status set successfully");
+                        return (true, result.Message ?? "Status updated");
+                    }
+                    return (false, result?.Message ?? "Failed to set status");
+                }
+                
+                return (false, $"Server error: {response.StatusCode}");
+            }
+            catch (TaskCanceledException)
+            {
+                Console.WriteLine("SetDriverStatusAsync: Request timed out");
+                return (false, "Request timed out");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SetDriverStatusAsync: Error: {ex.Message}");
+                return (false, ex.Message);
+            }
+        }
+
+        private class SetStatusResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+        }
     }
 }

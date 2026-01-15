@@ -232,7 +232,23 @@ public partial class AppShell : Shell
         {
             if (Preferences.Get("IsLoggedIn", false))
             {
-                // Logout - save email before clearing preferences
+                // Logout - first notify the server that we're going offline
+                try
+                {
+                    var authService = App.Services.GetService<Services.AuthService>();
+                    if (authService != null)
+                    {
+                        Console.WriteLine("AppShell: Sending offline status before logout");
+                        await authService.SetDriverStatusAsync(false, "Logged out");
+                    }
+                }
+                catch (Exception statusEx)
+                {
+                    Console.WriteLine($"AppShell: Failed to send offline status: {statusEx.Message}");
+                    // Continue with logout even if status update fails
+                }
+                
+                // Save email before clearing preferences
                 string savedEmail = Preferences.Get("SavedLoginEmail", string.Empty);
                 if (string.IsNullOrEmpty(savedEmail))
                 {
