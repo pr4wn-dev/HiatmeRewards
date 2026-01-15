@@ -2,37 +2,37 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="HiatMeApp.SplashPage"
-             BackgroundColor="#1e3a5f"
+             BackgroundColor="#FFFFFF"
              Shell.NavBarIsVisible="False">
     <VerticalStackLayout HorizontalOptions="Center"
                          VerticalOptions="Center"
                          Spacing="25">
         
-        <!-- Dog Image - simple and reliable -->
+        <!-- Dog Image -->
         <Image Source="dog.png"
-               WidthRequest="140"
-               HeightRequest="140"
+               WidthRequest="160"
+               HeightRequest="160"
                Aspect="AspectFit"
                HorizontalOptions="Center" />
         
-        <!-- HIATME text -->
+        <!-- HIATME text - black to match dog -->
         <Label Text="HIATME"
                FontSize="52"
                FontAttributes="Bold"
-               TextColor="White"
+               TextColor="#000000"
                HorizontalOptions="Center"
                CharacterSpacing="4" />
         
-        <!-- Powered by AI -->
+        <!-- Powered by AI - dark gray -->
         <Label Text="POWERED BY AI"
                FontSize="16"
-               TextColor="#60a5fa"
+               TextColor="#374151"
                HorizontalOptions="Center"
                CharacterSpacing="3" />
         
-        <!-- Loading indicator -->
+        <!-- Loading indicator - dark -->
         <ActivityIndicator IsRunning="True"
-                           Color="#60a5fa"
+                           Color="#374151"
                            WidthRequest="36"
                            HeightRequest="36" />
     </VerticalStackLayout>

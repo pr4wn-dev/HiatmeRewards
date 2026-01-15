@@ -49,8 +49,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#1a1a1a" />
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#1a1a1a" BaseSize="256,256" />
+    <MauiIcon Include="Resources\AppIcon\appicon.png" Color="#FFFFFF" />
+    <MauiSplashScreen Include="Resources\Images\dog.png" Color="#FFFFFF" BaseSize="256,256" />
     <MauiImage Include="Resources\Images\*" />
     <MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
     <!-- Exclude corrupted avatar.png - it's actually a RIFF/WAV file, not PNG. We load it from URL instead -->
