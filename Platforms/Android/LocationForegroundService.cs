@@ -101,7 +101,7 @@ namespace HiatmeApp
             var builder = new NotificationCompat.Builder(this, ChannelId)
                 .SetContentTitle("HiatMe")
                 .SetContentText("Location tracking active")
-                .SetSmallIcon(Android.Resource.Drawable.IcMenuMylocation)
+                .SetSmallIcon(Android.Resource.Drawable.IcDialogMap)
                 .SetOngoing(true)
                 .SetPriority(NotificationCompat.PriorityLow)
                 .SetContentIntent(pendingIntent);
