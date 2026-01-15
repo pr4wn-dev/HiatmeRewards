@@ -108,18 +108,20 @@
                            LineBreakMode="TailTruncation"
                            MaxLines="1" />
                     <!-- Role badge -->
-                    <Frame BackgroundColor="#1e3a5f"
-                           CornerRadius="8"
-                           Padding="8,4"
-                           HasShadow="False"
-                           HorizontalOptions="Start"
-                           Margin="0,4,0,0">
+                    <Border BackgroundColor="#1e3a5f"
+                            StrokeShape="RoundRectangle 8"
+                            Stroke="Transparent"
+                            Padding="10,4"
+                            HorizontalOptions="Start"
+                            Margin="0,4,0,0">
                         <Label Text="{Binding UserRole, TargetNullValue='User'}"
                                FontSize="11"
                                FontAttributes="Bold"
                                TextColor="#3b82f6"
-                               TextTransform="Uppercase" />
-                    </Frame>
+                               TextTransform="Uppercase"
+                               LineBreakMode="NoWrap"
+                               MaxLines="1" />
+                    </Border>
                 </VerticalStackLayout>
             </Grid>
         </Grid>
