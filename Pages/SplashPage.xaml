@@ -4,48 +4,29 @@
              x:Class="HiatMeApp.SplashPage"
              BackgroundColor="#1e3a5f"
              Shell.NavBarIsVisible="False">
-    <Grid>
+    <Grid VerticalOptions="Center" HorizontalOptions="Center">
         <VerticalStackLayout HorizontalOptions="Center"
-                           VerticalOptions="Center"
-                           Spacing="30">
+                             VerticalOptions="Center"
+                             Spacing="25">
             
-            <!-- Paw Print using Path -->
-            <Grid WidthRequest="180" HeightRequest="180" HorizontalOptions="Center">
-                <!-- Main pad -->
-                <Ellipse Fill="#3b82f6" 
-                         WidthRequest="90" HeightRequest="70"
-                         HorizontalOptions="Center" VerticalOptions="End"
-                         Margin="0,0,0,10" />
-                
-                <!-- Toe pads - using a Grid to position them -->
-                <Ellipse Fill="#3b82f6" 
-                         WidthRequest="40" HeightRequest="50"
-                         HorizontalOptions="Start" VerticalOptions="Start"
-                         Margin="10,30,0,0" 
-                         Rotation="-15"/>
-                
-                <Ellipse Fill="#3b82f6" 
-                         WidthRequest="38" HeightRequest="48"
-                         HorizontalOptions="Center" VerticalOptions="Start"
-                         Margin="-45,10,0,0"
-                         Rotation="-5"/>
-                
-                <Ellipse Fill="#3b82f6" 
-                         WidthRequest="38" HeightRequest="48"
-                         HorizontalOptions="Center" VerticalOptions="Start"
-                         Margin="45,10,0,0"
-                         Rotation="5"/>
-                
-                <Ellipse Fill="#3b82f6" 
-                         WidthRequest="40" HeightRequest="50"
-                         HorizontalOptions="End" VerticalOptions="Start"
-                         Margin="0,30,10,0"
-                         Rotation="15"/>
+            <!-- Paw Print using Path - proper dog paw shape, black -->
+            <Grid WidthRequest="160" HeightRequest="160" HorizontalOptions="Center">
+                <Path Fill="#000000"
+                      HorizontalOptions="Center"
+                      VerticalOptions="Center"
+                      Aspect="Uniform"
+                      WidthRequest="140"
+                      HeightRequest="140"
+                      Data="M 80 170 C 20 170 -5 130 5 95 C 15 65 45 50 80 50 C 115 50 145 65 155 95 C 165 130 140 170 80 170 Z
+                            M 25 35 C 25 55 35 72 50 72 C 65 72 75 55 75 35 C 75 15 65 0 50 0 C 35 0 25 15 25 35 Z
+                            M 55 15 C 55 35 65 52 80 52 C 95 52 105 35 105 15 C 105 -5 95 -20 80 -20 C 65 -20 55 -5 55 15 Z
+                            M 85 35 C 85 55 95 72 110 72 C 125 72 135 55 135 35 C 135 15 125 0 110 0 C 95 0 85 15 85 35 Z
+                            M 115 15 C 115 35 125 52 140 52 C 155 52 165 35 165 15 C 165 -5 155 -20 140 -20 C 125 -20 115 -5 115 15 Z" />
             </Grid>
             
             <!-- HIATME text -->
             <Label Text="HIATME"
-                   FontSize="56"
+                   FontSize="52"
                    FontAttributes="Bold"
                    TextColor="White"
                    HorizontalOptions="Center"
@@ -53,17 +34,16 @@
             
             <!-- Powered by AI -->
             <Label Text="POWERED BY AI"
-                   FontSize="18"
+                   FontSize="16"
                    TextColor="#60a5fa"
                    HorizontalOptions="Center"
                    CharacterSpacing="3" />
             
             <!-- Loading indicator -->
             <ActivityIndicator IsRunning="True"
-                              Color="#60a5fa"
-                              WidthRequest="40"
-                              HeightRequest="40"
-                              Margin="0,20,0,0" />
+                               Color="#60a5fa"
+                               WidthRequest="36"
+                               HeightRequest="36" />
         </VerticalStackLayout>
     </Grid>
 </ContentPage>

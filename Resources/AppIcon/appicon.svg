@@ -11,22 +11,20 @@
     <!-- Background -->
     <rect width="512" height="512" fill="url(#bgGrad)" />
     
-    <!-- Dog Paw Print Icon -->
-    <g transform="translate(256, 256)">
-        <!-- Main pad (large center pad) -->
-        <ellipse cx="0" cy="50" rx="65" ry="52" fill="#ffffff" />
+    <!-- Dog Paw Print - matching reference -->
+    <g transform="translate(256, 270)">
+        <!-- Main pad - rounded triangular/heart shape -->
+        <path d="M 0 75 
+                 C -60 75, -85 35, -75 0
+                 C -65 -25, -40 -40, 0 -40
+                 C 40 -40, 65 -25, 75 0
+                 C 85 35, 60 75, 0 75 Z" 
+              fill="#ffffff" />
         
-        <!-- Top toe pads -->
-        <!-- Left outer toe -->
-        <ellipse cx="-70" cy="-28" rx="30" ry="36" fill="#ffffff" transform="rotate(-15, -70, -28)" />
-        
-        <!-- Left inner toe -->
-        <ellipse cx="-26" cy="-52" rx="28" ry="34" fill="#ffffff" transform="rotate(-5, -26, -52)" />
-        
-        <!-- Right inner toe -->
-        <ellipse cx="26" cy="-52" rx="28" ry="34" fill="#ffffff" transform="rotate(5, 26, -52)" />
-        
-        <!-- Right outer toe -->
-        <ellipse cx="70" cy="-28" rx="30" ry="36" fill="#ffffff" transform="rotate(15, 70, -28)" />
+        <!-- Toe pads - 4 ovals arranged in arc -->
+        <ellipse cx="-62" cy="-65" rx="24" ry="32" fill="#ffffff" transform="rotate(-20, -62, -65)" />
+        <ellipse cx="-24" cy="-88" rx="22" ry="30" fill="#ffffff" transform="rotate(-8, -24, -88)" />
+        <ellipse cx="24" cy="-88" rx="22" ry="30" fill="#ffffff" transform="rotate(8, 24, -88)" />
+        <ellipse cx="62" cy="-65" rx="24" ry="32" fill="#ffffff" transform="rotate(20, 62, -65)" />
     </g>
 </svg>

@@ -1,38 +1,32 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="512" height="512" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <!-- Paw pad gradient -->
-        <linearGradient id="padGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#4a9eff"/>
-            <stop offset="100%" style="stop-color:#2563eb"/>
-        </linearGradient>
-        <!-- Subtle shadow -->
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
-        </filter>
-    </defs>
     
-    <!-- Dog Paw Print - Large and centered -->
-    <g transform="translate(256, 180)" filter="url(#shadow)">
-        <!-- Main pad (large center pad) -->
-        <ellipse cx="0" cy="60" rx="70" ry="55" fill="url(#padGrad)" />
+    <!-- Dog Paw Print - Large and centered, matching reference -->
+    <g transform="translate(256, 200)">
+        <!-- Main pad - rounded triangular/heart shape -->
+        <path d="M 0 85 
+                 C -70 85, -95 40, -85 0
+                 C -75 -30, -45 -45, 0 -45
+                 C 45 -45, 75 -30, 85 0
+                 C 95 40, 70 85, 0 85 Z" 
+              fill="#000000" />
         
-        <!-- Top toe pads -->
+        <!-- Toe pads - 4 ovals arranged in arc -->
         <!-- Left outer toe -->
-        <ellipse cx="-75" cy="-30" rx="32" ry="38" fill="url(#padGrad)" transform="rotate(-15, -75, -30)" />
+        <ellipse cx="-72" cy="-75" rx="28" ry="38" fill="#000000" transform="rotate(-20, -72, -75)" />
         
         <!-- Left inner toe -->
-        <ellipse cx="-28" cy="-55" rx="30" ry="36" fill="url(#padGrad)" transform="rotate(-5, -28, -55)" />
+        <ellipse cx="-28" cy="-100" rx="26" ry="36" fill="#000000" transform="rotate(-8, -28, -100)" />
         
         <!-- Right inner toe -->
-        <ellipse cx="28" cy="-55" rx="30" ry="36" fill="url(#padGrad)" transform="rotate(5, 28, -55)" />
+        <ellipse cx="28" cy="-100" rx="26" ry="36" fill="#000000" transform="rotate(8, 28, -100)" />
         
         <!-- Right outer toe -->
-        <ellipse cx="75" cy="-30" rx="32" ry="38" fill="url(#padGrad)" transform="rotate(15, 75, -30)" />
+        <ellipse cx="72" cy="-75" rx="28" ry="38" fill="#000000" transform="rotate(20, 72, -75)" />
     </g>
     
     <!-- HIATME - Very large, clean font -->
-    <text x="256" y="380" 
+    <text x="256" y="400" 
           font-family="'Segoe UI', 'SF Pro Display', Helvetica, Arial, sans-serif" 
           font-size="96" 
           font-weight="700" 
@@ -43,7 +37,7 @@
     </text>
     
     <!-- Powered by AI tagline -->
-    <text x="256" y="440" 
+    <text x="256" y="455" 
           font-family="'Segoe UI', 'SF Pro Display', Helvetica, Arial, sans-serif" 
           font-size="28" 
           fill="#60a5fa" 
