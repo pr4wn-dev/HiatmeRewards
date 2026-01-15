@@ -88,7 +88,7 @@
                                    FontSize="14"
                                    TextColor="#AAAAAA" />
                             
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="10" Margin="0,8,0,0">
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10" Margin="0,8,0,0">
                                 <Label Grid.Row="0" Grid.Column="0" Text="🚗" FontSize="20" VerticalOptions="Center" />
                                 <Label Grid.Row="0" Grid.Column="1" Text="Assign and manage your vehicle" TextColor="White" FontSize="14" VerticalOptions="Center" />
                                 
