@@ -17,8 +17,8 @@ public partial class SplashPage : ContentPage
         {
             base.OnAppearing();
             
-            // Small delay to show splash screen
-            await Task.Delay(300);
+            // Show splash screen for 3 seconds
+            await Task.Delay(3000);
         
         // Validate and restore session if logged in
         bool isLoggedIn = Preferences.Get("IsLoggedIn", false);
